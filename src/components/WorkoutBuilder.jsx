@@ -48,7 +48,8 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
         setSelectedTemplateId(val);
 
         if (val !== 'new') {
-            const template = templates.find(t => t.id === val);
+            // Template IDs are numbers (Date.now()), val is string from select
+            const template = templates.find(t => t.id === Number(val));
             if (template) {
                 setWorkoutName(template.name);
                 // Hydrate exercises
