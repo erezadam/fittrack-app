@@ -1,15 +1,20 @@
-import { initialExercises } from '../data/initialData';
+import { initialExercises, initialMuscles } from '../data/initialData';
 
 const EXERCISE_KEY = 'fittrack_exercises';
+const MUSCLE_KEY = 'fittrack_muscles';
 const HISTORY_KEY = 'fittrack_history';
 const TEMPLATE_KEY = 'fittrack_templates';
 
 export const storageService = {
     initialize: () => {
-        const existing = localStorage.getItem(EXERCISE_KEY);
-        if (!existing) {
+        const existingEx = localStorage.getItem(EXERCISE_KEY);
+        if (!existingEx) {
             localStorage.setItem(EXERCISE_KEY, JSON.stringify(initialExercises));
-            console.log('Initialized DB with default data');
+        }
+
+        const existingMuscles = localStorage.getItem(MUSCLE_KEY);
+        if (!existingMuscles) {
+            localStorage.setItem(MUSCLE_KEY, JSON.stringify(initialMuscles));
         }
     },
 
@@ -22,9 +27,19 @@ export const storageService = {
         localStorage.setItem(EXERCISE_KEY, JSON.stringify(exercises));
     },
 
+    getMuscles: () => {
+        const data = localStorage.getItem(MUSCLE_KEY);
+        return data ? JSON.parse(data) : initialMuscles;
+    },
+
+    saveMuscles: (muscles) => {
+        localStorage.setItem(MUSCLE_KEY, JSON.stringify(muscles));
+    },
+
     resetData: () => {
         localStorage.setItem(EXERCISE_KEY, JSON.stringify(initialExercises));
-        return initialExercises;
+        localStorage.setItem(MUSCLE_KEY, JSON.stringify(initialMuscles));
+        return { exercises: initialExercises, muscles: initialMuscles };
     },
 
     saveWorkout: (workout) => {

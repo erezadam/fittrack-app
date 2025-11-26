@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 
-const MUSCLE_MAP = {
-    'Chest': { label: 'חזה', icon: '👕' },
-    'Back': { label: 'גב', icon: '🦅' },
-    'Legs': { label: 'רגליים', icon: '🦵' },
-    'Shoulders': { label: 'כתפיים', icon: '🥥' },
-    'Arms': { label: 'ידיים', icon: '💪' },
-    'Core': { label: 'בטן', icon: '🍫' },
-    'Cardio': { label: 'אירובי', icon: '🏃‍♂️' },
-    'Full Body': { label: 'כל הגוף', icon: '⚡' }
-};
-
 export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
@@ -19,6 +8,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
     // Data State
     const [exercises, setExercises] = useState([]);
     const [templates, setTemplates] = useState([]);
+    const [muscles, setMuscles] = useState({}); // Object: { 'Chest': { label: '...', ... } }
 
     // Workout State
     const [workoutName, setWorkoutName] = useState('');
@@ -26,7 +16,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
     const [selectedExercises, setSelectedExercises] = useState([]);
 
     // Selection State
-    const [selectedMuscles, setSelectedMuscles] = useState([]); // Array of strings
+    const [selectedMuscles, setSelectedMuscles] = useState([]); // Array of strings (keys)
     const [selectedSubMuscles, setSelectedSubMuscles] = useState([]); // Array of strings
 
     useEffect(() => {
@@ -42,6 +32,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
         const userTemplates = storageService.getTemplates();
         setTemplates(userTemplates);
+
+        const muscleData = storageService.getMuscles();
+        setMuscles(muscleData);
     };
 
     // --- Logic ---
@@ -130,7 +123,11 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
     // --- Renderers ---
 
-    const availableMuscles = [...new Set(exercises.map(e => e.muscle_group_id || e.mainMuscle))];
+    // We use the keys from the muscles object to drive the UI, 
+    // ensuring we only show muscles that exist in our definition.
+    // Alternatively, we could intersect with available exercises if we want to hide empty muscles.
+    // For now, let's show all defined muscles.
+    const availableMuscleKeys = Object.keys(muscles);
 
     if (step === 'dashboard') {
         return (
@@ -182,9 +179,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                             gap: '16px',
                             marginBottom: '32px'
                         }}>
-                            {availableMuscles.map(m => {
+                            {availableMuscleKeys.map(m => {
                                 const isSelected = selectedMuscles.includes(m);
-                                const mapping = MUSCLE_MAP[m] || { label: m, icon: '💪' };
+                                const mapping = muscles[m] || { label: m, icon: '💪' };
                                 return (
                                     <div
                                         key={m}
@@ -235,11 +232,20 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
             <div style={{ marginBottom: '20px' }}>
                 {selectedMuscles.map(m => {
-                    const mapping = MUSCLE_MAP[m] || { label: m };
+                    const mapping = muscles[m] || { label: m };
                     const allMuscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
 
                     // Extract Sub-Muscles
-                    const subMuscles = [...new Set(allMuscleExercises.map(ex => ex.subMuscle).filter(Boolean))];
+                    // We can now use the predefined sub-muscles from the muscle object if we want to show all options,
+                    // or stick to what's available in the exercises.
+                    // Let's stick to available exercises for now to avoid empty filters,
+                    // OR better: show all defined sub-muscles for this muscle group so user knows what's possible?
+                    // User asked for "filtering based on sub-muscle", usually implies showing available filters.
+                    // Let's use the sub-muscles defined in the muscle object + any extras found in exercises.
+
+                    const definedSubMuscles = mapping.subMuscles || [];
+                    const exerciseSubMuscles = [...new Set(allMuscleExercises.map(ex => ex.subMuscle).filter(Boolean))];
+                    const subMuscles = [...new Set([...definedSubMuscles, ...exerciseSubMuscles])];
 
                     // Filter Logic
                     const displayedExercises = allMuscleExercises.filter(ex => {
@@ -308,7 +314,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                         >
                                             <div>
                                                 <div style={{ fontWeight: 'bold' }}>{ex.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#718096' }}>{ex.subMuscle || ex.equipment}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                                                    {ex.subMuscle} {ex.subMuscle && ex.equipment ? '•' : ''} {ex.equipment}
+                                                </div>
                                             </div>
                                             <div className={`neu-checkbox ${isSelected ? 'checked' : ''}`} style={{
                                                 background: isSelected ? 'var(--accent-color)' : 'var(--bg-color)',
