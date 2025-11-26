@@ -27,8 +27,11 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
     // Selection State
     const [selectedMuscles, setSelectedMuscles] = useState([]); // Array of strings
+    const [selectedSubMuscles, setSelectedSubMuscles] = useState([]); // Array of strings
 
     useEffect(() => {
+        // For dev: force reset to load new Hebrew data if needed, or just init
+        // storageService.resetData(); // Uncomment to force update data
         storageService.initialize();
         loadData();
     }, []);
@@ -63,6 +66,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
             setWorkoutName('');
             setSelectedExercises([]);
             setSelectedMuscles([]);
+            setSelectedSubMuscles([]);
         }
     };
 
@@ -71,6 +75,14 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
             setSelectedMuscles(selectedMuscles.filter(m => m !== muscleKey));
         } else {
             setSelectedMuscles([...selectedMuscles, muscleKey]);
+        }
+    };
+
+    const toggleSubMuscle = (sub) => {
+        if (selectedSubMuscles.includes(sub)) {
+            setSelectedSubMuscles(selectedSubMuscles.filter(s => s !== sub));
+        } else {
+            setSelectedSubMuscles([...selectedSubMuscles, sub]);
         }
     };
 
@@ -224,15 +236,62 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
             <div style={{ marginBottom: '20px' }}>
                 {selectedMuscles.map(m => {
                     const mapping = MUSCLE_MAP[m] || { label: m };
-                    const muscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
+                    const allMuscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
+
+                    // Extract Sub-Muscles
+                    const subMuscles = [...new Set(allMuscleExercises.map(ex => ex.subMuscle).filter(Boolean))];
+
+                    // Filter Logic
+                    const displayedExercises = allMuscleExercises.filter(ex => {
+                        if (selectedSubMuscles.length === 0) return true;
+                        // If any sub-muscle selected, check if this exercise matches one of them
+                        // But we only want to filter if the selected sub-muscle belongs to THIS muscle group?
+                        // Actually, global filter is fine if sub-muscles are unique enough, or we check intersection.
+                        // Let's assume we want to show exercise if its subMuscle is in selectedSubMuscles
+                        // OR if no subMuscles for THIS muscle group are selected.
+
+                        // Better UX: Filter chips are per muscle group visually, but state is global?
+                        // Let's check if any of THIS muscle's sub-muscles are selected.
+                        const hasActiveFilter = subMuscles.some(sm => selectedSubMuscles.includes(sm));
+                        if (!hasActiveFilter) return true;
+                        return selectedSubMuscles.includes(ex.subMuscle);
+                    });
 
                     return (
                         <div key={m} style={{ marginBottom: '24px' }}>
                             <h3 style={{ borderBottom: '2px solid var(--accent-color)', paddingBottom: '8px', display: 'inline-block' }}>
                                 {mapping.label}
                             </h3>
+
+                            {/* Sub-Muscle Filters */}
+                            {subMuscles.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                    {subMuscles.map(sm => {
+                                        const isActive = selectedSubMuscles.includes(sm);
+                                        return (
+                                            <div
+                                                key={sm}
+                                                onClick={() => toggleSubMuscle(sm)}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '0.85rem',
+                                                    cursor: 'pointer',
+                                                    background: isActive ? 'var(--accent-color)' : 'var(--bg-color)',
+                                                    color: isActive ? 'white' : 'var(--text-color)',
+                                                    boxShadow: isActive ? 'inset 2px 2px 5px rgba(0,0,0,0.2)' : '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                            >
+                                                {sm}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             <div className="grid-cols-2">
-                                {muscleExercises.map(ex => {
+                                {displayedExercises.map(ex => {
                                     const isSelected = !!selectedExercises.find(e => e.id === ex.id);
                                     return (
                                         <div
@@ -249,7 +308,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                         >
                                             <div>
                                                 <div style={{ fontWeight: 'bold' }}>{ex.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#718096' }}>{ex.equipment}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#718096' }}>{ex.subMuscle || ex.equipment}</div>
                                             </div>
                                             <div className={`neu-checkbox ${isSelected ? 'checked' : ''}`} style={{
                                                 background: isSelected ? 'var(--accent-color)' : 'var(--bg-color)',
@@ -261,6 +320,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                     );
                                 })}
                             </div>
+                            {displayedExercises.length === 0 && (
+                                <div style={{ color: '#718096', fontStyle: 'italic' }}>אין תרגילים התואמים את הסינון.</div>
+                            )}
                         </div>
                     );
                 })}
