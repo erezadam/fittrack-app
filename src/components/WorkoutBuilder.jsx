@@ -244,8 +244,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                     // Let's use the sub-muscles defined in the muscle object + any extras found in exercises.
 
                     const definedSubMuscles = mapping.subMuscles || [];
-                    const exerciseSubMuscles = [...new Set(allMuscleExercises.map(ex => ex.subMuscle).filter(Boolean))];
-                    const subMuscles = [...new Set([...definedSubMuscles, ...exerciseSubMuscles])];
+                    // We only show sub-muscles that are explicitly defined for this muscle group.
+                    // This prevents "garbage" or old data from appearing as filter chips.
+                    const subMuscles = definedSubMuscles;
 
                     // Filter Logic
                     const displayedExercises = allMuscleExercises.filter(ex => {

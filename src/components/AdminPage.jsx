@@ -16,6 +16,10 @@ export default function AdminPage({ onBack }) {
     const [muscleForm, setMuscleForm] = useState({ key: '', label: '', icon: '', subMuscles: [] });
     const [newSubMuscle, setNewSubMuscle] = useState('');
 
+    // Filter State
+    const [filterMainMuscle, setFilterMainMuscle] = useState('');
+    const [filterSubMuscle, setFilterSubMuscle] = useState('');
+
     useEffect(() => {
         loadData();
     }, []);
@@ -50,6 +54,7 @@ export default function AdminPage({ onBack }) {
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
         setExForm({ name: ex.name, mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '' });
+        window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
     const handleDeleteExercise = (id) => {
@@ -59,6 +64,108 @@ export default function AdminPage({ onBack }) {
             setExercises(updated);
         }
     };
+
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target.result;
+            const lines = content.split('\n');
+            if (lines.length < 2) {
+                alert('קובץ ריק או לא תקין');
+                return;
+            }
+
+            const headers = lines[0].trim().split(',');
+            // Expected: name,mainMuscle,subMuscle,workoutType
+
+            const newExercises = [];
+            let skipped = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const values = line.split(',');
+                if (values.length < 4) {
+                    skipped++;
+                    continue;
+                }
+
+                const [name, mainMuscle, subMuscle, workoutType] = values.map(v => v.trim());
+
+                // Validation
+                // 1. Check if mainMuscle exists (by key or label?) Let's assume Key for now as per template.
+                // If user puts Hebrew label, we might want to map it back to Key.
+                // Let's try to find the key if they provided a label.
+                let muscleKey = mainMuscle;
+                if (!muscles[muscleKey]) {
+                    // Try to find by label
+                    const foundKey = Object.keys(muscles).find(k => muscles[k].label === mainMuscle);
+                    if (foundKey) muscleKey = foundKey;
+                    else {
+                        console.warn(`Muscle not found: ${mainMuscle}`);
+                        // Optional: Create it? No, safer to skip or default.
+                        // Let's skip for safety.
+                        skipped++;
+                        continue;
+                    }
+                }
+
+                // 2. Validate Workout Type
+                // If it's English (e.g. 'Machine'), map to Hebrew if possible, or just take it if it matches.
+                // Our WORKOUT_TYPES are Hebrew.
+                // Simple mapping for common English terms to our Hebrew types:
+                const typeMapping = {
+                    'Machine': 'מכשירים',
+                    'Free Weight': 'משקולות חופשיות',
+                    'Barbell': 'משקולות חופשיות',
+                    'Dumbbells': 'משקולות חופשיות',
+                    'Cables': 'כבלים',
+                    'Cable': 'כבלים',
+                    'Bodyweight': 'משקל גוף'
+                };
+
+                let finalType = workoutType;
+                if (typeMapping[workoutType]) finalType = typeMapping[workoutType];
+                else if (!WORKOUT_TYPES.includes(workoutType)) {
+                    // If not in our list and not mapped, maybe default to Free Weight or skip?
+                    // Let's keep it but it might not show in dropdown correctly.
+                    // Or better, default to 'משקולות חופשיות' if unknown.
+                    finalType = 'משקולות חופשיות';
+                }
+
+                newExercises.push({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    name,
+                    mainMuscle: muscleKey,
+                    subMuscle,
+                    equipment: finalType
+                });
+            }
+
+            if (newExercises.length > 0) {
+                const updated = [...exercises, ...newExercises];
+                storageService.saveExercises(updated);
+                setExercises(updated);
+                alert(`נוספו בהצלחה ${newExercises.length} תרגילים. (${skipped} נדלגו)`);
+            } else {
+                alert('לא נמצאו תרגילים תקינים לייבוא.');
+            }
+        };
+        reader.readAsText(file);
+        // Reset input
+        event.target.value = '';
+    };
+
+    // Filtered Exercises
+    const filteredExercises = exercises.filter(ex => {
+        if (filterMainMuscle && ex.mainMuscle !== filterMainMuscle) return false;
+        if (filterSubMuscle && ex.subMuscle !== filterSubMuscle) return false;
+        return true;
+    });
 
     // --- Muscle Logic ---
 
@@ -108,9 +215,29 @@ export default function AdminPage({ onBack }) {
 
     return (
         <div className="container">
+            {/* ... (Header and Tabs) ... */}
             <div className="flex-between" style={{ marginBottom: '20px' }}>
                 <button type="button" onClick={onBack} className="neu-btn">← חזרה</button>
-                <h2 className="title" style={{ margin: 0, fontSize: '1.5rem' }}>ניהול מערכת</h2>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <h2 className="title" style={{ margin: 0, fontSize: '1.5rem' }}>ניהול מערכת</h2>
+                </div>
+            </div>
+
+            {/* Import/Export Actions */}
+            <div className="neu-card" style={{ marginBottom: '20px', padding: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>פעולות מהירות:</span>
+                <a href="/exercises_template.csv" download className="neu-btn" style={{ textDecoration: 'none', fontSize: '0.8rem' }}>
+                    📥 הורד תבנית CSV
+                </a>
+                <label className="neu-btn primary" style={{ cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    📤 טען תרגילים מ-CSV
+                    <input
+                        type="file"
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                        onChange={handleFileUpload}
+                    />
+                </label>
             </div>
 
             {/* Tabs */}
@@ -138,6 +265,7 @@ export default function AdminPage({ onBack }) {
                 <div>
                     {/* Add/Edit Form */}
                     <div className="neu-card" style={{ marginBottom: '24px' }}>
+                        {/* ... (Form content same as before) ... */}
                         <h3>{editingExercise ? 'עריכת תרגיל' : 'הוספת תרגיל חדש'}</h3>
                         <div className="flex-col">
                             <input
@@ -192,11 +320,41 @@ export default function AdminPage({ onBack }) {
                         </div>
                     </div>
 
-                    {/* List */}
+                    {/* List with Filters */}
                     <div className="neu-card">
-                        <h3>רשימת תרגילים ({exercises.length})</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <h3 style={{ margin: 0 }}>רשימת תרגילים ({filteredExercises.length})</h3>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="grid-cols-2" style={{ marginBottom: '16px', gap: '10px' }}>
+                            <select
+                                className="neu-input"
+                                value={filterMainMuscle}
+                                onChange={e => { setFilterMainMuscle(e.target.value); setFilterSubMuscle(''); }}
+                                style={{ fontSize: '0.9rem', padding: '8px' }}
+                            >
+                                <option value="">כל השרירים</option>
+                                {Object.keys(muscles).map(k => (
+                                    <option key={k} value={k}>{muscles[k].label}</option>
+                                ))}
+                            </select>
+                            <select
+                                className="neu-input"
+                                value={filterSubMuscle}
+                                onChange={e => setFilterSubMuscle(e.target.value)}
+                                disabled={!filterMainMuscle}
+                                style={{ fontSize: '0.9rem', padding: '8px' }}
+                            >
+                                <option value="">כל תתי-השרירים</option>
+                                {filterMainMuscle && muscles[filterMainMuscle]?.subMuscles?.map(sub => (
+                                    <option key={sub} value={sub}>{sub}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div style={{ maxHeight: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {exercises.map(ex => (
+                            {filteredExercises.map(ex => (
                                 <div key={ex.id} className="neu-card" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'none', border: '1px solid rgba(0,0,0,0.05)' }}>
                                     <div>
                                         <strong>{ex.name}</strong>
