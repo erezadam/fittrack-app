@@ -6,10 +6,11 @@ export default function AdminPage({ onBack }) {
     const [activeTab, setActiveTab] = useState('exercises'); // 'exercises' | 'muscles'
     const [exercises, setExercises] = useState([]);
     const [muscles, setMuscles] = useState({});
+    const [loading, setLoading] = useState(true);
 
     // Exercise Form State
     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
-    const [exForm, setExForm] = useState({ name: '', mainMuscle: '', subMuscle: '', equipment: '' });
+    const [exForm, setExForm] = useState({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' });
 
     // Muscle Form State
     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
@@ -24,44 +25,70 @@ export default function AdminPage({ onBack }) {
         loadData();
     }, []);
 
-    const loadData = () => {
-        setExercises(storageService.getExercises());
-        setMuscles(storageService.getMuscles());
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [exData, muscleData] = await Promise.all([
+                storageService.getExercises(),
+                storageService.getMuscles()
+            ]);
+            setExercises(exData);
+            setMuscles(muscleData);
+        } catch (error) {
+            console.error("Failed to load data", error);
+            alert("שגיאה בטעינת נתונים");
+        } finally {
+            setLoading(false);
+        }
     };
 
     // --- Exercise Logic ---
 
-    const handleSaveExercise = () => {
+    const handleSaveExercise = async () => {
         if (!exForm.name || !exForm.mainMuscle || !exForm.equipment) {
             alert('Name, Main Muscle, and Workout Type are required');
             return;
         }
 
-        let updatedExercises;
-        if (editingExercise) {
-            updatedExercises = exercises.map(ex => ex.id === editingExercise.id ? { ...ex, ...exForm } : ex);
-        } else {
-            const newEx = { id: Date.now().toString(), ...exForm };
-            updatedExercises = [...exercises, newEx];
+        setLoading(true);
+        try {
+            if (editingExercise) {
+                const updatedEx = { ...editingExercise, ...exForm };
+                await storageService.updateExercise(updatedEx);
+                setExercises(exercises.map(ex => ex.id === editingExercise.id ? updatedEx : ex));
+            } else {
+                const newEx = { ...exForm };
+                const savedEx = await storageService.addExercise(newEx);
+                setExercises([...exercises, savedEx]);
+            }
+            setEditingExercise(null);
+            setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' });
+        } catch (error) {
+            console.error("Failed to save exercise", error);
+            alert("שגיאה בשמירת תרגיל");
+        } finally {
+            setLoading(false);
         }
-
-        storageService.saveExercises(updatedExercises);
-        setExercises(updatedExercises);
-        setEditingExercise(null);
-        setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '' });
     };
 
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
-        setExForm({ name: ex.name, mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '' });
+        setExForm({ name: ex.name, mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', video_url: ex.video_url || '' });
         window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
-    const handleDeleteExercise = (id) => {
+    const handleDeleteExercise = async (id) => {
         if (window.confirm('Delete this exercise?')) {
-            const updated = exercises.filter(ex => ex.id !== id);
-            storageService.saveExercises(updated);
-            setExercises(updated);
+            setLoading(true);
+            try {
+                await storageService.deleteExercise(id);
+                setExercises(exercises.filter(ex => ex.id !== id));
+            } catch (error) {
+                console.error("Failed to delete exercise", error);
+                alert("שגיאה במחיקת תרגיל");
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -70,7 +97,7 @@ export default function AdminPage({ onBack }) {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             const content = e.target.result;
             const lines = content.split('\n');
             if (lines.length < 2) {
@@ -94,30 +121,20 @@ export default function AdminPage({ onBack }) {
                     continue;
                 }
 
-                const [name, mainMuscle, subMuscle, workoutType] = values.map(v => v.trim());
+                const [name, mainMuscle, subMuscle, workoutType, video_url] = values.map(v => v.trim());
 
                 // Validation
-                // 1. Check if mainMuscle exists (by key or label?) Let's assume Key for now as per template.
-                // If user puts Hebrew label, we might want to map it back to Key.
-                // Let's try to find the key if they provided a label.
                 let muscleKey = mainMuscle;
                 if (!muscles[muscleKey]) {
-                    // Try to find by label
                     const foundKey = Object.keys(muscles).find(k => muscles[k].label === mainMuscle);
                     if (foundKey) muscleKey = foundKey;
                     else {
-                        console.warn(`Muscle not found: ${mainMuscle}`);
-                        // Optional: Create it? No, safer to skip or default.
-                        // Let's skip for safety.
                         skipped++;
                         continue;
                     }
                 }
 
-                // 2. Validate Workout Type
-                // If it's English (e.g. 'Machine'), map to Hebrew if possible, or just take it if it matches.
-                // Our WORKOUT_TYPES are Hebrew.
-                // Simple mapping for common English terms to our Hebrew types:
+                // Type Mapping
                 const typeMapping = {
                     'Machine': 'מכשירים',
                     'Free Weight': 'משקולות חופשיות',
@@ -131,26 +148,32 @@ export default function AdminPage({ onBack }) {
                 let finalType = workoutType;
                 if (typeMapping[workoutType]) finalType = typeMapping[workoutType];
                 else if (!WORKOUT_TYPES.includes(workoutType)) {
-                    // If not in our list and not mapped, maybe default to Free Weight or skip?
-                    // Let's keep it but it might not show in dropdown correctly.
-                    // Or better, default to 'משקולות חופשיות' if unknown.
                     finalType = 'משקולות חופשיות';
                 }
 
                 newExercises.push({
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     name,
                     mainMuscle: muscleKey,
                     subMuscle,
-                    equipment: finalType
+                    equipment: finalType,
+                    video_url: video_url || ''
                 });
             }
 
             if (newExercises.length > 0) {
-                const updated = [...exercises, ...newExercises];
-                storageService.saveExercises(updated);
-                setExercises(updated);
-                alert(`נוספו בהצלחה ${newExercises.length} תרגילים. (${skipped} נדלגו)`);
+                setLoading(true);
+                try {
+                    await storageService.saveExercisesBatch(newExercises);
+                    // Reload to get IDs
+                    const updatedEx = await storageService.getExercises();
+                    setExercises(updatedEx);
+                    alert(`נוספו בהצלחה ${newExercises.length} תרגילים. (${skipped} נדלגו)`);
+                } catch (error) {
+                    console.error("Failed to batch save", error);
+                    alert("שגיאה בייבוא תרגילים");
+                } finally {
+                    setLoading(false);
+                }
             } else {
                 alert('לא נמצאו תרגילים תקינים לייבוא.');
             }
@@ -169,29 +192,39 @@ export default function AdminPage({ onBack }) {
 
     // --- Muscle Logic ---
 
-    const handleSaveMuscle = () => {
+    const handleSaveMuscle = async () => {
         if (!muscleForm.key || !muscleForm.label) {
             alert('Key (English) and Label (Hebrew) are required');
             return;
         }
 
-        const updatedMuscles = { ...muscles };
+        setLoading(true);
+        try {
+            const updatedMuscles = { ...muscles };
 
-        // If renaming key (creating new key, deleting old), handle that
-        if (editingMuscleKey && editingMuscleKey !== muscleForm.key) {
-            delete updatedMuscles[editingMuscleKey];
+            // Note: Renaming key is hard in Firestore (need to create new doc and delete old).
+            // For now, let's assume we are just updating data for the key, or creating new if key doesn't exist.
+            // If user changes key, it's effectively a new muscle.
+
+            const muscleData = {
+                label: muscleForm.label,
+                icon: muscleForm.icon,
+                subMuscles: muscleForm.subMuscles
+            };
+
+            await storageService.saveMuscle(muscleForm.key, muscleData);
+
+            updatedMuscles[muscleForm.key] = muscleData;
+            setMuscles(updatedMuscles);
+
+            setEditingMuscleKey(null);
+            setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] });
+        } catch (error) {
+            console.error("Failed to save muscle", error);
+            alert("שגיאה בשמירת שריר");
+        } finally {
+            setLoading(false);
         }
-
-        updatedMuscles[muscleForm.key] = {
-            label: muscleForm.label,
-            icon: muscleForm.icon,
-            subMuscles: muscleForm.subMuscles
-        };
-
-        storageService.saveMuscles(updatedMuscles);
-        setMuscles(updatedMuscles);
-        setEditingMuscleKey(null);
-        setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] });
     };
 
     const handleEditMuscle = (key) => {
@@ -212,6 +245,10 @@ export default function AdminPage({ onBack }) {
     };
 
     // --- Renderers ---
+
+    if (loading) {
+        return <div className="container" style={{ textAlign: 'center', padding: '50px' }}>טוען נתונים...</div>;
+    }
 
     return (
         <div className="container">
@@ -303,16 +340,23 @@ export default function AdminPage({ onBack }) {
                                 onChange={e => setExForm({ ...exForm, equipment: e.target.value })}
                             >
                                 <option value="">בחר סוג אימון...</option>
-                                {WORKOUT_TYPES.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
+                                <option value="משקולות חופשיות">משקולות חופשיות</option>
+                                <option value="מכשירים">מכשירים</option>
+                                <option value="כבלים">כבלים</option>
+                                <option value="משקל גוף">משקל גוף</option>
                             </select>
+                            <input
+                                className="neu-input"
+                                placeholder="קישור לוידאו (YouTube)"
+                                value={exForm.video_url}
+                                onChange={e => setExForm({ ...exForm, video_url: e.target.value })}
+                            />
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button type="button" onClick={handleSaveExercise} className="neu-btn primary" style={{ flex: 1 }}>
                                     {editingExercise ? 'שמור שינויים' : 'הוסף תרגיל'}
                                 </button>
                                 {editingExercise && (
-                                    <button type="button" onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '' }); }} className="neu-btn">
+                                    <button type="button" onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' }); }} className="neu-btn">
                                         ביטול
                                     </button>
                                 )}

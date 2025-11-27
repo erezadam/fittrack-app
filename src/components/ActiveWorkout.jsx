@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { storageService } from '../services/storageService';
+import VideoModal from './VideoModal';
 
 export default function ActiveWorkout({ exercises, workoutName, onFinish, onCancel }) {
 
@@ -9,6 +10,8 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
             [ex.id]: { sets: [{ weight: '', reps: '' }] }
         }), {})
     );
+
+    const [selectedVideo, setSelectedVideo] = useState(null); // { url, title } or null
 
     const updateSet = (exId, setIndex, field, value) => {
         const currentSets = [...workoutData[exId].sets];
@@ -61,7 +64,18 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
             <div className="flex-col" style={{ marginBottom: '100px' }}>
                 {exercises.map(ex => (
                     <div key={ex.id} className="neu-card">
-                        <h3 style={{ marginTop: 0 }}>{ex.name}</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ marginTop: 0 }}>{ex.name}</h3>
+                            {ex.video_url && (
+                                <button
+                                    onClick={() => setSelectedVideo({ url: ex.video_url, title: ex.name })}
+                                    className="neu-btn"
+                                    style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                    🎥 וידאו
+                                </button>
+                            )}
+                        </div>
                         <div className="flex-col">
                             {workoutData[ex.id].sets.map((set, idx) => (
                                 <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -110,6 +124,12 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
                     Finish Workout
                 </button>
             </div>
+            <VideoModal
+                isOpen={!!selectedVideo}
+                onClose={() => setSelectedVideo(null)}
+                videoUrl={selectedVideo?.url}
+                title={selectedVideo?.title}
+            />
         </div>
     );
 }

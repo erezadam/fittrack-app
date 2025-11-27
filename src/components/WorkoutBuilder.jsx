@@ -26,15 +26,19 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
         loadData();
     }, []);
 
-    const loadData = () => {
-        const exList = storageService.getExercises();
-        setExercises(exList);
+    const loadData = async () => {
+        try {
+            const exList = await storageService.getExercises();
+            setExercises(exList);
 
-        const userTemplates = storageService.getTemplates();
-        setTemplates(userTemplates);
+            const userTemplates = await storageService.getTemplates();
+            setTemplates(userTemplates);
 
-        const muscleData = storageService.getMuscles();
-        setMuscles(muscleData);
+            const muscleData = await storageService.getMuscles();
+            setMuscles(muscleData);
+        } catch (error) {
+            console.error("Failed to load data:", error);
+        }
     };
 
     // --- Logic ---
@@ -44,8 +48,8 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
         setSelectedTemplateId(val);
 
         if (val !== 'new') {
-            // Template IDs are numbers (Date.now()), val is string from select
-            const template = templates.find(t => t.id === Number(val));
+            // Template IDs are strings in Firestore
+            const template = templates.find(t => t.id === val);
             if (template) {
                 setWorkoutName(template.name);
                 // Hydrate exercises
@@ -115,7 +119,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
         // Save as template if new
         if (selectedTemplateId === 'new') {
-            storageService.saveTemplate(workoutName, selectedExercises);
+            storageService.saveTemplate(workoutName, selectedExercises).catch(console.error);
         }
 
         onStartWorkout(selectedExercises, workoutName);

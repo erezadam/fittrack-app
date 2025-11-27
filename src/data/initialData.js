@@ -8,7 +8,7 @@ export const WORKOUT_TYPES = [
 export const initialExercises = [
     // Chest
     { id: 'c1', name: 'Bench Press', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'משקולות חופשיות' },
-    { id: 'c2', name: 'Incline Dumbbell Press', mainMuscle: 'Chest', subMuscle: 'חזה עליון', equipment: 'משקולות חופשיות' },
+    { id: 'c2', name: 'Incline Dumbbell Press', mainMuscle: 'Chest', subMuscle: 'חזה עליון', equipment: 'משקולות חופשיות', video_url: 'https://www.youtube.com/watch?v=8iPEnn-ltC8' },
     { id: 'c3', name: 'Cable Flys', mainMuscle: 'Chest', subMuscle: 'חזה פנימי', equipment: 'כבלים' },
     { id: 'c4', name: 'Push Ups', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'משקל גוף' },
     { id: 'c5', name: 'Chest Press Machine', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'מכשירים' },

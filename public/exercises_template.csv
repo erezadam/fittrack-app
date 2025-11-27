@@ -1,4 +1,4 @@
-name,mainMuscle,subMuscle,workoutType
-Lying Leg Curl,Legs,Hamstrings,Machine
-Incline Bench Press,Chest,Upper Chest,Free Weight
-Tricep Dips,Arms,Triceps,Bodyweight
+name,mainMuscle,subMuscle,workoutType,videoUrl
+Lying Leg Curl,Legs,Hamstrings,Machine,https://example.com/video1.mp4
+Incline Bench Press,Chest,Upper Chest,Free Weight,
+Tricep Dips,Arms,Triceps,Bodyweight,

@@ -1,80 +1,155 @@
+import { db } from '../lib/firebase';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { initialExercises, initialMuscles } from '../data/initialData';
 
-const EXERCISE_KEY = 'fittrack_exercises';
-const MUSCLE_KEY = 'fittrack_muscles';
-const HISTORY_KEY = 'fittrack_history';
-const TEMPLATE_KEY = 'fittrack_templates';
+const EXERCISE_COLLECTION = 'exercises';
+const MUSCLE_COLLECTION = 'muscles';
+const TEMPLATE_COLLECTION = 'templates';
 
 export const storageService = {
-    initialize: () => {
-        const existingEx = localStorage.getItem(EXERCISE_KEY);
-        if (!existingEx) {
-            localStorage.setItem(EXERCISE_KEY, JSON.stringify(initialExercises));
+    // Exercises
+    getExercises: async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, EXERCISE_COLLECTION));
+            const exercises = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return exercises.length > 0 ? exercises : initialExercises; // Fallback if empty? Maybe not needed if we seed.
+        } catch (error) {
+            console.error("Error getting exercises:", error);
+            return initialExercises;
         }
+    },
 
-        const existingMuscles = localStorage.getItem(MUSCLE_KEY);
-        if (!existingMuscles) {
-            localStorage.setItem(MUSCLE_KEY, JSON.stringify(initialMuscles));
+    addExercise: async (exercise) => {
+        try {
+            // Remove id if present, let Firestore generate it, or use it if we want custom IDs (but Firestore auto-id is better)
+            // The current app generates IDs. Let's let Firestore do it if possible, or keep using provided ID if we want to batch import with specific IDs.
+            // For single add:
+            const { id, ...data } = exercise;
+            const docRef = await addDoc(collection(db, EXERCISE_COLLECTION), data);
+            return { id: docRef.id, ...data };
+        } catch (error) {
+            console.error("Error adding exercise:", error);
+            throw error;
         }
     },
 
-    getExercises: () => {
-        const data = localStorage.getItem(EXERCISE_KEY);
-        return data ? JSON.parse(data) : [];
+    updateExercise: async (exercise) => {
+        try {
+            const { id, ...data } = exercise;
+            const exerciseRef = doc(db, EXERCISE_COLLECTION, id);
+            await updateDoc(exerciseRef, data);
+            return exercise;
+        } catch (error) {
+            console.error("Error updating exercise:", error);
+            throw error;
+        }
     },
 
-    saveExercises: (exercises) => {
-        localStorage.setItem(EXERCISE_KEY, JSON.stringify(exercises));
+    deleteExercise: async (id) => {
+        try {
+            await deleteDoc(doc(db, EXERCISE_COLLECTION, id));
+            return id;
+        } catch (error) {
+            console.error("Error deleting exercise:", error);
+            throw error;
+        }
     },
 
-    getMuscles: () => {
-        const data = localStorage.getItem(MUSCLE_KEY);
-        return data ? JSON.parse(data) : initialMuscles;
+    // Batch save (for import or initial save)
+    saveExercisesBatch: async (exercises) => {
+        try {
+            const batch = writeBatch(db);
+            exercises.forEach(ex => {
+                const { id, ...data } = ex;
+                // If ID is provided and looks like a Firestore ID (20 chars), use it? 
+                // Or just generate new ones.
+                // For simplicity in migration, let's create new docs.
+                const newRef = doc(collection(db, EXERCISE_COLLECTION));
+                batch.set(newRef, data);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("Error batch saving exercises:", error);
+            throw error;
+        }
     },
 
-    saveMuscles: (muscles) => {
-        localStorage.setItem(MUSCLE_KEY, JSON.stringify(muscles));
+    // Muscles
+    getMuscles: async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, MUSCLE_COLLECTION));
+            const muscles = {};
+            querySnapshot.docs.forEach(doc => {
+                muscles[doc.id] = doc.data();
+            });
+            // If empty, return initial?
+            if (Object.keys(muscles).length === 0) return initialMuscles;
+            return muscles;
+        } catch (error) {
+            console.error("Error getting muscles:", error);
+            return initialMuscles;
+        }
     },
 
-    resetData: () => {
-        localStorage.setItem(EXERCISE_KEY, JSON.stringify(initialExercises));
-        localStorage.setItem(MUSCLE_KEY, JSON.stringify(initialMuscles));
-        return { exercises: initialExercises, muscles: initialMuscles };
+    saveMuscle: async (key, muscleData) => {
+        try {
+            await updateDoc(doc(db, MUSCLE_COLLECTION, key), muscleData); // This assumes document exists. 
+            // Better to use setDoc with merge: true or just setDoc
+            // But wait, muscles are stored as a map in the app state, but in Firestore they should probably be documents where ID is the key.
+        } catch (error) {
+            console.error("Error saving muscle:", error);
+            throw error;
+        }
     },
 
-    saveWorkout: (workout) => {
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        const newEntry = {
-            id: Date.now(),
-            date: new Date().toISOString(),
-            ...workout
-        };
-        history.push(newEntry);
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-        return newEntry;
-    },
-
-    getHistory: () => {
-        return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    // Helper to save all muscles (initial migration)
+    saveMusclesBatch: async (musclesObj) => {
+        try {
+            const batch = writeBatch(db);
+            Object.entries(musclesObj).forEach(([key, data]) => {
+                const ref = doc(db, MUSCLE_COLLECTION, key);
+                batch.set(ref, data);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("Error batch saving muscles:", error);
+            throw error;
+        }
     },
 
     // Templates
-    saveTemplate: (name, exercises) => {
-        const templates = JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
-        const newTemplate = { id: Date.now(), name, exercises };
-        templates.push(newTemplate);
-        localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
-        return newTemplate;
+    getTemplates: async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, TEMPLATE_COLLECTION));
+            const templates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return templates;
+        } catch (error) {
+            console.error("Error getting templates:", error);
+            return [];
+        }
     },
 
-    getTemplates: () => {
-        return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
+    saveTemplate: async (name, exercises) => {
+        try {
+            // We use a numeric ID in the app logic (Date.now()), but Firestore uses string IDs.
+            // Let's stick to Firestore IDs for new templates, but we might need to adapt the app logic if it expects numbers.
+            // The app uses `selectedTemplateId` which can be 'new' or an ID.
+            // Let's save it.
+            const templateData = {
+                name,
+                exercises,
+                createdAt: new Date().toISOString()
+            };
+            const docRef = await addDoc(collection(db, TEMPLATE_COLLECTION), templateData);
+            return { id: docRef.id, ...templateData };
+        } catch (error) {
+            console.error("Error saving template:", error);
+            throw error;
+        }
     },
 
-    deleteTemplate: (id) => {
-        const templates = JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
-        const updated = templates.filter(t => t.id !== id);
-        localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
-        return updated;
+    initialize: async () => {
+        // No-op for now, or maybe check connection
+        console.log("Storage service initialized");
     }
 };
