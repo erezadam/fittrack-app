@@ -5,6 +5,7 @@ import { initialExercises, initialMuscles } from '../data/initialData';
 const EXERCISE_COLLECTION = 'exercises';
 const MUSCLE_COLLECTION = 'muscles';
 const TEMPLATE_COLLECTION = 'templates';
+const WORKOUT_LOGS_COLLECTION = 'workout_logs';
 
 export const storageService = {
     // Exercises
@@ -144,6 +145,21 @@ export const storageService = {
             return { id: docRef.id, ...templateData };
         } catch (error) {
             console.error("Error saving template:", error);
+            throw error;
+        }
+    },
+
+    // Workout Logs
+    saveWorkout: async (workoutData) => {
+        try {
+            const dataToSave = {
+                ...workoutData,
+                timestamp: new Date().toISOString()
+            };
+            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+            return { id: docRef.id, ...dataToSave };
+        } catch (error) {
+            console.error("Error saving workout log:", error);
             throw error;
         }
     },

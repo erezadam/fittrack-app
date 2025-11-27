@@ -50,7 +50,7 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
         };
 
         storageService.saveWorkout(logData);
-        alert('Workout Logged to Local Storage!');
+        // alert('Workout Logged to Local Storage!');
         onFinish();
     };
 

@@ -106,7 +106,8 @@ export default function AdminPage({ onBack }) {
             }
 
             const headers = lines[0].trim().split(',');
-            // Expected: name,mainMuscle,subMuscle,workoutType
+            // Check if Hebrew headers
+            const isHebrew = headers[0].includes('שם התרגיל');
 
             const newExercises = [];
             let skipped = 0;
@@ -121,20 +122,50 @@ export default function AdminPage({ onBack }) {
                     continue;
                 }
 
-                const [name, mainMuscle, subMuscle, workoutType, video_url] = values.map(v => v.trim());
+                let [name, mainMuscle, subMuscle, workoutType, video_url] = values.map(v => v.trim());
 
-                // Validation
-                let muscleKey = mainMuscle;
-                if (!muscles[muscleKey]) {
-                    const foundKey = Object.keys(muscles).find(k => muscles[k].label === mainMuscle);
-                    if (foundKey) muscleKey = foundKey;
-                    else {
-                        skipped++;
-                        continue;
+                // Hebrew Mapping Logic
+                if (isHebrew) {
+                    // Map Muscle (Hebrew Label -> English Key)
+                    const muscleEntry = Object.entries(muscles).find(([key, val]) => val.label === mainMuscle);
+                    if (muscleEntry) {
+                        mainMuscle = muscleEntry[0]; // Use the English key (e.g., 'Chest')
+                    } else {
+                        // Try to find by key if user put English key in Hebrew CSV? Unlikely but possible.
+                        if (!muscles[mainMuscle]) {
+                            skipped++;
+                            continue;
+                        }
                     }
+
+                    // Map Equipment (Hebrew -> Hebrew/English Key)
+                    // In our app, equipment is stored as Hebrew string (e.g. 'משקולות חופשיות')
+                    // So if the user wrote 'משקולות חופשיות', it's fine.
+                    // But if they wrote 'משקולות', we might want to map it.
+                    const equipmentMapping = {
+                        'משקולות': 'משקולות חופשיות',
+                        'משקולת': 'משקולות חופשיות',
+                        'מכונה': 'מכשירים',
+                        'כבל': 'כבלים'
+                    };
+                    if (equipmentMapping[workoutType]) {
+                        workoutType = equipmentMapping[workoutType];
+                    }
+                } else {
+                    // English CSV Logic (existing)
+                    let muscleKey = mainMuscle;
+                    if (!muscles[muscleKey]) {
+                        const foundKey = Object.keys(muscles).find(k => muscles[k].label === mainMuscle);
+                        if (foundKey) muscleKey = foundKey;
+                        else {
+                            skipped++;
+                            continue;
+                        }
+                    }
+                    mainMuscle = muscleKey;
                 }
 
-                // Type Mapping
+                // Common Type Mapping (English -> Hebrew) - kept for backward compatibility or mixed usage
                 const typeMapping = {
                     'Machine': 'מכשירים',
                     'Free Weight': 'משקולות חופשיות',
@@ -148,12 +179,16 @@ export default function AdminPage({ onBack }) {
                 let finalType = workoutType;
                 if (typeMapping[workoutType]) finalType = typeMapping[workoutType];
                 else if (!WORKOUT_TYPES.includes(workoutType)) {
-                    finalType = 'משקולות חופשיות';
+                    // If it's not a valid type, default or skip? 
+                    // Let's default to Free Weight if unknown, or keep as is if it matches Hebrew.
+                    if (!Object.values(typeMapping).includes(workoutType)) {
+                        finalType = 'משקולות חופשיות';
+                    }
                 }
 
                 newExercises.push({
                     name,
-                    mainMuscle: muscleKey,
+                    mainMuscle,
                     subMuscle,
                     equipment: finalType,
                     video_url: video_url || ''
@@ -263,8 +298,8 @@ export default function AdminPage({ onBack }) {
             {/* Import/Export Actions */}
             <div className="neu-card" style={{ marginBottom: '20px', padding: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>פעולות מהירות:</span>
-                <a href="/exercises_template.csv" download className="neu-btn" style={{ textDecoration: 'none', fontSize: '0.8rem' }}>
-                    📥 הורד תבנית CSV
+                <a href="/exercises_template_he.csv" download="exercises_template_he.csv" target="_blank" rel="noopener noreferrer" className="neu-btn" style={{ textDecoration: 'none', fontSize: '0.8rem' }}>
+                    📥 הורד תבנית CSV (עברית)
                 </a>
                 <label className="neu-btn primary" style={{ cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     📤 טען תרגילים מ-CSV
