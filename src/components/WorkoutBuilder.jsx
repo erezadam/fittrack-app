@@ -203,7 +203,17 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                             flexDirection: 'row-reverse'
                                         }}
                                     >
-                                        <div style={{ fontSize: '1.5rem' }}>{mapping.icon}</div>
+                                        <div style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {mapping.icon && mapping.icon.startsWith('http') ? (
+                                                <img
+                                                    src={mapping.icon}
+                                                    alt={mapping.label}
+                                                    style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+                                                />
+                                            ) : (
+                                                mapping.icon
+                                            )}
+                                        </div>
                                         <div style={{ fontWeight: 600 }}>{mapping.label}</div>
                                     </div>
                                 );

@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
 import { initialExercises, initialMuscles } from '../data/initialData';
 
 const EXERCISE_COLLECTION = 'exercises';
@@ -94,9 +94,8 @@ export const storageService = {
 
     saveMuscle: async (key, muscleData) => {
         try {
-            await updateDoc(doc(db, MUSCLE_COLLECTION, key), muscleData); // This assumes document exists. 
-            // Better to use setDoc with merge: true or just setDoc
-            // But wait, muscles are stored as a map in the app state, but in Firestore they should probably be documents where ID is the key.
+            // Use setDoc with merge: true to handle both create and update
+            await setDoc(doc(db, MUSCLE_COLLECTION, key), muscleData, { merge: true });
         } catch (error) {
             console.error("Error saving muscle:", error);
             throw error;

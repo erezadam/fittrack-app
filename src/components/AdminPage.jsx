@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
+import { storage } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { WORKOUT_TYPES } from '../data/initialData';
 
 export default function AdminPage({ onBack }) {
@@ -15,6 +17,7 @@ export default function AdminPage({ onBack }) {
     // Muscle Form State
     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
     const [muscleForm, setMuscleForm] = useState({ key: '', label: '', icon: '', subMuscles: [] });
+    const [muscleIconFile, setMuscleIconFile] = useState(null);
     const [newSubMuscle, setNewSubMuscle] = useState('');
 
     // Filter State
@@ -235,6 +238,14 @@ export default function AdminPage({ onBack }) {
 
         setLoading(true);
         try {
+            let iconUrl = muscleForm.icon;
+
+            if (muscleIconFile) {
+                const storageRef = ref(storage, `icons/muscles/${muscleIconFile.name}_${Date.now()}`);
+                await uploadBytes(storageRef, muscleIconFile);
+                iconUrl = await getDownloadURL(storageRef);
+            }
+
             const updatedMuscles = { ...muscles };
 
             // Note: Renaming key is hard in Firestore (need to create new doc and delete old).
@@ -243,7 +254,7 @@ export default function AdminPage({ onBack }) {
 
             const muscleData = {
                 label: muscleForm.label,
-                icon: muscleForm.icon,
+                icon: iconUrl,
                 subMuscles: muscleForm.subMuscles
             };
 
@@ -254,6 +265,7 @@ export default function AdminPage({ onBack }) {
 
             setEditingMuscleKey(null);
             setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] });
+            setMuscleIconFile(null);
         } catch (error) {
             console.error("Failed to save muscle", error);
             alert("שגיאה בשמירת שריר");
@@ -266,6 +278,7 @@ export default function AdminPage({ onBack }) {
         setEditingMuscleKey(key);
         const m = muscles[key];
         setMuscleForm({ key: key, label: m.label, icon: m.icon, subMuscles: m.subMuscles || [] });
+        setMuscleIconFile(null);
     };
 
     const handleAddSubMuscle = () => {
@@ -471,12 +484,31 @@ export default function AdminPage({ onBack }) {
                                     onChange={e => setMuscleForm({ ...muscleForm, label: e.target.value })}
                                 />
                             </div>
-                            <input
-                                className="neu-input"
-                                placeholder="אייקון (למשל: 💪)"
-                                value={muscleForm.icon}
-                                onChange={e => setMuscleForm({ ...muscleForm, icon: e.target.value })}
-                            />
+                            <div style={{ marginBottom: '10px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>אייקון (קובץ תמונה או אימוג'י):</label>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                    <input
+                                        type="file"
+                                        accept="image/png, image/svg+xml, image/jpeg"
+                                        className="neu-input"
+                                        onChange={e => setMuscleIconFile(e.target.files[0])}
+                                        style={{ padding: '8px' }}
+                                    />
+                                    <span style={{ fontSize: '0.9rem' }}>או</span>
+                                    <input
+                                        className="neu-input"
+                                        placeholder="אימוג'י (למשל: 💪)"
+                                        value={muscleForm.icon}
+                                        onChange={e => setMuscleForm({ ...muscleForm, icon: e.target.value })}
+                                        style={{ width: '150px' }}
+                                    />
+                                </div>
+                                {muscleForm.icon && (
+                                    <div style={{ marginTop: '5px', fontSize: '0.8rem', color: '#718096' }}>
+                                        נוכחי: {muscleForm.icon.startsWith('http') ? 'תמונה מותאמת' : muscleForm.icon}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Sub Muscles Manager */}
                             <div style={{ background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px' }}>
@@ -506,7 +538,7 @@ export default function AdminPage({ onBack }) {
                                     {editingMuscleKey ? 'שמור שינויים' : 'הוסף שריר'}
                                 </button>
                                 {editingMuscleKey && (
-                                    <button type="button" onClick={() => { setEditingMuscleKey(null); setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] }); }} className="neu-btn">
+                                    <button type="button" onClick={() => { setEditingMuscleKey(null); setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] }); setMuscleIconFile(null); }} className="neu-btn">
                                         ביטול
                                     </button>
                                 )}
@@ -519,7 +551,17 @@ export default function AdminPage({ onBack }) {
                         {Object.keys(muscles).map(key => (
                             <div key={key} className="neu-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <div style={{ fontSize: '1.5rem' }}>{muscles[key].icon}</div>
+                                    <div style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center' }}>
+                                        {muscles[key].icon && muscles[key].icon.startsWith('http') ? (
+                                            <img
+                                                src={muscles[key].icon}
+                                                alt={muscles[key].label}
+                                                style={{ width: '40px', height: '40px', objectFit: 'contain' }}
+                                            />
+                                        ) : (
+                                            muscles[key].icon
+                                        )}
+                                    </div>
                                     <div style={{ fontWeight: 'bold' }}>{muscles[key].label}</div>
                                     <div style={{ fontSize: '0.8rem', color: '#718096' }}>{key}</div>
                                 </div>
