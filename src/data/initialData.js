@@ -51,6 +51,7 @@ export const initialMuscles = {
     'Shoulders': { label: 'כתפיים', icon: '🥥', subMuscles: ['כתף קדמית', 'כתף אמצעית', 'כתף אחורית'] },
     'Arms': { label: 'ידיים', icon: '💪', subMuscles: ['יד קדמית', 'יד אחורית', 'אמה'] },
     'Core': { label: 'בטן', icon: '🍫', subMuscles: ['בטן עליונה', 'בטן תחתונה', 'אלכסונים', 'בטן סטטית'] },
+    'Glutes': { label: 'ישבן', icon: '🍑', subMuscles: ['ישבן עליון', 'ישבן תחתון', 'צידי הישבן'] },
     'Cardio': { label: 'אירובי', icon: '🏃‍♂️', subMuscles: ['ריצה', 'הליכה', 'אופניים'] },
     'Full Body': { label: 'כל הגוף', icon: '⚡', subMuscles: [] }
 };

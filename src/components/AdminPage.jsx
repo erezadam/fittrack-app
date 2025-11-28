@@ -292,6 +292,26 @@ export default function AdminPage({ onBack }) {
         setMuscleForm({ ...muscleForm, subMuscles: muscleForm.subMuscles.filter(s => s !== sub) });
     };
 
+    const handleRestoreDefaults = async () => {
+        if (!window.confirm('האם אתה בטוח? פעולה זו תוסיף את כל שרירי ברירת המחדל למערכת (לא תמחק קיימים, אבל תדרוס אם המפתח זהה).')) {
+            return;
+        }
+        setLoading(true);
+        try {
+            const { initialMuscles } = await import('../data/initialData');
+            await storageService.saveMusclesBatch(initialMuscles);
+            // Reload
+            const updatedMuscles = await storageService.getMuscles();
+            setMuscles(updatedMuscles);
+            alert('שרירי ברירת המחדל שוחזרו בהצלחה!');
+        } catch (error) {
+            console.error("Failed to restore defaults", error);
+            alert("שגיאה בשחזור נתונים");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // --- Renderers ---
 
     if (loading) {
@@ -323,6 +343,18 @@ export default function AdminPage({ onBack }) {
                         onChange={handleFileUpload}
                     />
                 </label>
+                <label className="neu-btn primary" style={{ cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    📤 טען תרגילים מ-CSV
+                    <input
+                        type="file"
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                        onChange={handleFileUpload}
+                    />
+                </label>
+                <button onClick={handleRestoreDefaults} className="neu-btn" style={{ fontSize: '0.8rem' }}>
+                    🔄 שחזר שרירי ברירת מחדל
+                </button>
             </div>
 
             {/* Tabs */}
@@ -549,7 +581,7 @@ export default function AdminPage({ onBack }) {
                     {/* Muscles List */}
                     <div className="grid-cols-2">
                         {Object.keys(muscles).map(key => (
-                            <div key={key} className="neu-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div key={key} className="neu-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                                 <div>
                                     <div style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center' }}>
                                         {muscles[key].icon && muscles[key].icon.startsWith('http') ? (
