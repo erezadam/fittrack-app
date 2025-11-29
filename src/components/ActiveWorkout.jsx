@@ -40,18 +40,30 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
         });
     };
 
-    const handleFinish = () => {
-        const logData = {
-            workout_id: null, // TODO: Pass workout ID if started from a plan
-            exercises: Object.entries(workoutData).map(([id, data]) => ({
-                exercise_id: id,
-                sets: data.sets
-            }))
-        };
+    const [isSaving, setIsSaving] = useState(false);
 
-        storageService.saveWorkout(logData);
-        // alert('Workout Logged to Local Storage!');
-        onFinish();
+    const handleFinish = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            const logData = {
+                workout_id: null, // TODO: Pass workout ID if started from a plan
+                exercises: Object.entries(workoutData).map(([id, data]) => ({
+                    exercise_id: id,
+                    sets: data.sets
+                }))
+            };
+
+            console.log("Saving workout data:", JSON.stringify(logData, null, 2));
+            await storageService.saveWorkout(logData);
+            alert('Workout saved to database!');
+            onFinish();
+        } catch (error) {
+            console.error("Failed to save workout:", error);
+            alert("Failed to save workout. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -118,10 +130,11 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
             }}>
                 <button
                     onClick={handleFinish}
-                    className="neu-btn primary"
-                    style={{ padding: '16px 48px', fontSize: '1.2rem', width: '100%', maxWidth: '400px' }}
+                    disabled={isSaving}
+                    className={`neu-btn primary ${isSaving ? 'disabled' : ''}`}
+                    style={{ padding: '16px 48px', fontSize: '1.2rem', width: '100%', maxWidth: '400px', opacity: isSaving ? 0.7 : 1 }}
                 >
-                    Finish Workout
+                    {isSaving ? 'Saving...' : 'Finish Workout'}
                 </button>
             </div>
             <VideoModal

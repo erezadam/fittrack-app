@@ -155,6 +155,7 @@ export const storageService = {
                 ...workoutData,
                 timestamp: new Date().toISOString()
             };
+            console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
             return { id: docRef.id, ...dataToSave };
         } catch (error) {
