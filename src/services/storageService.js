@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, setDoc, query, orderBy, limit } from 'firebase/firestore';
 import { initialExercises, initialMuscles } from '../data/initialData';
 
 const EXERCISE_COLLECTION = 'exercises';
@@ -161,6 +161,53 @@ export const storageService = {
         } catch (error) {
             console.error("Error saving workout log:", error);
             throw error;
+        }
+    },
+
+    getLastExercisePerformance: async (exerciseId) => {
+        try {
+            // Query recent workout logs, ordered by date descending
+            const q = query(
+                collection(db, WORKOUT_LOGS_COLLECTION),
+                orderBy('timestamp', 'desc'),
+                limit(20) // Limit to recent 20 workouts to avoid scanning everything
+            );
+
+            const querySnapshot = await getDocs(q);
+
+            // Iterate through logs to find the first occurrence of the exercise
+            for (const doc of querySnapshot.docs) {
+                const workout = doc.data();
+                if (workout.exercises) {
+                    const exerciseData = workout.exercises.find(ex => ex.exercise_id === exerciseId);
+
+                    if (exerciseData && exerciseData.sets && exerciseData.sets.length > 0) {
+                        // Find the best set (highest weight)
+                        // Assuming weight is stored as string or number, convert to float for comparison
+                        let bestSet = null;
+                        let maxWeight = -1;
+
+                        exerciseData.sets.forEach(set => {
+                            const weight = parseFloat(set.weight) || 0;
+                            if (weight > maxWeight) {
+                                maxWeight = weight;
+                                bestSet = set;
+                            }
+                        });
+
+                        if (bestSet) {
+                            return {
+                                weight: bestSet.weight,
+                                reps: bestSet.reps
+                            };
+                        }
+                    }
+                }
+            }
+            return null; // No history found
+        } catch (error) {
+            console.error("Error getting last exercise performance:", error);
+            return null;
         }
     },
 
