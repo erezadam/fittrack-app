@@ -315,63 +315,62 @@ export default function AdminPage({ onBack }) {
     // --- Renderers ---
 
     if (loading) {
-        return <div className="container" style={{ textAlign: 'center', padding: '50px' }}>טוען נתונים...</div>;
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+            </div>
+        );
     }
 
     return (
-        <div className="container">
-            {/* ... (Header and Tabs) ... */}
-            <div className="flex-between" style={{ marginBottom: '20px' }}>
-                <button type="button" onClick={onBack} className="neu-btn">← חזרה</button>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <h2 className="title" style={{ margin: 0, fontSize: '1.5rem' }}>ניהול מערכת</h2>
-                </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-8">
+                <button type="button" onClick={onBack} className="neu-btn text-sm">
+                    ← חזרה
+                </button>
+                <h2 className="text-2xl font-bold text-gray-800">ניהול מערכת</h2>
             </div>
 
             {/* Import/Export Actions */}
-            <div className="neu-card" style={{ marginBottom: '20px', padding: '15px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>פעולות מהירות:</span>
-                <a href="/exercises_template_he.csv" download="exercises_template_he.csv" target="_blank" rel="noopener noreferrer" className="neu-btn" style={{ textDecoration: 'none', fontSize: '0.8rem' }}>
-                    📥 הורד תבנית CSV (עברית)
+            <div className="neu-card mb-8 flex flex-wrap gap-4 items-center">
+                <span className="font-bold text-sm text-gray-600">פעולות מהירות:</span>
+                <a
+                    href="/exercises_template_he.csv"
+                    download="exercises_template_he.csv"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="neu-btn text-xs"
+                >
+                    📥 הורד תבנית CSV
                 </a>
-                <label className="neu-btn primary" style={{ cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    📤 טען תרגילים מ-CSV
+                <label className="neu-btn primary text-xs cursor-pointer">
+                    📤 טען תרגילים
                     <input
                         type="file"
                         accept=".csv"
-                        style={{ display: 'none' }}
+                        className="hidden"
                         onChange={handleFileUpload}
                     />
                 </label>
-                <label className="neu-btn primary" style={{ cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    📤 טען תרגילים מ-CSV
-                    <input
-                        type="file"
-                        accept=".csv"
-                        style={{ display: 'none' }}
-                        onChange={handleFileUpload}
-                    />
-                </label>
-                <button onClick={handleRestoreDefaults} className="neu-btn" style={{ fontSize: '0.8rem' }}>
-                    🔄 שחזר שרירי ברירת מחדל
+                <button onClick={handleRestoreDefaults} className="neu-btn text-xs">
+                    🔄 שחזר ברירת מחדל
                 </button>
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <div className="flex gap-4 mb-8">
                 <button
                     type="button"
                     onClick={() => setActiveTab('exercises')}
-                    className={`neu-btn ${activeTab === 'exercises' ? 'primary' : ''}`}
-                    style={{ flex: 1 }}
+                    className={`neu-btn flex-1 ${activeTab === 'exercises' ? 'primary' : ''}`}
                 >
                     תרגילים
                 </button>
                 <button
                     type="button"
                     onClick={() => setActiveTab('muscles')}
-                    className={`neu-btn ${activeTab === 'muscles' ? 'primary' : ''}`}
-                    style={{ flex: 1 }}
+                    className={`neu-btn flex-1 ${activeTab === 'muscles' ? 'primary' : ''}`}
                 >
                     שרירים
                 </button>
@@ -379,19 +378,20 @@ export default function AdminPage({ onBack }) {
 
             {/* Content */}
             {activeTab === 'exercises' ? (
-                <div>
+                <div className="space-y-8 animate-fade-in">
                     {/* Add/Edit Form */}
-                    <div className="neu-card" style={{ marginBottom: '24px' }}>
-                        {/* ... (Form content same as before) ... */}
-                        <h3>{editingExercise ? 'עריכת תרגיל' : 'הוספת תרגיל חדש'}</h3>
-                        <div className="flex-col">
+                    <div className="neu-card">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800">
+                            {editingExercise ? 'עריכת תרגיל' : 'הוספת תרגיל חדש'}
+                        </h3>
+                        <div className="space-y-4">
                             <input
                                 className="neu-input"
                                 placeholder="שם התרגיל"
                                 value={exForm.name}
                                 onChange={e => setExForm({ ...exForm, name: e.target.value })}
                             />
-                            <div className="grid-cols-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <select
                                     className="neu-input"
                                     value={exForm.mainMuscle}
@@ -431,12 +431,16 @@ export default function AdminPage({ onBack }) {
                                 value={exForm.video_url}
                                 onChange={e => setExForm({ ...exForm, video_url: e.target.value })}
                             />
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button type="button" onClick={handleSaveExercise} className="neu-btn primary" style={{ flex: 1 }}>
+                            <div className="flex gap-4">
+                                <button type="button" onClick={handleSaveExercise} className="neu-btn primary flex-1">
                                     {editingExercise ? 'שמור שינויים' : 'הוסף תרגיל'}
                                 </button>
                                 {editingExercise && (
-                                    <button type="button" onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' }); }} className="neu-btn">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' }); }}
+                                        className="neu-btn"
+                                    >
                                         ביטול
                                     </button>
                                 )}
@@ -446,17 +450,16 @@ export default function AdminPage({ onBack }) {
 
                     {/* List with Filters */}
                     <div className="neu-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                            <h3 style={{ margin: 0 }}>רשימת תרגילים ({filteredExercises.length})</h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">רשימת תרגילים ({filteredExercises.length})</h3>
                         </div>
 
                         {/* Filters */}
-                        <div className="grid-cols-2" style={{ marginBottom: '16px', gap: '10px' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <select
-                                className="neu-input"
+                                className="neu-input text-sm py-2"
                                 value={filterMainMuscle}
                                 onChange={e => { setFilterMainMuscle(e.target.value); setFilterSubMuscle(''); }}
-                                style={{ fontSize: '0.9rem', padding: '8px' }}
                             >
                                 <option value="">כל השרירים</option>
                                 {Object.keys(muscles).map(k => (
@@ -464,11 +467,10 @@ export default function AdminPage({ onBack }) {
                                 ))}
                             </select>
                             <select
-                                className="neu-input"
+                                className="neu-input text-sm py-2"
                                 value={filterSubMuscle}
                                 onChange={e => setFilterSubMuscle(e.target.value)}
                                 disabled={!filterMainMuscle}
-                                style={{ fontSize: '0.9rem', padding: '8px' }}
                             >
                                 <option value="">כל תתי-השרירים</option>
                                 {filterMainMuscle && muscles[filterMainMuscle]?.subMuscles?.map(sub => (
@@ -477,18 +479,18 @@ export default function AdminPage({ onBack }) {
                             </select>
                         </div>
 
-                        <div style={{ maxHeight: '500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div className="max-h-[500px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                             {filteredExercises.map(ex => (
-                                <div key={ex.id} className="neu-card" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'none', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                <div key={ex.id} className="bg-white rounded-xl p-4 flex justify-between items-center border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                                     <div>
-                                        <strong>{ex.name}</strong>
-                                        <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                                        <div className="font-bold text-gray-800">{ex.name}</div>
+                                        <div className="text-xs text-gray-500 mt-1">
                                             {muscles[ex.mainMuscle]?.label || ex.mainMuscle} • {ex.subMuscle} • {ex.equipment}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button type="button" onClick={() => handleEditExercise(ex)} className="neu-btn" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>ערוך</button>
-                                        <button type="button" onClick={() => handleDeleteExercise(ex.id)} className="neu-btn danger" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>מחק</button>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => handleEditExercise(ex)} className="text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-colors text-sm font-medium">ערוך</button>
+                                        <button type="button" onClick={() => handleDeleteExercise(ex.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors text-sm font-medium">מחק</button>
                                     </div>
                                 </div>
                             ))}
@@ -496,18 +498,20 @@ export default function AdminPage({ onBack }) {
                     </div>
                 </div>
             ) : (
-                <div>
+                <div className="space-y-8 animate-fade-in">
                     {/* Muscle Form */}
-                    <div className="neu-card" style={{ marginBottom: '24px' }}>
-                        <h3>{editingMuscleKey ? 'עריכת שריר' : 'הוספת שריר חדש'}</h3>
-                        <div className="flex-col">
-                            <div className="grid-cols-2">
+                    <div className="neu-card">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800">
+                            {editingMuscleKey ? 'עריכת שריר' : 'הוספת שריר חדש'}
+                        </h3>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <input
                                     className="neu-input"
                                     placeholder="מפתח באנגלית (למשל: Chest)"
                                     value={muscleForm.key}
                                     onChange={e => setMuscleForm({ ...muscleForm, key: e.target.value })}
-                                    disabled={!!editingMuscleKey} // Prevent changing key when editing for simplicity
+                                    disabled={!!editingMuscleKey}
                                 />
                                 <input
                                     className="neu-input"
@@ -516,61 +520,63 @@ export default function AdminPage({ onBack }) {
                                     onChange={e => setMuscleForm({ ...muscleForm, label: e.target.value })}
                                 />
                             </div>
-                            <div style={{ marginBottom: '10px' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px' }}>אייקון (קובץ תמונה או אימוג'י):</label>
-                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">אייקון (קובץ תמונה או אימוג'י):</label>
+                                <div className="flex flex-wrap gap-4 items-center">
                                     <input
                                         type="file"
                                         accept="image/png, image/svg+xml, image/jpeg"
-                                        className="neu-input"
+                                        className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
                                         onChange={e => setMuscleIconFile(e.target.files[0])}
-                                        style={{ padding: '8px' }}
                                     />
-                                    <span style={{ fontSize: '0.9rem' }}>או</span>
+                                    <span className="text-sm text-gray-400">או</span>
                                     <input
-                                        className="neu-input"
-                                        placeholder="אימוג'י (למשל: 💪)"
+                                        className="neu-input w-32"
+                                        placeholder="אימוג'י"
                                         value={muscleForm.icon}
                                         onChange={e => setMuscleForm({ ...muscleForm, icon: e.target.value })}
-                                        style={{ width: '150px' }}
                                     />
                                 </div>
                                 {muscleForm.icon && (
-                                    <div style={{ marginTop: '5px', fontSize: '0.8rem', color: '#718096' }}>
+                                    <div className="mt-2 text-xs text-gray-500">
                                         נוכחי: {muscleForm.icon.startsWith('http') ? 'תמונה מותאמת' : muscleForm.icon}
                                     </div>
                                 )}
                             </div>
 
                             {/* Sub Muscles Manager */}
-                            <div style={{ background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px' }}>
-                                <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>תתי שרירים:</label>
-                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '8px 0' }}>
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">תתי שרירים:</label>
+                                <div className="flex flex-wrap gap-2 mb-3">
                                     {muscleForm.subMuscles.map(sub => (
-                                        <span key={sub} style={{ background: 'white', padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #ddd' }}>
+                                        <span key={sub} className="bg-white px-3 py-1 rounded-full text-sm border border-gray-200 flex items-center gap-2 shadow-sm">
                                             {sub}
-                                            <button type="button" onClick={() => handleRemoveSubMuscle(sub)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'red', fontWeight: 'bold' }}>×</button>
+                                            <button type="button" onClick={() => handleRemoveSubMuscle(sub)} className="text-red-400 hover:text-red-600 font-bold">×</button>
                                         </span>
                                     ))}
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
+                                <div className="flex gap-2">
                                     <input
                                         className="neu-input"
                                         placeholder="הוסף תת-שריר..."
                                         value={newSubMuscle}
                                         onChange={e => setNewSubMuscle(e.target.value)}
-                                        style={{ padding: '8px' }}
                                     />
-                                    <button type="button" onClick={handleAddSubMuscle} className="neu-btn" style={{ padding: '8px 16px' }}>+</button>
+                                    <button type="button" onClick={handleAddSubMuscle} className="neu-btn px-6">+</button>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button type="button" onClick={handleSaveMuscle} className="neu-btn primary" style={{ flex: 1 }}>
+                            <div className="flex gap-4">
+                                <button type="button" onClick={handleSaveMuscle} className="neu-btn primary flex-1">
                                     {editingMuscleKey ? 'שמור שינויים' : 'הוסף שריר'}
                                 </button>
                                 {editingMuscleKey && (
-                                    <button type="button" onClick={() => { setEditingMuscleKey(null); setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] }); setMuscleIconFile(null); }} className="neu-btn">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setEditingMuscleKey(null); setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] }); setMuscleIconFile(null); }}
+                                        className="neu-btn"
+                                    >
                                         ביטול
                                     </button>
                                 )}
@@ -579,25 +585,27 @@ export default function AdminPage({ onBack }) {
                     </div>
 
                     {/* Muscles List */}
-                    <div className="grid-cols-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.keys(muscles).map(key => (
-                            <div key={key} className="neu-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
-                                <div>
-                                    <div style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center' }}>
+                            <div key={key} className="neu-card flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-3xl w-12 h-12 flex items-center justify-center bg-gray-50 rounded-full">
                                         {muscles[key].icon && muscles[key].icon.startsWith('http') ? (
                                             <img
                                                 src={muscles[key].icon}
                                                 alt={muscles[key].label}
-                                                style={{ width: '40px', height: '40px', objectFit: 'contain' }}
+                                                className="w-8 h-8 object-contain"
                                             />
                                         ) : (
                                             muscles[key].icon
                                         )}
                                     </div>
-                                    <div style={{ fontWeight: 'bold' }}>{muscles[key].label}</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#718096' }}>{key}</div>
+                                    <div>
+                                        <div className="font-bold text-gray-800">{muscles[key].label}</div>
+                                        <div className="text-xs text-gray-500">{key}</div>
+                                    </div>
                                 </div>
-                                <button type="button" onClick={() => handleEditMuscle(key)} className="neu-btn" style={{ fontSize: '0.8rem' }}>ערוך</button>
+                                <button type="button" onClick={() => handleEditMuscle(key)} className="neu-btn text-xs px-3 py-2">ערוך</button>
                             </div>
                         ))}
                     </div>

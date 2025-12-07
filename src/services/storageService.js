@@ -211,6 +211,25 @@ export const storageService = {
         }
     },
 
+    getLastWorkout: async () => {
+        try {
+            const q = query(
+                collection(db, WORKOUT_LOGS_COLLECTION),
+                orderBy('timestamp', 'desc'),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const doc = querySnapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error("Error getting last workout:", error);
+            return null;
+        }
+    },
+
     initialize: async () => {
         // No-op for now, or maybe check connection
         console.log("Storage service initialized");

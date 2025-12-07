@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
+import AIWorkoutModal from './AIWorkoutModal';
 
 export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
+    const [showAICoach, setShowAICoach] = useState(false);
 
     // Data State
     const [exercises, setExercises] = useState([]);
@@ -127,33 +129,48 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
     // --- Renderers ---
 
-    // We use the keys from the muscles object to drive the UI, 
-    // ensuring we only show muscles that exist in our definition.
-    // Alternatively, we could intersect with available exercises if we want to hide empty muscles.
-    // For now, let's show all defined muscles.
     const availableMuscleKeys = Object.keys(muscles);
 
     if (step === 'dashboard') {
         return (
-            <div className="container" style={{ marginTop: '20px' }}>
-                <div className="flex-between" style={{ marginBottom: '10px' }}>
-                    <button onClick={onOpenAdmin} className="neu-btn" style={{ fontSize: '0.8rem' }}>מנהל ⚙</button>
-                    <div style={{ textAlign: 'left' }}>
-                        <h1 className="title" style={{ margin: 0, fontSize: '1.5rem', textAlign: 'right', color: 'var(--accent-color)' }}>
+            <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex gap-4">
+                        <button onClick={onOpenAdmin} className="neu-btn text-sm">
+                            <span>⚙</span> מנהל
+                        </button>
+                        <button
+                            onClick={() => setShowAICoach(true)}
+                            className="neu-btn primary text-sm"
+                        >
+                            <span>🤖</span> מאמן AI
+                        </button>
+                    </div>
+                    <div className="text-left">
+                        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-teal-600 mb-1">
                             איזה כיף שחזרת להתאמן
                         </h1>
-                        <div style={{ fontSize: '1rem', color: '#718096' }}>יצירת/פתיחת אימון</div>
+                        <div className="text-gray-500 font-medium">יצירת/פתיחת אימון</div>
                     </div>
                 </div>
 
+                {showAICoach && (
+                    <AIWorkoutModal
+                        onClose={() => setShowAICoach(false)}
+                        onStartWorkout={(exercises, name) => {
+                            setShowAICoach(false);
+                            onStartWorkout(exercises, name);
+                        }}
+                    />
+                )}
+
                 {/* Section A: Choose Workout */}
-                <div className="neu-card" style={{ marginBottom: '24px', padding: '24px' }}>
-                    <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>בחר אימון</label>
+                <div className="neu-card mb-8 animate-fade-in">
+                    <label className="block mb-3 font-bold text-gray-700">בחר אימון</label>
                     <select
                         className="neu-input"
                         value={selectedTemplateId}
                         onChange={handleTemplateChange}
-                        style={{ fontSize: '1rem' }}
                     >
                         <option value="new">צור אימון חדש +</option>
                         {templates.map(t => (
@@ -164,9 +181,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
                 {/* Section B & C: Only if New Workout */}
                 {selectedTemplateId === 'new' && (
-                    <div className="animate-fade-in">
-                        <div className="neu-card" style={{ marginBottom: '24px', padding: '24px' }}>
-                            <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>שם האימון החדש</label>
+                    <div className="animate-fade-in space-y-8">
+                        <div className="neu-card">
+                            <label className="block mb-3 font-bold text-gray-700">שם האימון החדש</label>
                             <input
                                 type="text"
                                 className="neu-input"
@@ -176,58 +193,48 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                             />
                         </div>
 
-                        <h3 style={{ marginBottom: '16px' }}>בחר שרירים לאימון</h3>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                            gap: '16px',
-                            marginBottom: '32px'
-                        }}>
-                            {availableMuscleKeys.map(m => {
-                                const isSelected = selectedMuscles.includes(m);
-                                const mapping = muscles[m] || { label: m, icon: '💪' };
-                                return (
-                                    <div
-                                        key={m}
-                                        onClick={() => toggleMuscle(m)}
-                                        className="neu-card"
-                                        style={{
-                                            textAlign: 'center',
-                                            cursor: 'pointer',
-                                            padding: '20px',
-                                            border: isSelected ? '2px solid var(--accent-color)' : '2px solid transparent',
-                                            background: isSelected ? 'var(--bg-color)' : '',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            flexDirection: 'row-reverse'
-                                        }}
-                                    >
-                                        <div style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {mapping.icon && mapping.icon.startsWith('http') ? (
-                                                <img
-                                                    src={mapping.icon}
-                                                    alt={mapping.label}
-                                                    style={{ width: '48px', height: '48px', objectFit: 'contain' }}
-                                                />
-                                            ) : (
-                                                mapping.icon
-                                            )}
+                        <div>
+                            <h3 className="text-xl font-bold mb-4 text-gray-800">בחר שרירים לאימון</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {availableMuscleKeys.map(m => {
+                                    const isSelected = selectedMuscles.includes(m);
+                                    const mapping = muscles[m] || { label: m, icon: '💪' };
+                                    return (
+                                        <div
+                                            key={m}
+                                            onClick={() => toggleMuscle(m)}
+                                            className={`neu-card cursor-pointer transition-all duration-300 flex items-center justify-between flex-row-reverse p-4 ${isSelected
+                                                    ? 'ring-2 ring-cyan-400 transform scale-105 shadow-lg'
+                                                    : 'hover:translate-y-[-2px]'
+                                                }`}
+                                        >
+                                            <div className="text-2xl">
+                                                {mapping.icon && mapping.icon.startsWith('http') ? (
+                                                    <img
+                                                        src={mapping.icon}
+                                                        alt={mapping.label}
+                                                        className="w-8 h-8 object-contain"
+                                                    />
+                                                ) : (
+                                                    mapping.icon
+                                                )}
+                                            </div>
+                                            <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
+                                                {mapping.label}
+                                            </div>
                                         </div>
-                                        <div style={{ fontWeight: 600 }}>{mapping.label}</div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Main Action Button */}
-                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <div className="text-center mt-12 mb-8">
                     <button
                         onClick={handleContinue}
-                        className="neu-btn primary"
-                        style={{ width: '100%', maxWidth: '400px', padding: '16px', fontSize: '1.2rem' }}
+                        className="neu-btn primary w-full max-w-md mx-auto text-lg py-4"
                     >
                         {selectedTemplateId === 'new' ? 'המשך לבחירת תרגילים ←' : 'התחל אימון ←'}
                     </button>
@@ -238,71 +245,47 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
     // Step 2: Selection View
     return (
-        <div className="container" style={{ marginTop: '20px' }}>
-            <div className="flex-between" style={{ marginBottom: '20px' }}>
-                <button onClick={() => setStep('dashboard')} className="neu-btn">→ חזרה</button>
-                <h2 style={{ margin: 0 }}>בחירת תרגילים</h2>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="flex justify-between items-center mb-8">
+                <button onClick={() => setStep('dashboard')} className="neu-btn text-sm">
+                    → חזרה
+                </button>
+                <h2 className="text-2xl font-bold text-gray-800">בחירת תרגילים</h2>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
+            <div className="space-y-8">
                 {selectedMuscles.map(m => {
                     const mapping = muscles[m] || { label: m };
                     const allMuscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
-
-                    // Extract Sub-Muscles
-                    // We can now use the predefined sub-muscles from the muscle object if we want to show all options,
-                    // or stick to what's available in the exercises.
-                    // Let's stick to available exercises for now to avoid empty filters,
-                    // OR better: show all defined sub-muscles for this muscle group so user knows what's possible?
-                    // User asked for "filtering based on sub-muscle", usually implies showing available filters.
-                    // Let's use the sub-muscles defined in the muscle object + any extras found in exercises.
-
                     const definedSubMuscles = mapping.subMuscles || [];
-                    // We only show sub-muscles that are explicitly defined for this muscle group.
-                    // This prevents "garbage" or old data from appearing as filter chips.
                     const subMuscles = definedSubMuscles;
 
-                    // Filter Logic
                     const displayedExercises = allMuscleExercises.filter(ex => {
                         if (selectedSubMuscles.length === 0) return true;
-                        // If any sub-muscle selected, check if this exercise matches one of them
-                        // But we only want to filter if the selected sub-muscle belongs to THIS muscle group?
-                        // Actually, global filter is fine if sub-muscles are unique enough, or we check intersection.
-                        // Let's assume we want to show exercise if its subMuscle is in selectedSubMuscles
-                        // OR if no subMuscles for THIS muscle group are selected.
-
-                        // Better UX: Filter chips are per muscle group visually, but state is global?
-                        // Let's check if any of THIS muscle's sub-muscles are selected.
                         const hasActiveFilter = subMuscles.some(sm => selectedSubMuscles.includes(sm));
                         if (!hasActiveFilter) return true;
                         return selectedSubMuscles.includes(ex.subMuscle);
                     });
 
                     return (
-                        <div key={m} style={{ marginBottom: '24px' }}>
-                            <h3 style={{ borderBottom: '2px solid var(--accent-color)', paddingBottom: '8px', display: 'inline-block' }}>
+                        <div key={m} className="animate-fade-in">
+                            <h3 className="text-xl font-bold text-teal-600 border-b-2 border-teal-100 pb-2 inline-block mb-4">
                                 {mapping.label}
                             </h3>
 
                             {/* Sub-Muscle Filters */}
                             {subMuscles.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                <div className="flex flex-wrap gap-2 mb-4">
                                     {subMuscles.map(sm => {
                                         const isActive = selectedSubMuscles.includes(sm);
                                         return (
                                             <div
                                                 key={sm}
                                                 onClick={() => toggleSubMuscle(sm)}
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    borderRadius: '20px',
-                                                    fontSize: '0.85rem',
-                                                    cursor: 'pointer',
-                                                    background: isActive ? 'var(--accent-color)' : 'var(--bg-color)',
-                                                    color: isActive ? 'white' : 'var(--text-color)',
-                                                    boxShadow: isActive ? 'inset 2px 2px 5px rgba(0,0,0,0.2)' : '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                                                    transition: 'all 0.2s ease'
-                                                }}
+                                                className={`px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all shadow-sm ${isActive
+                                                        ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                                                    }`}
                                             >
                                                 {sm}
                                             </div>
@@ -311,64 +294,48 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                 </div>
                             )}
 
-                            <div className="grid-cols-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {displayedExercises.map(ex => {
                                     const isSelected = !!selectedExercises.find(e => e.id === ex.id);
                                     return (
                                         <div
                                             key={ex.id}
-                                            className="neu-card"
                                             onClick={() => toggleExercise(ex)}
-                                            style={{
-                                                cursor: 'pointer',
-                                                border: isSelected ? '2px solid var(--accent-color)' : '2px solid transparent',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}
+                                            className={`neu-card p-4 cursor-pointer flex justify-between items-center transition-all ${isSelected
+                                                    ? 'ring-2 ring-cyan-400 bg-cyan-50/50'
+                                                    : 'hover:bg-white'
+                                                }`}
                                         >
                                             <div>
-                                                <div style={{ fontWeight: 'bold' }}>{ex.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                                                <div className="font-bold text-gray-800">{ex.name}</div>
+                                                <div className="text-xs text-gray-500 mt-1">
                                                     {ex.subMuscle} {ex.subMuscle && ex.equipment ? '•' : ''} {ex.equipment}
                                                 </div>
                                             </div>
-                                            <div className={`neu-checkbox ${isSelected ? 'checked' : ''}`} style={{
-                                                background: isSelected ? 'var(--accent-color)' : 'var(--bg-color)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
-                                            }}>
-                                                {isSelected && '✓'}
+                                            <div className={`neu-checkbox ${isSelected ? 'checked' : ''}`}>
+                                                {isSelected && <span className="text-white text-sm">✓</span>}
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
                             {displayedExercises.length === 0 && (
-                                <div style={{ color: '#718096', fontStyle: 'italic' }}>אין תרגילים התואמים את הסינון.</div>
+                                <div className="text-gray-400 italic text-sm mt-2">אין תרגילים התואמים את הסינון.</div>
                             )}
                         </div>
                     );
                 })}
             </div>
 
-            <div style={{
-                position: 'fixed',
-                bottom: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 100,
-                width: '90%',
-                maxWidth: '400px'
-            }}>
+            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md z-50">
                 <button
                     onClick={handleStart}
-                    className="neu-btn primary"
-                    style={{ width: '100%', padding: '16px', fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    className="neu-btn primary w-full py-4 text-xl shadow-2xl"
                 >
                     התחל אימון ({selectedExercises.length})
                 </button>
             </div>
-            <div style={{ height: '80px' }}></div>
+            <div className="h-24"></div>
         </div>
     );
 }

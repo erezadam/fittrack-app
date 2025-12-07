@@ -85,25 +85,30 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
     };
 
     return (
-        <div className="container">
-            <div className="flex-between" style={{ marginBottom: '20px' }}>
-                <h2 className="title" style={{ margin: 0, fontSize: '1.5rem' }}>{workoutName || 'Active Workout'}</h2>
-                <button onClick={onCancel} className="neu-btn danger" style={{ fontSize: '0.8rem' }}>Cancel</button>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-800 border-r-4 border-teal-500 pr-3">
+                    {workoutName || 'Active Workout'}
+                </h2>
+                <button onClick={onCancel} className="neu-btn text-red-500 hover:text-red-600 text-sm px-4">
+                    ביטול
+                </button>
             </div>
 
-            <div className="flex-col" style={{ marginBottom: '100px' }}>
+            <div className="space-y-6 mb-32">
                 {exercises.map(ex => (
-                    <div key={ex.id} className="neu-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={ex.id} className="neu-card animate-fade-in">
+                        <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h3 style={{ marginTop: 0, marginBottom: '4px' }}>{ex.name}</h3>
-                                <div className="mb-3 text-sm" style={{ marginBottom: '12px', fontSize: '0.9rem' }}>
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">{ex.name}</h3>
+                                <div className="text-sm">
                                     {historyStats[ex.id] ? (
-                                        <span className="text-teal-600 font-bold bg-teal-50 px-2 py-1 rounded" style={{ color: '#0d9488', fontWeight: 'bold', backgroundColor: '#f0fdfa', padding: '4px 8px', borderRadius: '4px' }}>
-                                            ↺ פעם שעברה: {historyStats[ex.id].weight}kg / {historyStats[ex.id].reps} reps
+                                        <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-medium border border-teal-100">
+                                            <span>↺</span>
+                                            <span>פעם שעברה: {historyStats[ex.id].weight}kg / {historyStats[ex.id].reps} reps</span>
                                         </span>
                                     ) : (
-                                        <span className="text-gray-400 italic" style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                                        <span className="text-gray-400 italic text-sm">
                                             (אימון ראשון בתרגיל זה)
                                         </span>
                                     )}
@@ -112,62 +117,70 @@ export default function ActiveWorkout({ exercises, workoutName, onFinish, onCanc
                             {ex.video_url && (
                                 <button
                                     onClick={() => setSelectedVideo({ url: ex.video_url, title: ex.name })}
-                                    className="neu-btn"
-                                    style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    className="neu-btn text-xs px-3 py-2"
                                 >
                                     🎥 וידאו
                                 </button>
                             )}
                         </div>
-                        <div className="flex-col">
+
+                        <div className="space-y-3">
                             {workoutData[ex.id].sets.map((set, idx) => (
-                                <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                    <span style={{ width: '20px', fontWeight: 'bold' }}>{idx + 1}</span>
-                                    <input
-                                        type="number"
-                                        placeholder="kg"
-                                        className="neu-input"
-                                        value={set.weight}
-                                        onChange={(e) => updateSet(ex.id, idx, 'weight', e.target.value)}
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder="reps"
-                                        className="neu-input"
-                                        value={set.reps}
-                                        onChange={(e) => updateSet(ex.id, idx, 'reps', e.target.value)}
-                                    />
+                                <div key={idx} className="flex items-center gap-3">
+                                    <span className="w-6 font-bold text-gray-400 text-center">{idx + 1}</span>
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="number"
+                                            placeholder="kg"
+                                            className="neu-input text-center font-bold"
+                                            value={set.weight}
+                                            onChange={(e) => updateSet(ex.id, idx, 'weight', e.target.value)}
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">kg</span>
+                                    </div>
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="number"
+                                            placeholder="reps"
+                                            className="neu-input text-center font-bold"
+                                            value={set.reps}
+                                            onChange={(e) => updateSet(ex.id, idx, 'reps', e.target.value)}
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">reps</span>
+                                    </div>
                                     {idx > 0 && (
-                                        <button onClick={() => removeSet(ex.id, idx)} className="neu-btn danger" style={{ padding: '8px' }}>×</button>
+                                        <button
+                                            onClick={() => removeSet(ex.id, idx)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                        >
+                                            ×
+                                        </button>
                                     )}
                                 </div>
                             ))}
-                            <button onClick={() => addSet(ex.id)} className="neu-btn" style={{ marginTop: '8px' }}>+ Add Set</button>
+                            <button
+                                onClick={() => addSet(ex.id)}
+                                className="w-full py-2 mt-2 text-sm font-medium text-teal-600 hover:bg-teal-50 rounded-lg transition-colors border border-dashed border-teal-200"
+                            >
+                                + הוסף סט
+                            </button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div style={{
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                width: '100%',
-                background: 'var(--bg-color)',
-                padding: '20px',
-                boxShadow: '0 -5px 10px rgba(0,0,0,0.05)',
-                display: 'flex',
-                justifyContent: 'center'
-            }}>
-                <button
-                    onClick={handleFinish}
-                    disabled={isSaving}
-                    className={`neu-btn primary ${isSaving ? 'disabled' : ''}`}
-                    style={{ padding: '16px 48px', fontSize: '1.2rem', width: '100%', maxWidth: '400px', opacity: isSaving ? 0.7 : 1 }}
-                >
-                    {isSaving ? 'Saving...' : 'Finish Workout'}
-                </button>
+            <div className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md border-t border-gray-200 p-4 shadow-lg z-40">
+                <div className="max-w-4xl mx-auto flex justify-center">
+                    <button
+                        onClick={handleFinish}
+                        disabled={isSaving}
+                        className={`neu-btn primary w-full max-w-md text-lg py-4 shadow-xl ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                        {isSaving ? 'שומר אימון...' : 'סיים אימון ✓'}
+                    </button>
+                </div>
             </div>
+
             <VideoModal
                 isOpen={!!selectedVideo}
                 onClose={() => setSelectedVideo(null)}
