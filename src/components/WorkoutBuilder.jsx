@@ -204,19 +204,19 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                             key={m}
                                             onClick={() => toggleMuscle(m)}
                                             className={`neu-card cursor-pointer transition-all duration-300 flex items-center justify-between flex-row-reverse p-4 ${isSelected
-                                                    ? 'ring-2 ring-cyan-400 transform scale-105 shadow-lg'
-                                                    : 'hover:translate-y-[-2px]'
+                                                ? 'ring-2 ring-cyan-400 transform scale-105 shadow-lg'
+                                                : 'hover:translate-y-[-2px]'
                                                 }`}
                                         >
-                                            <div className="text-2xl">
-                                                {mapping.icon && mapping.icon.startsWith('http') ? (
+                                            <div className="text-4xl mb-2">
+                                                {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
                                                     <img
                                                         src={mapping.icon}
                                                         alt={mapping.label}
-                                                        className="w-8 h-8 object-contain"
+                                                        className="w-12 h-12 object-contain mx-auto"
                                                     />
                                                 ) : (
-                                                    mapping.icon
+                                                    <span>{mapping.icon || '💪'}</span>
                                                 )}
                                             </div>
                                             <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
@@ -283,8 +283,8 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                                 key={sm}
                                                 onClick={() => toggleSubMuscle(sm)}
                                                 className={`px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all shadow-sm ${isActive
-                                                        ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                                                    ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md'
+                                                    : 'bg-white text-gray-600 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 {sm}
@@ -302,8 +302,8 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                             key={ex.id}
                                             onClick={() => toggleExercise(ex)}
                                             className={`neu-card p-4 cursor-pointer flex justify-between items-center transition-all ${isSelected
-                                                    ? 'ring-2 ring-cyan-400 bg-cyan-50/50'
-                                                    : 'hover:bg-white'
+                                                ? 'ring-2 ring-cyan-400 bg-cyan-50/50'
+                                                : 'hover:bg-white'
                                                 }`}
                                         >
                                             <div>

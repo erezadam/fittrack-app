@@ -1,16 +1,23 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { app } from "../firebase";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-let genAI = null;
+// Lazy initialization
+let ai = null;
 let model = null;
 
-if (API_KEY) {
-    genAI = new GoogleGenerativeAI(API_KEY);
-    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-} else {
-    console.warn("VITE_GEMINI_API_KEY is not set. AI features will not work.");
-}
+const initializeAI = async () => {
+    if (!ai) {
+        try {
+            // Dynamic import to prevent load-time crashes
+            const { getAI, getGenerativeModel } = await import("firebase/ai");
+            ai = getAI(app);
+            model = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
+        } catch (error) {
+            console.error("Failed to load firebase/ai module:", error);
+            throw new Error("Failed to load AI module. Please check your connection.");
+        }
+    }
+    return model;
+};
 
 const SYSTEM_PROMPT = `
 ### SYSTEM INITIALIZATION & MANDATE
@@ -73,10 +80,6 @@ Return the response in JSON format with the following structure:
 
 export const aiService = {
     generateWorkoutPlan: async (userHistory, userInputs, availableExercises) => {
-        if (!model) {
-            return { message: "AI service is not configured. Please check your API key." };
-        }
-
         try {
             const prompt = `
                 ${SYSTEM_PROMPT}
@@ -88,19 +91,45 @@ export const aiService = {
 
                 **Instruction:**
                 Based on the current phase of interaction (Silent Assessment, Interview, Plan Generation, or Review), provide the next response.
-                If generating a plan, ensure it uses ONLY the available exercises.
+                
+                **CRITICAL OVERRIDE:**
+                If the "User Inputs" object above contains data (duration, targetMuscles, etc.), you MUST SKIP the "Interview" phase entirely.
+                IMMEDIATELY proceed to "Phase 3: Smart Plan Generation" and generate the full workout plan JSON.
+                Do NOT ask questions like "Daily or Weekly?" or "What is your goal?". Use the provided inputs.
+                
+                **CRITICAL OUTPUT FORMAT:**
+                You MUST return a JSON object with this EXACT structure:
+                {
+                  "plan": {
+                    "name": "Workout Name",
+                    "exercises": [
+                      {
+                        "id": "EXERCISE_ID_FROM_LIST", // MUST match an ID from Available Exercises
+                        "name": "Exercise Name",
+                        "sets": [
+                          { "weight": "target_weight_or_bodyweight", "reps": "target_reps" }
+                        ]
+                      }
+                    ]
+                  }
+                }
+                
+                If generating a plan, ensure it uses ONLY the available exercises provided in the context. Do not invent new exercises.
             `;
 
+            const model = await initializeAI();
             const result = await model.generateContent(prompt);
-            const response = await result.response;
+            const response = result.response;
             const text = response.text();
 
             // Attempt to parse JSON response
             try {
                 // Find JSON block if wrapped in markdown code blocks
-                const jsonMatch = text.match(/\\{.*\\}/s);
+                const jsonMatch = text.match(/\{.*\}/s);
                 const jsonStr = jsonMatch ? jsonMatch[0] : text;
-                return JSON.parse(jsonStr);
+                const parsed = JSON.parse(jsonStr);
+                console.log("AI Raw Response:", parsed);
+                return parsed;
             } catch (e) {
                 console.warn("Failed to parse AI response as JSON, returning raw text", e);
                 return { message: text };
@@ -108,7 +137,19 @@ export const aiService = {
 
         } catch (error) {
             console.error("Error generating workout plan:", error);
-            return { message: "Sorry, I encountered an error while generating your plan. Please try again." };
+
+            // Extract helpful error message
+            let errorMessage = "Sorry, I encountered an error while generating your plan. Please try again.";
+
+            if (error.message && (error.message.includes("api-not-enabled") || error.message.includes("403"))) {
+                errorMessage = "Error: The 'Firebase AI Logic API' is not enabled. Please enable it in the Google Cloud Console.";
+            } else if (error.message && error.message.includes("GEN_AI_CONFIG_NOT_FOUND")) {
+                errorMessage = "Error: Missing Gemini Developer API Key. Please configure it in Firebase Console -> AI Logic -> Settings.";
+            } else if (error.message) {
+                errorMessage = `Error: ${error.message}`;
+            }
+
+            return { message: errorMessage };
         }
     }
 };

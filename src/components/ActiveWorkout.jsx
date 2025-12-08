@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import VideoModal from './VideoModal';
 
-export default function ActiveWorkout({ exercises, workoutName, onFinish, onCancel }) {
+export default function ActiveWorkout({ exercises = [], workoutName, onFinish, onCancel }) {
 
     const [workoutData, setWorkoutData] = useState(
-        exercises.reduce((acc, ex) => ({
+        (exercises || []).reduce((acc, ex) => ({
             ...acc,
             [ex.id]: { sets: [{ weight: '', reps: '' }] }
         }), {})

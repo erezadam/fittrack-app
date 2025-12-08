@@ -6,6 +6,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
     const [loading, setLoading] = useState(false);
     const [muscles, setMuscles] = useState({});
     const [exercises, setExercises] = useState([]);
+    const [aiMessage, setAiMessage] = useState(null); // For displaying AI feedback or errors
 
     // Form State
     const [selectedMuscles, setSelectedMuscles] = useState([]);
@@ -39,8 +40,9 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
     };
 
     const handleGenerate = async () => {
+        setAiMessage(null); // Clear previous messages
         if (selectedMuscles.length === 0) {
-            alert('נא לבחור לפחות שריר אחד');
+            setAiMessage({ type: 'error', text: 'נא לבחור לפחות שריר אחד' });
             return;
         }
 
@@ -59,24 +61,19 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
             // we are overriding the "Interview" phase with direct inputs.
             const lastWorkout = await storageService.getLastWorkout();
 
-            // We need to adapt the aiService to handle this direct input if it expects a conversation.
-            // However, the current aiService.generateWorkoutPlan takes (userHistory, userInputs, availableExercises).
             // We can pass our structured inputs directly.
-
             const response = await aiService.generateWorkoutPlan(lastWorkout, userInputs, exercises);
 
             if (response.plan) {
                 onStartWorkout(response.plan.exercises, response.plan.name || "AI Generated Workout");
                 onClose();
             } else if (response.message) {
-                // If AI returns a message instead of a plan (maybe asking for more info?), 
-                // we might need to handle it, but for this "One-Shot" generator, we expect a plan.
-                // Let's alert the message if no plan.
-                alert(response.message);
+                // If AI returns a message instead of a plan, show it in UI
+                setAiMessage({ type: 'info', text: response.message });
             }
         } catch (error) {
             console.error("AI Generation Error:", error);
-            alert("אירעה שגיאה ביצירת האימון. אנא נסה שנית.");
+            setAiMessage({ type: 'error', text: "אירעה שגיאה ביצירת האימון. אנא נסה שנית." });
         } finally {
             setLoading(false);
         }
@@ -193,7 +190,17 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                                             : 'border-transparent bg-white text-gray-500 hover:bg-gray-50 shadow-sm'
                                             }`}
                                     >
-                                        <span className="text-2xl filter drop-shadow-sm">{mapping.icon || '💪'}</span>
+                                        <div className="text-2xl filter drop-shadow-sm">
+                                            {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
+                                                <img
+                                                    src={mapping.icon}
+                                                    alt={mapping.label}
+                                                    className="w-8 h-8 object-contain mx-auto"
+                                                />
+                                            ) : (
+                                                <span>{mapping.icon || '💪'}</span>
+                                            )}
+                                        </div>
                                         <span className="font-bold text-xs">{mapping.label}</span>
                                     </button>
                                 );
@@ -202,6 +209,17 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                     </div>
 
                 </div>
+
+                {/* AI Message Area */}
+                {aiMessage && (
+                    <div className={`mx-6 mb-2 p-4 rounded-xl text-sm font-medium flex items-start gap-3 ${aiMessage.type === 'error'
+                            ? 'bg-red-50 text-red-700 border border-red-100'
+                            : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        }`}>
+                        <span className="text-lg">{aiMessage.type === 'error' ? '⚠️' : '🤖'}</span>
+                        <p>{aiMessage.text}</p>
+                    </div>
+                )}
 
                 {/* Footer Action */}
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50 backdrop-blur-sm">

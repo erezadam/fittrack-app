@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
-import { storage } from '../lib/firebase';
+import { db } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { WORKOUT_TYPES } from '../data/initialData';
 

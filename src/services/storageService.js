@@ -1,4 +1,4 @@
-import { db } from '../lib/firebase';
+import { db } from '../firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, setDoc, query, orderBy, limit } from 'firebase/firestore';
 import { initialExercises, initialMuscles } from '../data/initialData';
 
