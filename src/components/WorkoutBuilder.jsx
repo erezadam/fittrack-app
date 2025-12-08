@@ -239,6 +239,11 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                         {selectedTemplateId === 'new' ? 'המשך לבחירת תרגילים ←' : 'התחל אימון ←'}
                     </button>
                 </div>
+
+                {/* Version Footer */}
+                <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
+                    Version: a8069a7 | Date: 08/12/2025
+                </div>
             </div>
         );
     }

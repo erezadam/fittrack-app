@@ -47,7 +47,7 @@ const Dashboard = ({ onCreateWorkout }) => {
 
         if (sortedLogs.length > 0) {
             const lastWorkoutDate = new Date(sortedLogs[0].timestamp);
-            lastDate = lastWorkoutDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' });
+            lastDate = lastWorkoutDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: 'Asia/Jerusalem' });
 
             // Simple streak calculation (consecutive days with workouts)
             // This is a simplified version. For robust streak, we need to check gaps.

@@ -96,6 +96,10 @@ export const aiService = {
                 If the "User Inputs" object above contains data (duration, targetMuscles, etc.), you MUST SKIP the "Interview" phase entirely.
                 IMMEDIATELY proceed to "Phase 3: Smart Plan Generation" and generate the full workout plan JSON.
                 Do NOT ask questions like "Daily or Weekly?" or "What is your goal?". Use the provided inputs.
+
+                **VOLUME & PACE INSTRUCTION:**
+                Plan for a high-volume workout: exactly ${Math.round((userInputs.duration || 60) / 60 * 9)} exercises.
+                Keep rest periods short to fit this volume.
                 
                 **CRITICAL OUTPUT FORMAT:**
                 You MUST return a JSON object with this EXACT structure:
