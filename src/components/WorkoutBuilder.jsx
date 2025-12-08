@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import AIWorkoutModal from './AIWorkoutModal';
+import { Dumbbell, Activity, Footprints, Shirt, HeartPulse, User, Zap, BicepsFlexed } from 'lucide-react';
+
+const MUSCLE_ICONS = {
+    chest: Shirt,
+    back: User,
+    legs: Footprints,
+    arms: Dumbbell,
+    shoulders: BicepsFlexed,
+    cardio: HeartPulse,
+    core: Zap,
+    abs: Zap,
+    fullbody: Activity
+};
 
 export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
     // Flow State: 'dashboard' -> 'selection'
@@ -208,16 +221,20 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
                                                 : 'hover:translate-y-[-2px]'
                                                 }`}
                                         >
-                                            <div className="text-4xl mb-2">
+                                            <div className="text-4xl mb-2 flex justify-center">
                                                 {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
                                                     <img
                                                         src={mapping.icon}
                                                         alt={mapping.label}
                                                         className="w-12 h-12 object-contain mx-auto"
                                                     />
-                                                ) : (
-                                                    <span>{mapping.icon || '💪'}</span>
-                                                )}
+                                                ) : (() => {
+                                                    const IconComponent = MUSCLE_ICONS[m.toLowerCase()] || MUSCLE_ICONS[mapping.label.toLowerCase()] || null;
+                                                    if (IconComponent) {
+                                                        return <IconComponent size={40} strokeWidth={1.5} className={isSelected ? 'text-cyan-500' : 'text-slate-400'} />;
+                                                    }
+                                                    return <span>{mapping.icon || '💪'}</span>;
+                                                })()}
                                             </div>
                                             <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
                                                 {mapping.label}
@@ -242,7 +259,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    Version: a8069a7 | Date: 08/12/2025
+                    גרסה: 72fece9 | תאריך: 08/12/2025
                 </div>
             </div>
         );

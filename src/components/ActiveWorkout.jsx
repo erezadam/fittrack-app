@@ -74,11 +74,11 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
 
             console.log("Saving workout data:", JSON.stringify(logData, null, 2));
             await storageService.saveWorkout(logData);
-            alert('Workout saved to database!');
+            alert('האימון נשמר בהצלחה!');
             onFinish();
         } catch (error) {
             console.error("Failed to save workout:", error);
-            alert("Failed to save workout. Please try again.");
+            alert("שגיאה בשמירת האימון. אנא נסה שנית.");
         } finally {
             setIsSaving(false);
         }
@@ -88,7 +88,7 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-800 border-r-4 border-teal-500 pr-3">
-                    {workoutName || 'Active Workout'}
+                    {workoutName || 'אימון פעיל'}
                 </h2>
                 <button onClick={onCancel} className="neu-btn text-red-500 hover:text-red-600 text-sm px-4">
                     ביטול
@@ -105,7 +105,7 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
                                     {historyStats[ex.id] ? (
                                         <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-medium border border-teal-100">
                                             <span>↺</span>
-                                            <span>פעם שעברה: {historyStats[ex.id].weight}kg / {historyStats[ex.id].reps} reps</span>
+                                            <span>פעם שעברה: {historyStats[ex.id].weight} ק"ג / {historyStats[ex.id].reps} חזרות</span>
                                         </span>
                                     ) : (
                                         <span className="text-gray-400 italic text-sm">
@@ -131,22 +131,22 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
                                     <div className="flex-1 relative">
                                         <input
                                             type="number"
-                                            placeholder="kg"
+                                            placeholder="ק״ג"
                                             className="neu-input text-center font-bold"
                                             value={set.weight}
                                             onChange={(e) => updateSet(ex.id, idx, 'weight', e.target.value)}
                                         />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">kg</span>
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
                                     </div>
                                     <div className="flex-1 relative">
                                         <input
                                             type="number"
-                                            placeholder="reps"
+                                            placeholder="חזרות"
                                             className="neu-input text-center font-bold"
                                             value={set.reps}
                                             onChange={(e) => updateSet(ex.id, idx, 'reps', e.target.value)}
                                         />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">reps</span>
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">חזרות</span>
                                     </div>
                                     {idx > 0 && (
                                         <button

@@ -7,41 +7,41 @@ export const WORKOUT_TYPES = [
 
 export const initialExercises = [
     // Chest
-    { id: 'c1', name: 'Bench Press', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'משקולות חופשיות' },
-    { id: 'c2', name: 'Incline Dumbbell Press', mainMuscle: 'Chest', subMuscle: 'חזה עליון', equipment: 'משקולות חופשיות', video_url: 'https://www.youtube.com/watch?v=8iPEnn-ltC8' },
-    { id: 'c3', name: 'Cable Flys', mainMuscle: 'Chest', subMuscle: 'חזה פנימי', equipment: 'כבלים' },
-    { id: 'c4', name: 'Push Ups', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'משקל גוף' },
-    { id: 'c5', name: 'Chest Press Machine', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'מכשירים' },
+    { id: 'c1', name: 'לחיצת חזה (מוט)', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'משקולות חופשיות' },
+    { id: 'c2', name: 'לחיצת חזה בשיפוע עליון (משקולות יד)', mainMuscle: 'Chest', subMuscle: 'חזה עליון', equipment: 'משקולות חופשיות', video_url: 'https://www.youtube.com/watch?v=8iPEnn-ltC8' },
+    { id: 'c3', name: 'פרפר בכבלים', mainMuscle: 'Chest', subMuscle: 'חזה פנימי', equipment: 'כבלים' },
+    { id: 'c4', name: 'שכיבות סמיכה', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'משקל גוף' },
+    { id: 'c5', name: 'לחיצת חזה במכונה', mainMuscle: 'Chest', subMuscle: 'חזה מרכזי', equipment: 'מכשירים' },
 
     // Back
-    { id: 'b1', name: 'Pull Ups', mainMuscle: 'Back', subMuscle: 'רחב גבי', equipment: 'משקל גוף' },
-    { id: 'b2', name: 'Lat Pulldown', mainMuscle: 'Back', subMuscle: 'רחב גבי', equipment: 'כבלים' },
-    { id: 'b3', name: 'Bent Over Row', mainMuscle: 'Back', subMuscle: 'מרכז גב', equipment: 'משקולות חופשיות' },
-    { id: 'b4', name: 'Face Pulls', mainMuscle: 'Back', subMuscle: 'טרפזים', equipment: 'כבלים' },
-    { id: 'b5', name: 'Seated Row Machine', mainMuscle: 'Back', subMuscle: 'מרכז גב', equipment: 'מכשירים' },
+    { id: 'b1', name: 'מתח', mainMuscle: 'Back', subMuscle: 'רחב גבי', equipment: 'משקל גוף' },
+    { id: 'b2', name: 'משיכת פולי עליון', mainMuscle: 'Back', subMuscle: 'רחב גבי', equipment: 'כבלים' },
+    { id: 'b3', name: 'חתירה בהטיה (Bent Over Row)', mainMuscle: 'Back', subMuscle: 'מרכז גב', equipment: 'משקולות חופשיות' },
+    { id: 'b4', name: 'Face Pulls (משיכת פנים)', mainMuscle: 'Back', subMuscle: 'טרפזים', equipment: 'כבלים' },
+    { id: 'b5', name: 'חתירה בישיבה במכונה', mainMuscle: 'Back', subMuscle: 'מרכז גב', equipment: 'מכשירים' },
 
     // Legs
-    { id: 'l1', name: 'Squat', mainMuscle: 'Legs', subMuscle: 'ארבע ראשי', equipment: 'משקולות חופשיות' },
-    { id: 'l2', name: 'Leg Press', mainMuscle: 'Legs', subMuscle: 'ארבע ראשי', equipment: 'מכשירים' },
-    { id: 'l3', name: 'Romanian Deadlift', mainMuscle: 'Legs', subMuscle: 'המסטרינג', equipment: 'משקולות חופשיות' },
-    { id: 'l4', name: 'Leg Extensions', mainMuscle: 'Legs', subMuscle: 'ארבע ראשי', equipment: 'מכשירים' },
-    { id: 'l5', name: 'Calf Raises', mainMuscle: 'Legs', subMuscle: 'תאומים', equipment: 'מכשירים' },
+    { id: 'l1', name: 'סקוואט (Squat)', mainMuscle: 'Legs', subMuscle: 'ארבע ראשי', equipment: 'משקולות חופשיות' },
+    { id: 'l2', name: 'לחיצת רגליים (Leg Press)', mainMuscle: 'Legs', subMuscle: 'ארבע ראשי', equipment: 'מכשירים' },
+    { id: 'l3', name: 'דדליפט רומני', mainMuscle: 'Legs', subMuscle: 'המסטרינג', equipment: 'משקולות חופשיות' },
+    { id: 'l4', name: 'פשיטת ברכיים', mainMuscle: 'Legs', subMuscle: 'ארבע ראשי', equipment: 'מכשירים' },
+    { id: 'l5', name: 'הרמת עקבים (תאומים)', mainMuscle: 'Legs', subMuscle: 'תאומים', equipment: 'מכשירים' },
 
     // Shoulders
-    { id: 's1', name: 'Overhead Press', mainMuscle: 'Shoulders', subMuscle: 'כתף קדמית', equipment: 'משקולות חופשיות' },
-    { id: 's2', name: 'Lateral Raises', mainMuscle: 'Shoulders', subMuscle: 'כתף אמצעית', equipment: 'משקולות חופשיות' },
-    { id: 's3', name: 'Face Pulls', mainMuscle: 'Shoulders', subMuscle: 'כתף אחורית', equipment: 'כבלים' },
+    { id: 's1', name: 'לחיצת כתפיים (Overhead Press)', mainMuscle: 'Shoulders', subMuscle: 'כתף קדמית', equipment: 'משקולות חופשיות' },
+    { id: 's2', name: 'הרחקת כתפיים לצדדים', mainMuscle: 'Shoulders', subMuscle: 'כתף אמצעית', equipment: 'משקולות חופשיות' },
+    { id: 's3', name: 'פרפר הפוך (כתף אחורית)', mainMuscle: 'Shoulders', subMuscle: 'כתף אחורית', equipment: 'כבלים' },
 
     // Arms
-    { id: 'a1', name: 'Bicep Curls', mainMuscle: 'Arms', subMuscle: 'יד קדמית', equipment: 'משקולות חופשיות' },
-    { id: 'a2', name: 'Tricep Pushdown', mainMuscle: 'Arms', subMuscle: 'יד אחורית', equipment: 'כבלים' },
-    { id: 'a3', name: 'Hammer Curls', mainMuscle: 'Arms', subMuscle: 'יד קדמית', equipment: 'משקולות חופשיות' },
-    { id: 'a4', name: 'Skull Crushers', mainMuscle: 'Arms', subMuscle: 'יד אחורית', equipment: 'משקולות חופשיות' },
+    { id: 'a1', name: 'כפיפת מרפקים (Bicep Curls)', mainMuscle: 'Arms', subMuscle: 'יד קדמית', equipment: 'משקולות חופשיות' },
+    { id: 'a2', name: 'פשיטת מרפקים בכבל (Tricep Pushdown)', mainMuscle: 'Arms', subMuscle: 'יד אחורית', equipment: 'כבלים' },
+    { id: 'a3', name: 'כפיפת פטישים', mainMuscle: 'Arms', subMuscle: 'יד קדמית', equipment: 'משקולות חופשיות' },
+    { id: 'a4', name: 'לחיצה צרפתית (Skull Crushers)', mainMuscle: 'Arms', subMuscle: 'יד אחורית', equipment: 'משקולות חופשיות' },
 
     // Core
-    { id: 'cr3', name: 'Leg Raises', mainMuscle: 'Core', subMuscle: 'בטן תחתונה', equipment: 'Bodyweight' },
-    { id: 'cr4', name: 'Russian Twists', mainMuscle: 'Core', subMuscle: 'אלכסונים', equipment: 'Bodyweight' },
-    { id: 'cr5', name: 'Ab Wheel Rollout', mainMuscle: 'Core', subMuscle: 'בטן עליונה', equipment: 'Other' }
+    { id: 'cr3', name: 'הרמות רגליים', mainMuscle: 'Core', subMuscle: 'בטן תחתונה', equipment: 'משקל גוף' },
+    { id: 'cr4', name: 'טוויסט רוסי', mainMuscle: 'Core', subMuscle: 'אלכסונים', equipment: 'משקל גוף' },
+    { id: 'cr5', name: 'גלגלת בטן', mainMuscle: 'Core', subMuscle: 'בטן עליונה', equipment: 'אחר' }
 ];
 
 export const initialMuscles = {

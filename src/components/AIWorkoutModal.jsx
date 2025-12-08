@@ -92,7 +92,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                             <span className="text-2xl">⚡</span>
                         </div>
                         <div>
-                            <h2 className="font-bold text-xl tracking-wide">Apex AI Coach</h2>
+                            <h2 className="font-bold text-xl tracking-wide">מאמן AI</h2>
                             <p className="text-xs text-teal-50 font-medium">הגדרת אימון חכם</p>
                         </div>
                     </div>
@@ -213,8 +213,8 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                 {/* AI Message Area */}
                 {aiMessage && (
                     <div className={`mx-6 mb-2 p-4 rounded-xl text-sm font-medium flex items-start gap-3 ${aiMessage.type === 'error'
-                            ? 'bg-red-50 text-red-700 border border-red-100'
-                            : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        ? 'bg-red-50 text-red-700 border border-red-100'
+                        : 'bg-blue-50 text-blue-700 border border-blue-100'
                         }`}>
                         <span className="text-lg">{aiMessage.type === 'error' ? '⚠️' : '🤖'}</span>
                         <p>{aiMessage.text}</p>

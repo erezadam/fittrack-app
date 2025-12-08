@@ -118,6 +118,12 @@ export const aiService = {
                   }
                 }
                 
+                **LANGUAGE INSTRUCTION:**
+                All output MUST be in Hebrew (עברית).
+                - The "message" field must be in Hebrew.
+                - The "plan.name" field must be a creative workout name in Hebrew (e.g., "אימון חזה וידיים מפלצתי").
+                - The exercise names in the plan MUST match the Hebrew names provided in "Available Exercises".
+
                 If generating a plan, ensure it uses ONLY the available exercises provided in the context. Do not invent new exercises.
             `;
 
