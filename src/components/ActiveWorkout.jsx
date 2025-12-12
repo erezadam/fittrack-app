@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import VideoModal from './VideoModal';
+import ImageGalleryModal from './ImageGalleryModal';
 
 export default function ActiveWorkout({ exercises = [], workoutName, onFinish, onCancel }) {
 
@@ -13,6 +14,7 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
 
     const [historyStats, setHistoryStats] = useState({});
     const [selectedVideo, setSelectedVideo] = useState(null); // { url, title } or null
+    const [selectedImages, setSelectedImages] = useState(null); // { images: [], title: '' } or null
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -114,14 +116,24 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
                                     )}
                                 </div>
                             </div>
-                            {ex.video_url && (
-                                <button
-                                    onClick={() => setSelectedVideo({ url: ex.video_url, title: ex.name })}
-                                    className="neu-btn text-xs px-3 py-2"
-                                >
-                                    🎥 וידאו
-                                </button>
-                            )}
+                            <div className="flex gap-2">
+                                {ex.video_url && (
+                                    <button
+                                        onClick={() => setSelectedVideo({ url: ex.video_url, title: ex.name })}
+                                        className="neu-btn text-xs px-3 py-2"
+                                    >
+                                        🎥 וידאו
+                                    </button>
+                                )}
+                                {ex.imageUrls && ex.imageUrls.length > 0 && (
+                                    <button
+                                        onClick={() => setSelectedImages({ images: ex.imageUrls, title: ex.name })}
+                                        className="neu-btn text-xs px-3 py-2"
+                                    >
+                                        📷 תמונות
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-3">
@@ -186,6 +198,13 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
                 onClose={() => setSelectedVideo(null)}
                 videoUrl={selectedVideo?.url}
                 title={selectedVideo?.title}
+            />
+
+            <ImageGalleryModal
+                isOpen={!!selectedImages}
+                onClose={() => setSelectedImages(null)}
+                images={selectedImages?.images || []}
+                title={selectedImages?.title}
             />
         </div>
     );

@@ -65,7 +65,7 @@ export default function AdminPage({ onBack }) {
                 setExercises([...exercises, savedEx]);
             }
             setEditingExercise(null);
-            setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' });
+            setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] });
         } catch (error) {
             console.error("Failed to save exercise", error);
             alert("שגיאה בשמירת תרגיל");
@@ -76,7 +76,7 @@ export default function AdminPage({ onBack }) {
 
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
-        setExForm({ name: ex.name, mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', video_url: ex.video_url || '' });
+        setExForm({ name: ex.name, mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
         window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
@@ -431,6 +431,68 @@ export default function AdminPage({ onBack }) {
                                 value={exForm.video_url}
                                 onChange={e => setExForm({ ...exForm, video_url: e.target.value })}
                             />
+
+                            {/* Image Upload Section */}
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">תמונות (אופציונלי):</label>
+                                <div className="flex flex-wrap gap-4 items-center">
+                                    <label className="neu-btn text-xs cursor-pointer bg-white border border-gray-200 hover:bg-gray-50">
+                                        📷 הוסף תמונות
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const files = Array.from(e.target.files);
+                                                if (files.length === 0) return;
+
+                                                setLoading(true);
+                                                try {
+                                                    const newUrls = [];
+                                                    for (const file of files) {
+                                                        const storageRef = ref(storage, `exercises/${file.name}_${Date.now()}`);
+                                                        await uploadBytes(storageRef, file);
+                                                        const url = await getDownloadURL(storageRef);
+                                                        newUrls.push(url);
+                                                    }
+                                                    setExForm(prev => ({
+                                                        ...prev,
+                                                        imageUrls: [...(prev.imageUrls || []), ...newUrls]
+                                                    }));
+                                                } catch (error) {
+                                                    console.error("Failed to upload images", error);
+                                                    alert("שגיאה בהעלאת תמונות");
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+
+                                {/* Image Preview List */}
+                                {exForm.imageUrls && exForm.imageUrls.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {exForm.imageUrls.map((url, idx) => (
+                                            <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                                                <img src={url} alt="preview" className="w-full h-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setExForm(prev => ({
+                                                        ...prev,
+                                                        imageUrls: prev.imageUrls.filter((_, i) => i !== idx)
+                                                    }))}
+                                                    className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity font-bold"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex gap-4">
                                 <button type="button" onClick={handleSaveExercise} className="neu-btn primary flex-1">
                                     {editingExercise ? 'שמור שינויים' : 'הוסף תרגיל'}
@@ -438,7 +500,7 @@ export default function AdminPage({ onBack }) {
                                 {editingExercise && (
                                     <button
                                         type="button"
-                                        onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' }); }}
+                                        onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] }); }}
                                         className="neu-btn"
                                     >
                                         ביטול
