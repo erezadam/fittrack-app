@@ -15,7 +15,7 @@ const MUSCLE_ICONS = {
     fullbody: Activity
 };
 
-export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
+export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
     const [showAICoach, setShowAICoach] = useState(false);
@@ -39,14 +39,14 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
         // storageService.resetData(); // Uncomment to force update data
         storageService.initialize();
         loadData();
-    }, []);
+    }, [user]);
 
     const loadData = async () => {
         try {
             const exList = await storageService.getExercises();
             setExercises(exList);
 
-            const userTemplates = await storageService.getTemplates();
+            const userTemplates = await storageService.getTemplates(user?.id);
             setTemplates(userTemplates);
 
             const muscleData = await storageService.getMuscles();
@@ -134,7 +134,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
         // Save as template if new
         if (selectedTemplateId === 'new') {
-            storageService.saveTemplate(workoutName, selectedExercises).catch(console.error);
+            storageService.saveTemplate(workoutName, selectedExercises, user?.id).catch(console.error);
         }
 
         onStartWorkout(selectedExercises, workoutName);
@@ -149,6 +149,9 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
             <div className="container mx-auto px-4 py-8 max-w-4xl">
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex gap-4">
+                        <button onClick={onBack} className="neu-btn text-sm">
+                            → חזרה
+                        </button>
                         <button onClick={onOpenAdmin} className="neu-btn text-sm">
                             <span>⚙</span> מנהל
                         </button>
@@ -259,7 +262,7 @@ export default function WorkoutBuilder({ onStartWorkout, onOpenAdmin }) {
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: 72fece9 | תאריך: 08/12/2025
+                    גרסה: 8f2a1b3 | תאריך: 13/12/2025
                 </div>
             </div>
         );

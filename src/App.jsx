@@ -2,11 +2,38 @@ import React, { useState, useEffect } from 'react';
 import WorkoutBuilder from './components/WorkoutBuilder';
 import ActiveWorkout from './components/ActiveWorkout';
 import AdminPage from './components/AdminPage';
+import UserDashboard from './components/UserDashboard';
+
+import LoginScreen from './components/LoginScreen';
 
 function App() {
-  const [view, setView] = useState('builder'); // builder, active, admin
+  const [user, setUser] = useState({
+    firstName: 'Dev',
+    lastName: 'Mode',
+    phone: '0500000000',
+    isAdmin: true,
+    id: 'dev_user_id'
+  });
+  console.log("App Rendered - User State:", user);
+
+  const [view, setView] = useState('dashboard'); // dashboard, builder, active, admin
   const [activeExercises, setActiveExercises] = useState([]);
   const [activeWorkoutName, setActiveWorkoutName] = useState('');
+
+  // useEffect(() => {
+  //   // Legacy auto-login logic if needed later
+  // }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    // localStorage.setItem('fittrack_user', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    // localStorage.removeItem('fittrack_user');
+    setView('dashboard');
+  };
 
   const startWorkout = (exercises, name) => {
     setActiveExercises(exercises);
@@ -15,22 +42,37 @@ function App() {
   };
 
   const finishWorkout = () => {
-    setView('builder');
+    setView('dashboard'); // Return to dashboard after workout
     setActiveExercises([]);
     setActiveWorkoutName('');
   };
 
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <div>
+      {view === 'dashboard' && (
+        <UserDashboard
+          user={user}
+          onNavigateToBuilder={() => setView('builder')}
+          onLogout={handleLogout}
+        />
+      )}
+
       {view === 'builder' && (
         <WorkoutBuilder
+          user={user}
           onStartWorkout={startWorkout}
           onOpenAdmin={() => setView('admin')}
+          onBack={() => setView('dashboard')}
         />
       )}
 
       {view === 'active' && (
         <ActiveWorkout
+          user={user}
           exercises={activeExercises}
           workoutName={activeWorkoutName}
           onFinish={finishWorkout}
@@ -40,6 +82,7 @@ function App() {
 
       {view === 'admin' && (
         <AdminPage
+          user={user}
           onBack={() => setView('builder')}
         />
       )}

@@ -12,8 +12,8 @@ const firebaseConfig = {
   appId: "1:605737443158:web:b0f878c7f3e2749e6500f7"
 };
 
-// SAFETY CHECK: Prevent duplicate initialization crash
-export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// התיקון: הוספנו export const app כדי שקבצים אחרים יוכלו להשתמש בו
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);

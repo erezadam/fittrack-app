@@ -65,7 +65,18 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
             const response = await aiService.generateWorkoutPlan(lastWorkout, userInputs, exercises);
 
             if (response.plan) {
-                onStartWorkout(response.plan.exercises, response.plan.name || "AI Generated Workout");
+                // Merge AI plan with full exercise data (images, etc.)
+                const fullExercises = response.plan.exercises.map(aiEx => {
+                    const originalEx = exercises.find(e => e.id === aiEx.id);
+                    return {
+                        ...originalEx, // Contains imageUrls, video_url, etc.
+                        ...aiEx,       // Contains sets, reps, weight from AI
+                        // Ensure we keep the ID from the AI if it matches, or original. 
+                        // The AI is instructed to use the ID from the list.
+                    };
+                });
+
+                onStartWorkout(fullExercises, response.plan.name || "AI Generated Workout");
                 onClose();
             } else if (response.message) {
                 // If AI returns a message instead of a plan, show it in UI

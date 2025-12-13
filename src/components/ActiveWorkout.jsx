@@ -3,7 +3,7 @@ import { storageService } from '../services/storageService';
 import VideoModal from './VideoModal';
 import ImageGalleryModal from './ImageGalleryModal';
 
-export default function ActiveWorkout({ exercises = [], workoutName, onFinish, onCancel }) {
+export default function ActiveWorkout({ user, exercises = [], workoutName, onFinish, onCancel }) {
 
     const [workoutData, setWorkoutData] = useState(
         (exercises || []).reduce((acc, ex) => ({
@@ -21,7 +21,7 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
             console.log("Fetching history for exercises:", exercises.map(e => e.id));
             const stats = {};
             for (const ex of exercises) {
-                const performance = await storageService.getLastExercisePerformance(ex.id);
+                const performance = await storageService.getLastExercisePerformance(ex.id, user?.id);
                 console.log(`Performance for ${ex.name} (${ex.id}):`, performance);
                 if (performance) {
                     stats[ex.id] = performance;
@@ -31,7 +31,7 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
             setHistoryStats(stats);
         };
         fetchHistory();
-    }, [exercises]);
+    }, [exercises, user]);
 
     const updateSet = (exId, setIndex, field, value) => {
         const currentSets = [...workoutData[exId].sets];
@@ -75,7 +75,7 @@ export default function ActiveWorkout({ exercises = [], workoutName, onFinish, o
             };
 
             console.log("Saving workout data:", JSON.stringify(logData, null, 2));
-            await storageService.saveWorkout(logData);
+            await storageService.saveWorkout(logData, user?.id);
             alert('האימון נשמר בהצלחה!');
             onFinish();
         } catch (error) {

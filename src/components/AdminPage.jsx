@@ -4,7 +4,22 @@ import { db, storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { WORKOUT_TYPES } from '../data/initialData';
 
-export default function AdminPage({ onBack }) {
+import { migrateMuscleNames, seedMissingExercises } from '../utils/fixData';
+
+export default function AdminPage({ user, onBack }) {
+    if (!user || !user.isAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
+                <div className="text-6xl mb-4">🚫</div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">אין לך הרשאה לצפות בדף זה</h2>
+                <p className="text-gray-500 mb-6">דף זה מיועד למנהלי מערכת בלבד.</p>
+                <button onClick={onBack} className="neu-btn primary">
+                    חזור לדף הבית
+                </button>
+            </div>
+        );
+    }
+
     const [activeTab, setActiveTab] = useState('exercises'); // 'exercises' | 'muscles'
     const [exercises, setExercises] = useState([]);
     const [muscles, setMuscles] = useState({});
@@ -12,13 +27,14 @@ export default function AdminPage({ onBack }) {
 
     // Exercise Form State
     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
-    const [exForm, setExForm] = useState({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '' });
+    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] });
 
     // Muscle Form State
     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
     const [muscleForm, setMuscleForm] = useState({ key: '', label: '', icon: '', subMuscles: [] });
     const [muscleIconFile, setMuscleIconFile] = useState(null);
     const [newSubMuscle, setNewSubMuscle] = useState('');
+    const [tempImageUrl, setTempImageUrl] = useState('');
 
     // Filter State
     const [filterMainMuscle, setFilterMainMuscle] = useState('');
@@ -30,11 +46,15 @@ export default function AdminPage({ onBack }) {
 
     const loadData = async () => {
         setLoading(true);
+        console.log("AdminPage: loadData started");
         try {
             const [exData, muscleData] = await Promise.all([
                 storageService.getExercises(),
                 storageService.getMuscles()
             ]);
+            console.log("AdminPage: Data loaded", { exDataCount: exData.length, muscleDataCount: Object.keys(muscleData).length });
+            console.log("AdminPage: First exercise:", exData[0]);
+
             setExercises(exData);
             setMuscles(muscleData);
         } catch (error) {
@@ -65,7 +85,7 @@ export default function AdminPage({ onBack }) {
                 setExercises([...exercises, savedEx]);
             }
             setEditingExercise(null);
-            setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] });
+            setExForm({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] });
         } catch (error) {
             console.error("Failed to save exercise", error);
             alert("שגיאה בשמירת תרגיל");
@@ -76,7 +96,7 @@ export default function AdminPage({ onBack }) {
 
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
-        setExForm({ name: ex.name, mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
+        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
         window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
@@ -119,13 +139,27 @@ export default function AdminPage({ onBack }) {
                 const line = lines[i].trim();
                 if (!line) continue;
 
+                // Handle CSV parsing with potential commas in quotes (simple split for now, assuming no commas in fields)
+                // If we need robust CSV parsing, we might need a library, but let's stick to split for now as per previous logic.
                 const values = line.split(',');
-                if (values.length < 4) {
+
+                // New format: Hebrew Name, English Name, Main Muscle, Sub Muscle, Equipment, Img1, Img2, Img3
+                // Old format: Name, Main Muscle, Sub Muscle, Equipment, Video URL
+
+                let name, nameEn, mainMuscle, subMuscle, workoutType, video_url, img1, img2, img3;
+
+                if (values.length >= 6) {
+                    // New format (supports 1-3 images)
+                    [name, nameEn, mainMuscle, subMuscle, workoutType, img1, img2, img3] = values.map(v => v ? v.trim() : '');
+                    video_url = '';
+                } else if (values.length >= 4) {
+                    // Fallback to old format logic if columns are few
+                    [name, mainMuscle, subMuscle, workoutType, video_url] = values.map(v => v.trim());
+                    nameEn = '';
+                } else {
                     skipped++;
                     continue;
                 }
-
-                let [name, mainMuscle, subMuscle, workoutType, video_url] = values.map(v => v.trim());
 
                 // Hebrew Mapping Logic
                 if (isHebrew) {
@@ -136,15 +170,18 @@ export default function AdminPage({ onBack }) {
                     } else {
                         // Try to find by key if user put English key in Hebrew CSV? Unlikely but possible.
                         if (!muscles[mainMuscle]) {
-                            skipped++;
-                            continue;
+                            // Try to find case-insensitive match for English key
+                            const keyMatch = Object.keys(muscles).find(k => k.toLowerCase() === mainMuscle.toLowerCase());
+                            if (keyMatch) {
+                                mainMuscle = keyMatch;
+                            } else {
+                                skipped++;
+                                continue;
+                            }
                         }
                     }
 
                     // Map Equipment (Hebrew -> Hebrew/English Key)
-                    // In our app, equipment is stored as Hebrew string (e.g. 'משקולות חופשיות')
-                    // So if the user wrote 'משקולות חופשיות', it's fine.
-                    // But if they wrote 'משקולות', we might want to map it.
                     const equipmentMapping = {
                         'משקולות': 'משקולות חופשיות',
                         'משקולת': 'משקולות חופשיות',
@@ -168,7 +205,7 @@ export default function AdminPage({ onBack }) {
                     mainMuscle = muscleKey;
                 }
 
-                // Common Type Mapping (English -> Hebrew) - kept for backward compatibility or mixed usage
+                // Common Type Mapping (English -> Hebrew)
                 const typeMapping = {
                     'Machine': 'מכשירים',
                     'Free Weight': 'משקולות חופשיות',
@@ -182,19 +219,21 @@ export default function AdminPage({ onBack }) {
                 let finalType = workoutType;
                 if (typeMapping[workoutType]) finalType = typeMapping[workoutType];
                 else if (!WORKOUT_TYPES.includes(workoutType)) {
-                    // If it's not a valid type, default or skip? 
-                    // Let's default to Free Weight if unknown, or keep as is if it matches Hebrew.
                     if (!Object.values(typeMapping).includes(workoutType)) {
                         finalType = 'משקולות חופשיות';
                     }
                 }
 
+                const imageUrls = [img1, img2, img3].filter(url => url && url.startsWith('http'));
+
                 newExercises.push({
                     name,
+                    nameEn,
                     mainMuscle,
                     subMuscle,
                     equipment: finalType,
-                    video_url: video_url || ''
+                    video_url: video_url || '',
+                    imageUrls
                 });
             }
 
@@ -336,8 +375,8 @@ export default function AdminPage({ onBack }) {
             <div className="neu-card mb-8 flex flex-wrap gap-4 items-center">
                 <span className="font-bold text-sm text-gray-600">פעולות מהירות:</span>
                 <a
-                    href="/exercises_template_he.csv"
-                    download="exercises_template_he.csv"
+                    href="/exercises_template_v2.csv"
+                    download="exercises_template_v2.csv"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="neu-btn text-xs"
@@ -353,8 +392,141 @@ export default function AdminPage({ onBack }) {
                         onChange={handleFileUpload}
                     />
                 </label>
+                <button
+                    onClick={() => {
+                        const missingImages = exercises.filter(ex => !ex.imageUrls || ex.imageUrls.length === 0);
+                        if (missingImages.length === 0) {
+                            alert('כל התרגילים מכילים תמונות! 🎉');
+                            return;
+                        }
+
+                        const csvContent = [
+                            '\uFEFFMain Muscle,Sub Muscle,Hebrew Name,English Name', // Header
+                            ...missingImages.map(ex => {
+                                // Escape commas in fields
+                                const clean = (str) => `"${(str || '').replace(/"/g, '""')}"`;
+                                return `${clean(muscles[ex.mainMuscle]?.label || ex.mainMuscle)},${clean(ex.subMuscle)},${clean(ex.name)},${clean(ex.nameEn)}`;
+                            })
+                        ].join('\n');
+
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.setAttribute('download', 'exercises_missing_images.csv');
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }}
+                    className="neu-btn text-xs bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100"
+                >
+                    ⚠️ דוח חסרי תמונות
+                </button>
+                <button
+                    onClick={async () => {
+                        if (window.confirm('⚠️ פעולה בלתי הפיכה! האם אתה בטוח שברצונך למחוק את כל התרגילים מהמערכת?')) {
+                            if (window.confirm('אישור סופי: כל התרגילים יימחקו. האם להמשיך?')) {
+                                setLoading(true);
+                                try {
+                                    await storageService.deleteAllExercises();
+                                    setExercises([]);
+                                    alert('כל התרגילים נמחקו בהצלחה.');
+                                } catch (error) {
+                                    console.error("Failed to delete all exercises", error);
+                                    alert("שגיאה במחיקת תרגילים");
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }
+                        }
+                    }}
+                    className="neu-btn text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                >
+                    🗑️ מחק תרגילים
+                </button>
+                <button
+                    onClick={async () => {
+                        if (window.confirm('⚠️ האם אתה בטוח שברצונך למחוק את כל תבניות האימון?')) {
+                            setLoading(true);
+                            try {
+                                await storageService.deleteAllTemplates();
+                                alert('כל תבניות האימון נמחקו בהצלחה.');
+                            } catch (error) {
+                                console.error("Failed to delete templates", error);
+                                alert("שגיאה במחיקת תבניות");
+                            } finally {
+                                setLoading(false);
+                            }
+                        }
+                    }}
+                    className="neu-btn text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                >
+                    🗑️ מחק תבניות
+                </button>
+                <button
+                    onClick={async () => {
+                        if (window.confirm('⚠️ האם אתה בטוח שברצונך למחוק את כל היסטוריית האימונים?')) {
+                            setLoading(true);
+                            try {
+                                await storageService.deleteAllWorkoutLogs();
+                                alert('כל היסטוריית האימונים נמחקה בהצלחה.');
+                            } catch (error) {
+                                console.error("Failed to delete logs", error);
+                                alert("שגיאה במחיקת היסטוריה");
+                            } finally {
+                                setLoading(false);
+                            }
+                        }
+                    }}
+                    className="neu-btn text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                >
+                    🗑️ מחק היסטוריה
+                </button>
                 <button onClick={handleRestoreDefaults} className="neu-btn text-xs">
                     🔄 שחזר ברירת מחדל
+                </button>
+                <button
+                    onClick={migrateMuscleNames}
+                    className="neu-btn text-xs bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100"
+                >
+                    🔧 תקן שמות שרירים (Migration)
+                </button>
+                <button
+                    onClick={seedMissingExercises}
+                    className="neu-btn text-xs bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
+                >
+                    📥 טען תרגילים חסרים
+                </button>
+            </div>
+
+            {/* Developer Options */}
+            <div className="neu-card mb-8 flex flex-wrap gap-4 items-center bg-yellow-50 border-yellow-100">
+                <span className="font-bold text-sm text-yellow-800">🛠️ אפשרויות מפתח:</span>
+                <button
+                    onClick={() => {
+                        const current = localStorage.getItem('fittrack_dev_mode') === 'true';
+                        const next = !current;
+                        localStorage.setItem('fittrack_dev_mode', next);
+                        if (next) {
+                            alert('מצב מפתח הופעל! 🚀\nבטעינה הבאה תיכנס אוטומטית למערכת.');
+                        } else {
+                            alert('מצב מפתח כובה. 🛑\nכעת תידרש לבצע כניסה רגילה.');
+                        }
+                        // Force update UI to reflect state if needed, or just rely on alert
+                        window.location.reload();
+                    }}
+                    className={`neu-btn text-xs ${localStorage.getItem('fittrack_dev_mode') === 'true' ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-600'}`}
+                >
+                    {localStorage.getItem('fittrack_dev_mode') === 'true' ? '✅ Dev Mode פעיל' : '⚪ הפעל Dev Mode'}
+                </button>
+                <button
+                    onClick={() => {
+                        alert(`Debug Info:\nExercises: ${exercises.length}\nMuscles: ${Object.keys(muscles).length}\nFiltered: ${filteredExercises.length}`);
+                        console.log("Debug Exercises:", exercises);
+                    }}
+                    className="neu-btn text-xs bg-gray-800 text-white"
+                >
+                    🐞 Debug Data
                 </button>
             </div>
 
@@ -390,6 +562,12 @@ export default function AdminPage({ onBack }) {
                                 placeholder="שם התרגיל"
                                 value={exForm.name}
                                 onChange={e => setExForm({ ...exForm, name: e.target.value })}
+                            />
+                            <input
+                                className="neu-input"
+                                placeholder="שם התרגיל באנגלית (אופציונלי)"
+                                value={exForm.nameEn}
+                                onChange={e => setExForm({ ...exForm, nameEn: e.target.value })}
                             />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <select
@@ -437,7 +615,7 @@ export default function AdminPage({ onBack }) {
                                 <label className="block text-sm font-bold text-gray-700 mb-2">תמונות (אופציונלי):</label>
                                 <div className="flex flex-wrap gap-4 items-center">
                                     <label className="neu-btn text-xs cursor-pointer bg-white border border-gray-200 hover:bg-gray-50">
-                                        📷 הוסף תמונות
+                                        📷 העלה קבצים
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -469,6 +647,44 @@ export default function AdminPage({ onBack }) {
                                             }}
                                         />
                                     </label>
+
+                                    {/* Manual URL Input */}
+                                    <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                                        <input
+                                            className="neu-input text-xs py-1"
+                                            placeholder="או הדבק לינק לתמונה (GitHub וכו')"
+                                            value={tempImageUrl}
+                                            onChange={e => setTempImageUrl(e.target.value)}
+                                            onKeyPress={e => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    if (tempImageUrl) {
+                                                        setExForm(prev => ({
+                                                            ...prev,
+                                                            imageUrls: [...(prev.imageUrls || []), tempImageUrl]
+                                                        }));
+                                                        setTempImageUrl('');
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (tempImageUrl) {
+                                                    setExForm(prev => ({
+                                                        ...prev,
+                                                        imageUrls: [...(prev.imageUrls || []), tempImageUrl]
+                                                    }));
+                                                    setTempImageUrl('');
+                                                }
+                                            }}
+                                            className="neu-btn text-xs px-3 py-1"
+                                            disabled={!tempImageUrl}
+                                        >
+                                            הוסף
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Image Preview List */}
@@ -500,7 +716,7 @@ export default function AdminPage({ onBack }) {
                                 {editingExercise && (
                                     <button
                                         type="button"
-                                        onClick={() => { setEditingExercise(null); setExForm({ name: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] }); }}
+                                        onClick={() => { setEditingExercise(null); setExForm({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] }); }}
                                         className="neu-btn"
                                     >
                                         ביטול

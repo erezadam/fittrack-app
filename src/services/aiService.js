@@ -1,19 +1,17 @@
 import { app } from "../firebase";
+import { getAI, getGenerativeModel } from "firebase/ai";
 
 // Lazy initialization
-let ai = null;
 let model = null;
 
 const initializeAI = async () => {
-    if (!ai) {
+    if (!model) {
         try {
-            // Dynamic import to prevent load-time crashes
-            const { getAI, getGenerativeModel } = await import("firebase/ai");
-            ai = getAI(app);
+            const ai = getAI(app);
             model = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
         } catch (error) {
-            console.error("Failed to load firebase/ai module:", error);
-            throw new Error("Failed to load AI module. Please check your connection.");
+            console.error("Failed to initialize AI model:", error);
+            throw new Error("Failed to initialize AI. Please check your connection and API key.");
         }
     }
     return model;

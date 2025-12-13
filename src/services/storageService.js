@@ -1,13 +1,54 @@
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, setDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, setDoc, query, orderBy, limit, where } from 'firebase/firestore';
 import { initialExercises, initialMuscles } from '../data/initialData';
 
 const EXERCISE_COLLECTION = 'exercises';
 const MUSCLE_COLLECTION = 'muscles';
 const TEMPLATE_COLLECTION = 'templates';
 const WORKOUT_LOGS_COLLECTION = 'workout_logs';
+const USERS_COLLECTION = 'users';
 
 export const storageService = {
+    // Users
+    loginUser: async (firstName, lastName, phone) => {
+        try {
+            // Normalize phone
+            const cleanPhone = phone.replace(/-/g, '');
+            const ADMIN_PHONE = '0547895818';
+            const isAdmin = cleanPhone === ADMIN_PHONE;
+
+            const q = query(collection(db, USERS_COLLECTION), where('phone', '==', cleanPhone));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+
+                // If user should be admin but isn't marked as such in DB, update it
+                if (isAdmin && !userData.isAdmin) {
+                    await updateDoc(doc(db, USERS_COLLECTION, userDoc.id), { isAdmin: true });
+                    return { id: userDoc.id, ...userData, isAdmin: true };
+                }
+
+                return { id: userDoc.id, ...userData };
+            } else {
+                // Register new user
+                const newUser = {
+                    firstName,
+                    lastName,
+                    phone: cleanPhone,
+                    createdAt: new Date().toISOString(),
+                    isAdmin: isAdmin
+                };
+                const docRef = await addDoc(collection(db, USERS_COLLECTION), newUser);
+                return { id: docRef.id, ...newUser };
+            }
+        } catch (error) {
+            console.error("Error logging in user:", error);
+            throw error;
+        }
+    },
+
     // Exercises
     getExercises: async () => {
         try {
@@ -52,6 +93,20 @@ export const storageService = {
             return id;
         } catch (error) {
             console.error("Error deleting exercise:", error);
+            throw error;
+        }
+    },
+
+    deleteAllExercises: async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, EXERCISE_COLLECTION));
+            const batch = writeBatch(db);
+            querySnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("Error deleting all exercises:", error);
             throw error;
         }
     },
@@ -118,9 +173,13 @@ export const storageService = {
     },
 
     // Templates
-    getTemplates: async () => {
+    getTemplates: async (userId) => {
         try {
-            const querySnapshot = await getDocs(collection(db, TEMPLATE_COLLECTION));
+            let q = collection(db, TEMPLATE_COLLECTION);
+            if (userId) {
+                q = query(q, where('userId', '==', userId));
+            }
+            const querySnapshot = await getDocs(q);
             const templates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             return templates;
         } catch (error) {
@@ -129,7 +188,7 @@ export const storageService = {
         }
     },
 
-    saveTemplate: async (name, exercises) => {
+    saveTemplate: async (name, exercises, userId) => {
         try {
             // We use a numeric ID in the app logic (Date.now()), but Firestore uses string IDs.
             // Let's stick to Firestore IDs for new templates, but we might need to adapt the app logic if it expects numbers.
@@ -138,6 +197,7 @@ export const storageService = {
             const templateData = {
                 name,
                 exercises,
+                userId,
                 createdAt: new Date().toISOString()
             };
             const docRef = await addDoc(collection(db, TEMPLATE_COLLECTION), templateData);
@@ -149,10 +209,11 @@ export const storageService = {
     },
 
     // Workout Logs
-    saveWorkout: async (workoutData) => {
+    saveWorkout: async (workoutData, userId) => {
         try {
             const dataToSave = {
                 ...workoutData,
+                userId,
                 timestamp: new Date().toISOString()
             };
             console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
@@ -164,11 +225,56 @@ export const storageService = {
         }
     },
 
-    getLastExercisePerformance: async (exerciseId) => {
+    getAllWorkoutLogs: async (userId, isAdmin = false) => {
+        try {
+            let q = query(collection(db, WORKOUT_LOGS_COLLECTION), orderBy('timestamp', 'desc'));
+
+            if (!isAdmin && userId) {
+                q = query(collection(db, WORKOUT_LOGS_COLLECTION), where('userId', '==', userId), orderBy('timestamp', 'desc'));
+            }
+
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("Error getting all workout logs:", error);
+            return [];
+        }
+    },
+
+    deleteAllWorkoutLogs: async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, WORKOUT_LOGS_COLLECTION));
+            const batch = writeBatch(db);
+            querySnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("Error deleting all workout logs:", error);
+            throw error;
+        }
+    },
+
+    deleteAllTemplates: async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, TEMPLATE_COLLECTION));
+            const batch = writeBatch(db);
+            querySnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("Error deleting all templates:", error);
+            throw error;
+        }
+    },
+
+    getLastExercisePerformance: async (exerciseId, userId) => {
         try {
             // Query recent workout logs, ordered by date descending
-            const q = query(
+            let q = query(
                 collection(db, WORKOUT_LOGS_COLLECTION),
+                where('userId', '==', userId),
                 orderBy('timestamp', 'desc'),
                 limit(20) // Limit to recent 20 workouts to avoid scanning everything
             );
@@ -211,10 +317,11 @@ export const storageService = {
         }
     },
 
-    getLastWorkout: async () => {
+    getLastWorkout: async (userId) => {
         try {
             const q = query(
                 collection(db, WORKOUT_LOGS_COLLECTION),
+                where('userId', '==', userId),
                 orderBy('timestamp', 'desc'),
                 limit(1)
             );
