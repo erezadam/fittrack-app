@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import AIWorkoutModal from './AIWorkoutModal';
+import ImageGalleryModal from './ImageGalleryModal';
+import { initialExercises } from '../data/initialData';
 import { Dumbbell, Activity, Footprints, Shirt, HeartPulse, User, Zap, BicepsFlexed } from 'lucide-react';
 
 const MUSCLE_ICONS = {
@@ -26,6 +28,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
     const [showAICoach, setShowAICoach] = useState(false);
+    const [selectedImages, setSelectedImages] = useState(null); // { images: [], title: '' } or null
 
     // Data State
     const [exercises, setExercises] = useState([]);
@@ -52,7 +55,31 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     const loadData = async () => {
         try {
             const exList = await storageService.getExercises();
-            setExercises(exList);
+
+            // Merge with local initial data to ensure images are present if missing in DB
+            const mergedExercises = exList.map(ex => {
+                // Try exact ID match first
+                let localEx = initialExercises.find(ie => ie.id === ex.id);
+
+                // If no ID match, try name match (normalized)
+                if (!localEx) {
+                    localEx = initialExercises.find(ie => ie.name.trim() === ex.name.trim());
+                }
+
+                if (localEx && localEx.imageUrls && localEx.imageUrls.length > 0) {
+                    // console.log(`Merging images for ${ex.name}:`, localEx.imageUrls);
+                    if (!ex.imageUrls || ex.imageUrls.length === 0) {
+                        return { ...ex, imageUrls: localEx.imageUrls };
+                    }
+                }
+                return ex;
+            });
+
+            // Debug: Check if specific exercises have images
+            const debugEx = mergedExercises.find(e => e.name.includes('כפיפת מרפקים'));
+            console.log("Debug Bicep Curls:", debugEx);
+
+            setExercises(mergedExercises);
 
             const userTemplates = await storageService.getTemplates(user?.id);
             setTemplates(userTemplates);
@@ -286,7 +313,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: 8f2a1b5 | תאריך: 14/12/2025
+                    גרסה: 8f2a1b9 | תאריך: 14/12/2025
                 </div>
             </div>
         );
@@ -391,7 +418,20 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                                                 }`}
                                         >
                                             <div>
-                                                <div className="font-bold text-gray-800">{ex.name}</div>
+                                                <div className="font-bold text-gray-800 flex items-center gap-2">
+                                                    {ex.name}
+                                                    {ex.imageUrls && ex.imageUrls.length > 0 && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedImages({ images: ex.imageUrls, title: ex.name });
+                                                            }}
+                                                            className="neu-btn text-xs px-2 py-1 ml-2 bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
+                                                        >
+                                                            📷 תמונות
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 <div className="text-xs text-gray-500 mt-1">
                                                     {ex.subMuscle} {ex.subMuscle && ex.equipment ? '•' : ''} {ex.equipment}
                                                 </div>
@@ -420,6 +460,13 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                 </button>
             </div>
             <div className="h-24"></div>
+
+            <ImageGalleryModal
+                isOpen={!!selectedImages}
+                onClose={() => setSelectedImages(null)}
+                images={selectedImages?.images || []}
+                title={selectedImages?.title}
+            />
         </div>
     );
 }
