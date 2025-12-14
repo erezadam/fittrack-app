@@ -218,6 +218,7 @@ export const storageService = {
             };
             console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+            console.log("Workout saved with ID: ", docRef.id);
             return { id: docRef.id, ...dataToSave };
         } catch (error) {
             console.error("Error saving workout log:", error);
@@ -230,11 +231,16 @@ export const storageService = {
             let q = query(collection(db, WORKOUT_LOGS_COLLECTION), orderBy('timestamp', 'desc'));
 
             if (!isAdmin && userId) {
-                q = query(collection(db, WORKOUT_LOGS_COLLECTION), where('userId', '==', userId), orderBy('timestamp', 'desc'));
+                // q = query(collection(db, WORKOUT_LOGS_COLLECTION), where('userId', '==', userId), orderBy('timestamp', 'desc'));
+                // Temporary fix to check if index is missing: remove orderBy
+                q = query(collection(db, WORKOUT_LOGS_COLLECTION), where('userId', '==', userId));
             }
 
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Sort in memory since we removed orderBy
+            results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            return results;
         } catch (error) {
             console.error("Error getting all workout logs:", error);
             return [];

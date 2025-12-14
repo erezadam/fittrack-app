@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { WORKOUT_TYPES } from '../data/initialData';
 
 import { migrateMuscleNames, seedMissingExercises } from '../utils/fixData';
+import { importExercises } from '../utils/importHands';
 
 export default function AdminPage({ user, onBack }) {
     if (!user || !user.isAdmin) {
@@ -527,6 +528,9 @@ export default function AdminPage({ user, onBack }) {
                     className="neu-btn text-xs bg-gray-800 text-white"
                 >
                     🐞 Debug Data
+                </button>
+                <button onClick={importExercises} className="neu-btn text-xs bg-purple-600 text-white hover:bg-purple-700">
+                    טען תרגילי ידיים 💪
                 </button>
             </div>
 

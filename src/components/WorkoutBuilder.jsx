@@ -15,6 +15,13 @@ const MUSCLE_ICONS = {
     fullbody: Activity
 };
 
+const WORKOUT_TYPES = [
+    'מכשירים',
+    'משקולות חופשיות',
+    'כבלים',
+    'משקל גוף'
+];
+
 export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
@@ -33,6 +40,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     // Selection State
     const [selectedMuscles, setSelectedMuscles] = useState([]); // Array of strings (keys)
     const [selectedSubMuscles, setSelectedSubMuscles] = useState([]); // Array of strings
+    const [selectedEquipment, setSelectedEquipment] = useState({}); // Object: { 'Chest': ['Machines'], ... }
 
     useEffect(() => {
         // For dev: force reset to load new Hebrew data if needed, or just init
@@ -79,6 +87,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
             setSelectedExercises([]);
             setSelectedMuscles([]);
             setSelectedSubMuscles([]);
+            setSelectedEquipment({});
         }
     };
 
@@ -95,6 +104,21 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
             setSelectedSubMuscles(selectedSubMuscles.filter(s => s !== sub));
         } else {
             setSelectedSubMuscles([...selectedSubMuscles, sub]);
+        }
+    };
+
+    const toggleEquipment = (muscle, eq) => {
+        const current = selectedEquipment[muscle] || [];
+        if (current.includes(eq)) {
+            setSelectedEquipment({
+                ...selectedEquipment,
+                [muscle]: current.filter(e => e !== eq)
+            });
+        } else {
+            setSelectedEquipment({
+                ...selectedEquipment,
+                [muscle]: [...current, eq]
+            });
         }
     };
 
@@ -262,7 +286,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: 8f2a1b3 | תאריך: 13/12/2025
+                    גרסה: 8f2a1b5 | תאריך: 14/12/2025
                 </div>
             </div>
         );
@@ -284,12 +308,23 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                     const allMuscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
                     const definedSubMuscles = mapping.subMuscles || [];
                     const subMuscles = definedSubMuscles;
+                    const muscleEquipment = selectedEquipment[m] || [];
 
                     const displayedExercises = allMuscleExercises.filter(ex => {
-                        if (selectedSubMuscles.length === 0) return true;
-                        const hasActiveFilter = subMuscles.some(sm => selectedSubMuscles.includes(sm));
-                        if (!hasActiveFilter) return true;
-                        return selectedSubMuscles.includes(ex.subMuscle);
+                        // Filter by Sub-Muscle
+                        if (selectedSubMuscles.length > 0) {
+                            const hasActiveFilterForThisGroup = subMuscles.some(sm => selectedSubMuscles.includes(sm));
+                            if (hasActiveFilterForThisGroup) {
+                                if (!selectedSubMuscles.includes(ex.subMuscle)) return false;
+                            }
+                        }
+
+                        // Filter by Equipment (Per Muscle)
+                        if (muscleEquipment.length > 0) {
+                            if (!muscleEquipment.includes(ex.equipment)) return false;
+                        }
+
+                        return true;
                     });
 
                     return (
@@ -298,26 +333,50 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                                 {mapping.label}
                             </h3>
 
-                            {/* Sub-Muscle Filters */}
-                            {subMuscles.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {subMuscles.map(sm => {
-                                        const isActive = selectedSubMuscles.includes(sm);
-                                        return (
-                                            <div
-                                                key={sm}
-                                                onClick={() => toggleSubMuscle(sm)}
-                                                className={`px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all shadow-sm ${isActive
-                                                    ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md'
-                                                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                {sm}
-                                            </div>
-                                        );
-                                    })}
+                            <div className="flex flex-col gap-3 mb-4">
+                                {/* Sub-Muscle Filters */}
+                                {subMuscles.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {subMuscles.map(sm => {
+                                            const isActive = selectedSubMuscles.includes(sm);
+                                            return (
+                                                <div
+                                                    key={sm}
+                                                    onClick={() => toggleSubMuscle(sm)}
+                                                    className={`px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all shadow-sm ${isActive
+                                                        ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md'
+                                                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    {sm}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Equipment Filters (Per Muscle) */}
+                                <div className="mt-2">
+                                    <div className="text-xs font-bold text-gray-400 mb-2">סוג ציוד:</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(WORKOUT_TYPES || []).map(eq => {
+                                            const isActive = muscleEquipment.includes(eq);
+                                            return (
+                                                <div
+                                                    key={eq}
+                                                    onClick={() => toggleEquipment(m, eq)}
+                                                    className={`px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-all border ${isActive
+                                                        ? 'bg-indigo-100 border-indigo-300 text-indigo-800 shadow-sm'
+                                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    {eq}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            )}
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {displayedExercises.map(ex => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 
-export default function UserDashboard({ user, onNavigateToBuilder, onLogout }) {
+export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToHistory, onLogout }) {
     const [stats, setStats] = useState({
         monthCount: 0,
         weekCount: 0,
@@ -151,12 +151,18 @@ export default function UserDashboard({ user, onNavigateToBuilder, onLogout }) {
             </div>
 
             {/* CTA */}
-            <div className="text-center">
+            <div className="text-center flex flex-col md:flex-row gap-4 justify-center">
                 <button
                     onClick={onNavigateToBuilder}
                     className="neu-btn primary text-xl py-4 px-12 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
                 >
                     עבור לתכנון האימון ←
+                </button>
+                <button
+                    onClick={onNavigateToHistory}
+                    className="neu-btn text-xl py-4 px-12 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all bg-gray-800 text-white border-gray-700"
+                >
+                    📜 היסטוריית אימונים
                 </button>
             </div>
         </div>

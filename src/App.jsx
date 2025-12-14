@@ -3,6 +3,7 @@ import WorkoutBuilder from './components/WorkoutBuilder';
 import ActiveWorkout from './components/ActiveWorkout';
 import AdminPage from './components/AdminPage';
 import UserDashboard from './components/UserDashboard';
+import WorkoutHistory from './components/WorkoutHistory';
 
 import LoginScreen from './components/LoginScreen';
 
@@ -57,6 +58,7 @@ function App() {
         <UserDashboard
           user={user}
           onNavigateToBuilder={() => setView('builder')}
+          onNavigateToHistory={() => setView('history')}
           onLogout={handleLogout}
         />
       )}
@@ -84,6 +86,13 @@ function App() {
         <AdminPage
           user={user}
           onBack={() => setView('builder')}
+        />
+      )}
+
+      {view === 'history' && (
+        <WorkoutHistory
+          user={user}
+          onBack={() => setView('dashboard')}
         />
       )}
     </div>
