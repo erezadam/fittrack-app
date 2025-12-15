@@ -1,5 +1,5 @@
 import { db } from '../firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 
 const EXERCISES_TO_IMPORT = [
     { "name": "פשיטת מרפקים בשכיבה עם מוט", "nameEn": "Lying Barbell Triceps Extension", "mainMuscle": "ידיים", "subMuscle": "יד אחורית", "equipment": "משקולות", "imageUrls": ["https://raw.githubusercontent.com/erezadam/exercise-images-en/main/Lying_Barbell_Triceps_Extension.jpeg"] },
@@ -23,6 +23,7 @@ const EXERCISES_TO_IMPORT = [
 export const importExercises = async () => {
     const collectionRef = collection(db, 'exercises');
     let added = 0;
+    let updated = 0;
     let skipped = 0;
 
     console.log("Starting import...");
@@ -33,15 +34,27 @@ export const importExercises = async () => {
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            console.log(`Skipping duplicate: ${exercise.name}`);
-            skipped++;
-            continue;
+            // Update existing
+            const docId = querySnapshot.docs[0].id;
+            const docRef = doc(db, 'exercises', docId);
+
+            // We want to update images if they are missing or different, but let's just merge/overwrite relevant fields
+            // specifically imageUrls.
+            await updateDoc(docRef, {
+                imageUrls: exercise.imageUrls,
+                nameEn: exercise.nameEn, // Update English name too just in case
+                equipment: exercise.equipment
+            });
+
+            console.log(`Updated: ${exercise.name}`);
+            updated++;
+        } else {
+            // 2. Add if not exists
+            await addDoc(collectionRef, exercise);
+            console.log(`Added: ${exercise.name}`);
+            added++;
         }
-        // 2. Add if not exists
-        await addDoc(collectionRef, exercise);
-        console.log(`Added: ${exercise.name}`);
-        added++;
     }
 
-    alert(`Import complete!\nAdded: ${added}\nSkipped (Duplicates): ${skipped}`);
+    alert(`Import complete!\nAdded: ${added}\nUpdated: ${updated}\nSkipped: ${skipped}`);
 };

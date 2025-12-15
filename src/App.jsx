@@ -8,13 +8,7 @@ import WorkoutHistory from './components/WorkoutHistory';
 import LoginScreen from './components/LoginScreen';
 
 function App() {
-  const [user, setUser] = useState({
-    firstName: 'Dev',
-    lastName: 'Mode',
-    phone: '0500000000',
-    isAdmin: true,
-    id: 'dev_user_id'
-  });
+  const [user, setUser] = useState(null);
   console.log("App Rendered - User State:", user);
 
   const [view, setView] = useState('dashboard'); // dashboard, builder, active, admin

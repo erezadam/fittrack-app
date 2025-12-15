@@ -263,7 +263,13 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                         <div>
                             <h3 className="text-xl font-bold mb-4 text-gray-800">בחר שרירים לאימון</h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {availableMuscleKeys.map(m => {
+                                {availableMuscleKeys.filter(m => {
+                                    const label = muscles[m]?.label || '';
+                                    const hidden = ['אירובי', 'ישבן', 'cardio', 'glutes', 'כל הגוף', 'full body', 'fullbody'];
+                                    const shouldHide = hidden.includes(m.toLowerCase()) || hidden.includes(label.toLowerCase());
+                                    if (shouldHide) console.log(`Hiding muscle: ${m} (${label})`);
+                                    return !shouldHide;
+                                }).map(m => {
                                     const isSelected = selectedMuscles.includes(m);
                                     const mapping = muscles[m] || { label: m, icon: '💪' };
                                     return (
@@ -313,7 +319,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: 8f2a1b9 | תאריך: 14/12/2025
+                    גרסה: 8f2a1c2 | תאריך: 14/12/2025
                 </div>
             </div>
         );

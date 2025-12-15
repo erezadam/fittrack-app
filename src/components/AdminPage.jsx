@@ -21,7 +21,7 @@ export default function AdminPage({ user, onBack }) {
         );
     }
 
-    const [activeTab, setActiveTab] = useState('exercises'); // 'exercises' | 'muscles'
+    const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'exercises' | 'muscles'
     const [exercises, setExercises] = useState([]);
     const [muscles, setMuscles] = useState({});
     const [loading, setLoading] = useState(true);
@@ -47,15 +47,11 @@ export default function AdminPage({ user, onBack }) {
 
     const loadData = async () => {
         setLoading(true);
-        console.log("AdminPage: loadData started");
         try {
             const [exData, muscleData] = await Promise.all([
                 storageService.getExercises(),
                 storageService.getMuscles()
             ]);
-            console.log("AdminPage: Data loaded", { exDataCount: exData.length, muscleDataCount: Object.keys(muscleData).length });
-            console.log("AdminPage: First exercise:", exData[0]);
-
             setExercises(exData);
             setMuscles(muscleData);
         } catch (error) {
@@ -116,6 +112,30 @@ export default function AdminPage({ user, onBack }) {
         }
     };
 
+    // --- Actions ---
+
+    const handleExportCSV = () => {
+        const csvContent = [
+            '\uFEFFID,Hebrew Name,English Name,Main Muscle,Sub Muscle,Equipment,Video URL,Image 1,Image 2,Image 3', // Header
+            ...exercises.map(ex => {
+                const clean = (str) => `"${(str || '').replace(/"/g, '""')}"`;
+                const img1 = ex.imageUrls?.[0] || '';
+                const img2 = ex.imageUrls?.[1] || '';
+                const img3 = ex.imageUrls?.[2] || '';
+                return `${clean(ex.id)},${clean(ex.name)},${clean(ex.nameEn)},${clean(muscles[ex.mainMuscle]?.label || ex.mainMuscle)},${clean(ex.subMuscle)},${clean(ex.equipment)},${clean(ex.video_url)},${clean(img1)},${clean(img2)},${clean(img3)}`;
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `exercises_export_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -129,9 +149,51 @@ export default function AdminPage({ user, onBack }) {
                 return;
             }
 
-            const headers = lines[0].trim().split(',');
-            // Check if Hebrew headers
-            const isHebrew = headers[0].includes('שם התרגיל');
+            // Helper to parse CSV line respecting quotes
+            const parseCSVLine = (line) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        if (inQuotes && line[i + 1] === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            };
+
+            const headers = parseCSVLine(lines[0].trim());
+
+            // Dynamic Column Mapping
+            const colMap = {};
+            headers.forEach((h, index) => {
+                const header = h.replace(/^"|"$/g, '').trim(); // Clean quotes
+                if (header.includes('התרגיל בעברית') || header === 'Hebrew Name' || header === 'Name') colMap['name'] = index;
+                if (header.includes('שם התרגיל באנגלית') || header === 'English Name' || header === 'NameEn') colMap['nameEn'] = index;
+                if (header.includes('שריר ראשי') || header === 'Main Muscle') colMap['mainMuscle'] = index;
+                if (header.includes('תת שריר') || header === 'Sub Muscle') colMap['subMuscle'] = index;
+                if (header.includes('סוג הציוד') || header === 'Equipment') colMap['equipment'] = index;
+                if (header.includes('Video') || header.includes('וידאו')) colMap['video_url'] = index;
+                if (header.includes('לינק תמונה 1') || header === 'Image 1') colMap['img1'] = index;
+                if (header.includes('לינק תמונה 2') || header === 'Image 2') colMap['img2'] = index;
+                if (header.includes('לינק תמונה 3') || header === 'Image 3') colMap['img3'] = index;
+            });
+
+            // Fallback for old format (no headers or specific legacy structure)
+            // If we didn't find 'name' or 'mainMuscle' via headers, assume legacy position-based
+            const useLegacy = !Object.keys(colMap).includes('name') && !Object.keys(colMap).includes('mainMuscle');
 
             const newExercises = [];
             let skipped = 0;
@@ -140,92 +202,80 @@ export default function AdminPage({ user, onBack }) {
                 const line = lines[i].trim();
                 if (!line) continue;
 
-                // Handle CSV parsing with potential commas in quotes (simple split for now, assuming no commas in fields)
-                // If we need robust CSV parsing, we might need a library, but let's stick to split for now as per previous logic.
-                const values = line.split(',');
+                const values = parseCSVLine(line);
 
-                // New format: Hebrew Name, English Name, Main Muscle, Sub Muscle, Equipment, Img1, Img2, Img3
-                // Old format: Name, Main Muscle, Sub Muscle, Equipment, Video URL
+                let name, nameEn, mainMuscle, subMuscle, workoutType, video_url = '', img1 = '', img2 = '', img3 = '';
 
-                let name, nameEn, mainMuscle, subMuscle, workoutType, video_url, img1, img2, img3;
-
-                if (values.length >= 6) {
-                    // New format (supports 1-3 images)
-                    [name, nameEn, mainMuscle, subMuscle, workoutType, img1, img2, img3] = values.map(v => v ? v.trim() : '');
-                    video_url = '';
-                } else if (values.length >= 4) {
-                    // Fallback to old format logic if columns are few
-                    [name, mainMuscle, subMuscle, workoutType, video_url] = values.map(v => v.trim());
-                    nameEn = '';
+                if (useLegacy) {
+                    // Legacy logic (ID, Name, NameEn, Main, Sub, Eq, Video, Img1...)
+                    // Assuming standard export order: ID(0), Name(1), NameEn(2), Main(3), Sub(4), Eq(5), Video(6), Img1(7)...
+                    if (values.length >= 6) {
+                        name = values[1];
+                        nameEn = values[2];
+                        mainMuscle = values[3];
+                        subMuscle = values[4];
+                        workoutType = values[5];
+                        if (values.length >= 7) video_url = values[6];
+                        if (values.length >= 8) img1 = values[7];
+                        if (values.length >= 9) img2 = values[8];
+                        if (values.length >= 10) img3 = values[9];
+                    }
                 } else {
+                    // Dynamic logic
+                    name = colMap['name'] !== undefined ? values[colMap['name']] : '';
+                    nameEn = colMap['nameEn'] !== undefined ? values[colMap['nameEn']] : '';
+                    mainMuscle = colMap['mainMuscle'] !== undefined ? values[colMap['mainMuscle']] : '';
+                    subMuscle = colMap['subMuscle'] !== undefined ? values[colMap['subMuscle']] : '';
+                    workoutType = colMap['equipment'] !== undefined ? values[colMap['equipment']] : '';
+                    video_url = colMap['video_url'] !== undefined ? values[colMap['video_url']] : '';
+                    img1 = colMap['img1'] !== undefined ? values[colMap['img1']] : '';
+                    img2 = colMap['img2'] !== undefined ? values[colMap['img2']] : '';
+                    img3 = colMap['img3'] !== undefined ? values[colMap['img3']] : '';
+                }
+
+                // Clean values
+                const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : '';
+                name = clean(name);
+                nameEn = clean(nameEn);
+                mainMuscle = clean(mainMuscle);
+                subMuscle = clean(subMuscle);
+                workoutType = clean(workoutType);
+                video_url = clean(video_url);
+                img1 = clean(img1);
+                img2 = clean(img2);
+                img3 = clean(img3);
+
+                // Basic validation
+                if (!name || !mainMuscle) {
                     skipped++;
                     continue;
                 }
 
-                // Hebrew Mapping Logic
-                if (isHebrew) {
-                    // Map Muscle (Hebrew Label -> English Key)
-                    const muscleEntry = Object.entries(muscles).find(([key, val]) => val.label === mainMuscle);
-                    if (muscleEntry) {
-                        mainMuscle = muscleEntry[0]; // Use the English key (e.g., 'Chest')
-                    } else {
-                        // Try to find by key if user put English key in Hebrew CSV? Unlikely but possible.
-                        if (!muscles[mainMuscle]) {
-                            // Try to find case-insensitive match for English key
-                            const keyMatch = Object.keys(muscles).find(k => k.toLowerCase() === mainMuscle.toLowerCase());
-                            if (keyMatch) {
-                                mainMuscle = keyMatch;
-                            } else {
-                                skipped++;
-                                continue;
-                            }
-                        }
-                    }
+                // Reverse lookup for Main Muscle (Label -> Key)
+                const muscleEntry = Object.entries(muscles).find(([key, val]) => val.label === mainMuscle || key === mainMuscle);
+                if (muscleEntry) mainMuscle = muscleEntry[0];
 
-                    // Map Equipment (Hebrew -> Hebrew/English Key)
-                    const equipmentMapping = {
-                        'משקולות': 'משקולות חופשיות',
-                        'משקולת': 'משקולות חופשיות',
-                        'מכונה': 'מכשירים',
-                        'כבל': 'כבלים'
-                    };
-                    if (equipmentMapping[workoutType]) {
-                        workoutType = equipmentMapping[workoutType];
-                    }
-                } else {
-                    // English CSV Logic (existing)
-                    let muscleKey = mainMuscle;
-                    if (!muscles[muscleKey]) {
-                        const foundKey = Object.keys(muscles).find(k => muscles[k].label === mainMuscle);
-                        if (foundKey) muscleKey = foundKey;
-                        else {
-                            skipped++;
-                            continue;
-                        }
-                    }
-                    mainMuscle = muscleKey;
-                }
-
-                // Common Type Mapping (English -> Hebrew)
+                // Normalize Equipment
                 const typeMapping = {
-                    'Machine': 'מכשירים',
-                    'Free Weight': 'משקולות חופשיות',
-                    'Barbell': 'משקולות חופשיות',
-                    'Dumbbells': 'משקולות חופשיות',
-                    'Cables': 'כבלים',
-                    'Cable': 'כבלים',
-                    'Bodyweight': 'משקל גוף'
+                    'Machine': 'מכשירים', 'Free Weight': 'משקולות חופשיות', 'Barbell': 'משקולות חופשיות',
+                    'Dumbbells': 'משקולות חופשיות', 'Cables': 'כבלים', 'Bodyweight': 'משקל גוף',
+                    'מכונה': 'מכשירים', 'משקולות': 'משקולות חופשיות', 'כבל': 'כבלים', 'משקל גוף': 'משקל גוף'
+                };
+                let finalType = typeMapping[workoutType] || workoutType;
+                if (!WORKOUT_TYPES.includes(finalType) && !Object.values(typeMapping).includes(finalType)) finalType = 'משקולות חופשיות';
+
+                // Process Image URLs: If it's a filename, prepend the GitHub repo base URL
+                const GITHUB_BASE = 'https://raw.githubusercontent.com/erezadam/exercise-images-en/main/';
+                const processUrl = (url) => {
+                    if (!url) return null;
+                    const clean = url.replace(/^"|"$/g, '').trim();
+                    if (!clean) return null;
+                    if (clean.startsWith('http') || clean.startsWith('data:')) return clean;
+                    // It's likely a filename
+                    return `${GITHUB_BASE}${clean}`;
                 };
 
-                let finalType = workoutType;
-                if (typeMapping[workoutType]) finalType = typeMapping[workoutType];
-                else if (!WORKOUT_TYPES.includes(workoutType)) {
-                    if (!Object.values(typeMapping).includes(workoutType)) {
-                        finalType = 'משקולות חופשיות';
-                    }
-                }
-
-                const imageUrls = [img1, img2, img3].filter(url => url && url.startsWith('http'));
+                const imageUrls = [img1, img2, img3].map(processUrl).filter(Boolean);
 
                 newExercises.push({
                     name,
@@ -233,7 +283,7 @@ export default function AdminPage({ user, onBack }) {
                     mainMuscle,
                     subMuscle,
                     equipment: finalType,
-                    video_url: video_url || '',
+                    video_url,
                     imageUrls
                 });
             }
@@ -242,7 +292,6 @@ export default function AdminPage({ user, onBack }) {
                 setLoading(true);
                 try {
                     await storageService.saveExercisesBatch(newExercises);
-                    // Reload to get IDs
                     const updatedEx = await storageService.getExercises();
                     setExercises(updatedEx);
                     alert(`נוספו בהצלחה ${newExercises.length} תרגילים. (${skipped} נדלגו)`);
@@ -257,7 +306,6 @@ export default function AdminPage({ user, onBack }) {
             }
         };
         reader.readAsText(file);
-        // Reset input
         event.target.value = '';
     };
 
@@ -363,305 +411,252 @@ export default function AdminPage({ user, onBack }) {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <button type="button" onClick={onBack} className="neu-btn text-sm">
                     ← חזרה
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800">ניהול מערכת</h2>
+                <h2 className="text-2xl font-bold text-gray-800">לוח בקרה למנהל</h2>
             </div>
 
-            {/* Import/Export Actions */}
-            <div className="neu-card mb-8 flex flex-wrap gap-4 items-center">
-                <span className="font-bold text-sm text-gray-600">פעולות מהירות:</span>
-                <a
-                    href="/exercises_template_v2.csv"
-                    download="exercises_template_v2.csv"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="neu-btn text-xs"
-                >
-                    📥 הורד תבנית CSV
-                </a>
-                <label className="neu-btn primary text-xs cursor-pointer">
-                    📤 טען תרגילים
-                    <input
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                    />
-                </label>
-                <button
-                    onClick={() => {
-                        const missingImages = exercises.filter(ex => !ex.imageUrls || ex.imageUrls.length === 0);
-                        if (missingImages.length === 0) {
-                            alert('כל התרגילים מכילים תמונות! 🎉');
-                            return;
-                        }
+            {/* Main Dashboard Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
 
-                        const csvContent = [
-                            '\uFEFFMain Muscle,Sub Muscle,Hebrew Name,English Name', // Header
-                            ...missingImages.map(ex => {
-                                // Escape commas in fields
-                                const clean = (str) => `"${(str || '').replace(/"/g, '""')}"`;
-                                return `${clean(muscles[ex.mainMuscle]?.label || ex.mainMuscle)},${clean(ex.subMuscle)},${clean(ex.name)},${clean(ex.nameEn)}`;
-                            })
-                        ].join('\n');
+                {/* Zone A: Data Ingestion */}
+                <div className="neu-card border-t-4 border-green-500 bg-white/80 backdrop-blur-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="text-green-500">📥</span> ייבוא והוספת תוכן
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                            <button onClick={importExercises} className="w-full neu-btn bg-white text-green-700 border-green-200 hover:bg-green-100 mb-1">
+                                טען תרגילי ידיים (חדש)
+                            </button>
+                            <p className="text-xs text-gray-500">מוסיף את רשימת תרגילי הידיים מהקובץ האחרון. מדלג אוטומטית על כפילויות.</p>
+                        </div>
 
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.setAttribute('download', 'exercises_missing_images.csv');
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }}
-                    className="neu-btn text-xs bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100"
-                >
-                    ⚠️ דוח חסרי תמונות
-                </button>
-                <button
-                    onClick={async () => {
-                        if (window.confirm('⚠️ פעולה בלתי הפיכה! האם אתה בטוח שברצונך למחוק את כל התרגילים מהמערכת?')) {
-                            if (window.confirm('אישור סופי: כל התרגילים יימחקו. האם להמשיך?')) {
-                                setLoading(true);
-                                try {
-                                    await storageService.deleteAllExercises();
-                                    setExercises([]);
-                                    alert('כל התרגילים נמחקו בהצלחה.');
-                                } catch (error) {
-                                    console.error("Failed to delete all exercises", error);
-                                    alert("שגיאה במחיקת תרגילים");
-                                } finally {
-                                    setLoading(false);
-                                }
-                            }
-                        }
-                    }}
-                    className="neu-btn text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-                >
-                    🗑️ מחק תרגילים
-                </button>
-                <button
-                    onClick={async () => {
-                        if (window.confirm('⚠️ האם אתה בטוח שברצונך למחוק את כל תבניות האימון?')) {
-                            setLoading(true);
-                            try {
-                                await storageService.deleteAllTemplates();
-                                alert('כל תבניות האימון נמחקו בהצלחה.');
-                            } catch (error) {
-                                console.error("Failed to delete templates", error);
-                                alert("שגיאה במחיקת תבניות");
-                            } finally {
-                                setLoading(false);
-                            }
-                        }
-                    }}
-                    className="neu-btn text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-                >
-                    🗑️ מחק תבניות
-                </button>
-                <button
-                    onClick={async () => {
-                        if (window.confirm('⚠️ האם אתה בטוח שברצונך למחוק את כל היסטוריית האימונים?')) {
-                            setLoading(true);
-                            try {
-                                await storageService.deleteAllWorkoutLogs();
-                                alert('כל היסטוריית האימונים נמחקה בהצלחה.');
-                            } catch (error) {
-                                console.error("Failed to delete logs", error);
-                                alert("שגיאה במחיקת היסטוריה");
-                            } finally {
-                                setLoading(false);
-                            }
-                        }
-                    }}
-                    className="neu-btn text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-                >
-                    🗑️ מחק היסטוריה
-                </button>
-                <button onClick={handleRestoreDefaults} className="neu-btn text-xs">
-                    🔄 שחזר ברירת מחדל
-                </button>
-                <button
-                    onClick={migrateMuscleNames}
-                    className="neu-btn text-xs bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100"
-                >
-                    🔧 תקן שמות שרירים (Migration)
-                </button>
-                <button
-                    onClick={seedMissingExercises}
-                    className="neu-btn text-xs bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
-                >
-                    📥 טען תרגילים חסרים
-                </button>
-            </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <label className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 cursor-pointer block text-center">
+                                טען קובץ CSV
+                                <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                            </label>
+                            <p className="text-xs text-gray-500">ייבוא תרגילים מקובץ חיצוני לפי התבנית.</p>
+                        </div>
 
-            {/* Developer Options */}
-            <div className="neu-card mb-8 flex flex-wrap gap-4 items-center bg-yellow-50 border-yellow-100">
-                <span className="font-bold text-sm text-yellow-800">🛠️ אפשרויות מפתח:</span>
-                <button
-                    onClick={() => {
-                        const current = localStorage.getItem('fittrack_dev_mode') === 'true';
-                        const next = !current;
-                        localStorage.setItem('fittrack_dev_mode', next);
-                        if (next) {
-                            alert('מצב מפתח הופעל! 🚀\nבטעינה הבאה תיכנס אוטומטית למערכת.');
-                        } else {
-                            alert('מצב מפתח כובה. 🛑\nכעת תידרש לבצע כניסה רגילה.');
-                        }
-                        // Force update UI to reflect state if needed, or just rely on alert
-                        window.location.reload();
-                    }}
-                    className={`neu-btn text-xs ${localStorage.getItem('fittrack_dev_mode') === 'true' ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-600'}`}
-                >
-                    {localStorage.getItem('fittrack_dev_mode') === 'true' ? '✅ Dev Mode פעיל' : '⚪ הפעל Dev Mode'}
-                </button>
-                <button
-                    onClick={() => {
-                        alert(`Debug Info:\nExercises: ${exercises.length}\nMuscles: ${Object.keys(muscles).length}\nFiltered: ${filteredExercises.length}`);
-                        console.log("Debug Exercises:", exercises);
-                    }}
-                    className="neu-btn text-xs bg-gray-800 text-white"
-                >
-                    🐞 Debug Data
-                </button>
-                <button onClick={importExercises} className="neu-btn text-xs bg-purple-600 text-white hover:bg-purple-700">
-                    טען תרגילי ידיים 💪
-                </button>
-            </div>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <button onClick={seedMissingExercises} className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1">
+                                טען תרגילים חסרים
+                            </button>
+                            <p className="text-xs text-gray-500">משלים תרגילים בסיסיים אם הם חסרים במערכת.</p>
+                        </div>
+                    </div>
+                </div>
 
-            {/* Tabs */}
-            <div className="flex gap-4 mb-8">
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('exercises')}
-                    className={`neu-btn flex-1 ${activeTab === 'exercises' ? 'primary' : ''}`}
-                >
-                    תרגילים
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActiveTab('muscles')}
-                    className={`neu-btn flex-1 ${activeTab === 'muscles' ? 'primary' : ''}`}
-                >
-                    שרירים
-                </button>
-            </div>
+                {/* Zone B: Reports & Export */}
+                <div className="neu-card border-t-4 border-blue-500 bg-white/80 backdrop-blur-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="text-blue-500">📊</span> דוחות ובקרה (בטוח לשימוש)
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <button onClick={handleExportCSV} className="w-full neu-btn bg-white text-blue-700 border-blue-200 hover:bg-blue-100 mb-1">
+                                הורד דוח תרגילים (CSV)
+                            </button>
+                            <p className="text-xs text-gray-500">מוריד קובץ אקסל המכיל את כל התרגילים במערכת, כולל בדיקה האם יש להם תמונה.</p>
+                        </div>
 
-            {/* Content */}
-            {activeTab === 'exercises' ? (
-                <div className="space-y-8 animate-fade-in">
-                    {/* Add/Edit Form */}
-                    <div className="neu-card">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800">
-                            {editingExercise ? 'עריכת תרגיל' : 'הוספת תרגיל חדש'}
-                        </h3>
-                        <div className="space-y-4">
-                            <input
-                                className="neu-input"
-                                placeholder="שם התרגיל"
-                                value={exForm.name}
-                                onChange={e => setExForm({ ...exForm, name: e.target.value })}
-                            />
-                            <input
-                                className="neu-input"
-                                placeholder="שם התרגיל באנגלית (אופציונלי)"
-                                value={exForm.nameEn}
-                                onChange={e => setExForm({ ...exForm, nameEn: e.target.value })}
-                            />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <select
-                                    className="neu-input"
-                                    value={exForm.mainMuscle}
-                                    onChange={e => setExForm({ ...exForm, mainMuscle: e.target.value, subMuscle: '' })}
-                                >
-                                    <option value="">בחר שריר ראשי...</option>
-                                    {Object.keys(muscles).map(k => (
-                                        <option key={k} value={k}>{muscles[k].label}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    className="neu-input"
-                                    value={exForm.subMuscle}
-                                    onChange={e => setExForm({ ...exForm, subMuscle: e.target.value })}
-                                    disabled={!exForm.mainMuscle}
-                                >
-                                    <option value="">בחר תת-שריר...</option>
-                                    {exForm.mainMuscle && muscles[exForm.mainMuscle]?.subMuscles?.map(sub => (
-                                        <option key={sub} value={sub}>{sub}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <select
-                                className="neu-input"
-                                value={exForm.equipment}
-                                onChange={e => setExForm({ ...exForm, equipment: e.target.value })}
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <a href="/exercises_template_v2.csv" download className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 block text-center">
+                                הורד תבנית CSV
+                            </a>
+                            <p className="text-xs text-gray-500">תבנית ריקה לייבוא תרגילים חדשים.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Zone C: Maintenance & Danger Zone */}
+                <div className="neu-card border-t-4 border-red-500 bg-white/80 backdrop-blur-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="text-red-500">⚠️</span> תחזוקת מערכת (זהירות!)
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                            <button onClick={migrateMuscleNames} className="w-full neu-btn bg-white text-orange-700 border-orange-200 hover:bg-orange-100 mb-1">
+                                תיקון שמות (Migration)
+                            </button>
+                            <p className="text-xs text-gray-500">מריץ סקריפט לתיקון שמות שרירים מאנגלית לעברית. להפעיל רק אם תרגילים נעלמו.</p>
+                        </div>
+
+                        <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm('האם אתה בטוח? פעולה זו תמחק את כל התרגילים!')) {
+                                        setLoading(true);
+                                        await storageService.deleteAllExercises();
+                                        setExercises([]);
+                                        setLoading(false);
+                                        alert('נמחק בהצלחה');
+                                    }
+                                }}
+                                className="w-full neu-btn bg-white text-red-700 border-red-200 hover:bg-red-100 mb-1"
                             >
-                                <option value="">בחר סוג אימון...</option>
-                                <option value="משקולות חופשיות">משקולות חופשיות</option>
-                                <option value="מכשירים">מכשירים</option>
-                                <option value="כבלים">כבלים</option>
-                                <option value="משקל גוף">משקל גוף</option>
-                            </select>
-                            <input
-                                className="neu-input"
-                                placeholder="קישור לוידאו (YouTube)"
-                                value={exForm.video_url}
-                                onChange={e => setExForm({ ...exForm, video_url: e.target.value })}
-                            />
+                                מחק כל התרגילים
+                            </button>
+                            <p className="text-xs text-gray-500">פעולה בלתי הפיכה. מוחק את כל התרגילים ממסד הנתונים.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            {/* Image Upload Section */}
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">תמונות (אופציונלי):</label>
-                                <div className="flex flex-wrap gap-4 items-center">
-                                    <label className="neu-btn text-xs cursor-pointer bg-white border border-gray-200 hover:bg-gray-50">
-                                        📷 העלה קבצים
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const files = Array.from(e.target.files);
-                                                if (files.length === 0) return;
+            {/* Legacy Management Section (Collapsible or below) */}
+            <div className="neu-card">
+                <h3 className="text-xl font-bold text-gray-800 mb-6">ניהול שוטף</h3>
 
-                                                setLoading(true);
-                                                try {
-                                                    const newUrls = [];
-                                                    for (const file of files) {
-                                                        const storageRef = ref(storage, `exercises/${file.name}_${Date.now()}`);
-                                                        await uploadBytes(storageRef, file);
-                                                        const url = await getDownloadURL(storageRef);
-                                                        newUrls.push(url);
+                {/* Tabs */}
+                <div className="flex gap-4 mb-6">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('exercises')}
+                        className={`neu-btn flex-1 ${activeTab === 'exercises' || activeTab === 'dashboard' ? 'primary' : ''}`}
+                    >
+                        רשימת תרגילים
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('muscles')}
+                        className={`neu-btn flex-1 ${activeTab === 'muscles' ? 'primary' : ''}`}
+                    >
+                        ניהול שרירים
+                    </button>
+                </div>
+
+                {/* Content based on tab - simplified for this view, keeping existing logic if user clicks tabs */}
+                {/* For brevity, I'm keeping the list view here but hiding the complex forms unless needed, or just showing the list. */}
+                {/* Let's show the list as it's useful. */}
+
+                {activeTab === 'exercises' || activeTab === 'dashboard' ? (
+                    <div className="space-y-8 animate-fade-in">
+                        {/* Add/Edit Form */}
+                        <div className="neu-card">
+                            <h3 className="text-xl font-bold mb-4 text-gray-800">
+                                {editingExercise ? 'עריכת תרגיל' : 'הוספת תרגיל חדש'}
+                            </h3>
+                            <div className="space-y-4">
+                                <input
+                                    className="neu-input"
+                                    placeholder="שם התרגיל"
+                                    value={exForm.name}
+                                    onChange={e => setExForm({ ...exForm, name: e.target.value })}
+                                />
+                                <input
+                                    className="neu-input"
+                                    placeholder="שם התרגיל באנגלית (אופציונלי)"
+                                    value={exForm.nameEn}
+                                    onChange={e => setExForm({ ...exForm, nameEn: e.target.value })}
+                                />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <select
+                                        className="neu-input"
+                                        value={exForm.mainMuscle}
+                                        onChange={e => setExForm({ ...exForm, mainMuscle: e.target.value, subMuscle: '' })}
+                                    >
+                                        <option value="">בחר שריר ראשי...</option>
+                                        {Object.keys(muscles).map(k => (
+                                            <option key={k} value={k}>{muscles[k].label}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        className="neu-input"
+                                        value={exForm.subMuscle}
+                                        onChange={e => setExForm({ ...exForm, subMuscle: e.target.value })}
+                                        disabled={!exForm.mainMuscle}
+                                    >
+                                        <option value="">בחר תת-שריר...</option>
+                                        {exForm.mainMuscle && muscles[exForm.mainMuscle]?.subMuscles?.map(sub => (
+                                            <option key={sub} value={sub}>{sub}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <select
+                                    className="neu-input"
+                                    value={exForm.equipment}
+                                    onChange={e => setExForm({ ...exForm, equipment: e.target.value })}
+                                >
+                                    <option value="">בחר סוג אימון...</option>
+                                    <option value="משקולות חופשיות">משקולות חופשיות</option>
+                                    <option value="מכשירים">מכשירים</option>
+                                    <option value="כבלים">כבלים</option>
+                                    <option value="משקל גוף">משקל גוף</option>
+                                </select>
+                                <input
+                                    className="neu-input"
+                                    placeholder="קישור לוידאו (YouTube)"
+                                    value={exForm.video_url}
+                                    onChange={e => setExForm({ ...exForm, video_url: e.target.value })}
+                                />
+
+                                {/* Image Upload Section */}
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">תמונות (אופציונלי):</label>
+                                    <div className="flex flex-wrap gap-4 items-center">
+                                        <label className="neu-btn text-xs cursor-pointer bg-white border border-gray-200 hover:bg-gray-50">
+                                            📷 העלה קבצים
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const files = Array.from(e.target.files);
+                                                    if (files.length === 0) return;
+
+                                                    setLoading(true);
+                                                    try {
+                                                        const newUrls = [];
+                                                        for (const file of files) {
+                                                            const storageRef = ref(storage, `exercises/${file.name}_${Date.now()}`);
+                                                            await uploadBytes(storageRef, file);
+                                                            const url = await getDownloadURL(storageRef);
+                                                            newUrls.push(url);
+                                                        }
+                                                        setExForm(prev => ({
+                                                            ...prev,
+                                                            imageUrls: [...(prev.imageUrls || []), ...newUrls]
+                                                        }));
+                                                    } catch (error) {
+                                                        console.error("Failed to upload images", error);
+                                                        alert("שגיאה בהעלאת תמונות");
+                                                    } finally {
+                                                        setLoading(false);
                                                     }
-                                                    setExForm(prev => ({
-                                                        ...prev,
-                                                        imageUrls: [...(prev.imageUrls || []), ...newUrls]
-                                                    }));
-                                                } catch (error) {
-                                                    console.error("Failed to upload images", error);
-                                                    alert("שגיאה בהעלאת תמונות");
-                                                } finally {
-                                                    setLoading(false);
-                                                }
-                                            }}
-                                        />
-                                    </label>
+                                                }}
+                                            />
+                                        </label>
 
-                                    {/* Manual URL Input */}
-                                    <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                                        <input
-                                            className="neu-input text-xs py-1"
-                                            placeholder="או הדבק לינק לתמונה (GitHub וכו')"
-                                            value={tempImageUrl}
-                                            onChange={e => setTempImageUrl(e.target.value)}
-                                            onKeyPress={e => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
+                                        {/* Manual URL Input */}
+                                        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                                            <input
+                                                className="neu-input text-xs py-1"
+                                                placeholder="או הדבק לינק לתמונה (GitHub וכו')"
+                                                value={tempImageUrl}
+                                                onChange={e => setTempImageUrl(e.target.value)}
+                                                onKeyPress={e => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (tempImageUrl) {
+                                                            setExForm(prev => ({
+                                                                ...prev,
+                                                                imageUrls: [...(prev.imageUrls || []), tempImageUrl]
+                                                            }));
+                                                            setTempImageUrl('');
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
                                                     if (tempImageUrl) {
                                                         setExForm(prev => ({
                                                             ...prev,
@@ -669,230 +664,218 @@ export default function AdminPage({ user, onBack }) {
                                                         }));
                                                         setTempImageUrl('');
                                                     }
-                                                }
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (tempImageUrl) {
-                                                    setExForm(prev => ({
-                                                        ...prev,
-                                                        imageUrls: [...(prev.imageUrls || []), tempImageUrl]
-                                                    }));
-                                                    setTempImageUrl('');
-                                                }
-                                            }}
-                                            className="neu-btn text-xs px-3 py-1"
-                                            disabled={!tempImageUrl}
-                                        >
-                                            הוסף
-                                        </button>
+                                                }}
+                                                className="neu-btn text-xs px-3 py-1"
+                                                disabled={!tempImageUrl}
+                                            >
+                                                הוסף
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {/* Image Preview List */}
+                                    {exForm.imageUrls && exForm.imageUrls.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {exForm.imageUrls.map((url, idx) => (
+                                                <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                                                    <img src={url} alt="preview" className="w-full h-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setExForm(prev => ({
+                                                            ...prev,
+                                                            imageUrls: prev.imageUrls.filter((_, i) => i !== idx)
+                                                        }))}
+                                                        className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity font-bold"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Image Preview List */}
-                                {exForm.imageUrls && exForm.imageUrls.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {exForm.imageUrls.map((url, idx) => (
-                                            <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
-                                                <img src={url} alt="preview" className="w-full h-full object-cover" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setExForm(prev => ({
-                                                        ...prev,
-                                                        imageUrls: prev.imageUrls.filter((_, i) => i !== idx)
-                                                    }))}
-                                                    className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity font-bold"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={handleSaveExercise} className="neu-btn primary flex-1">
+                                        {editingExercise ? 'שמור שינויים' : 'הוסף תרגיל'}
+                                    </button>
+                                    {editingExercise && (
+                                        <button
+                                            type="button"
+                                            onClick={() => { setEditingExercise(null); setExForm({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] }); }}
+                                            className="neu-btn"
+                                        >
+                                            ביטול
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* List with Filters */}
+                        <div className="neu-card">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-800">רשימת תרגילים ({filteredExercises.length})</h3>
                             </div>
 
-                            <div className="flex gap-4">
-                                <button type="button" onClick={handleSaveExercise} className="neu-btn primary flex-1">
-                                    {editingExercise ? 'שמור שינויים' : 'הוסף תרגיל'}
-                                </button>
-                                {editingExercise && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { setEditingExercise(null); setExForm({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] }); }}
-                                        className="neu-btn"
-                                    >
-                                        ביטול
-                                    </button>
-                                )}
+                            {/* Filters */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <select
+                                    className="neu-input text-sm py-2"
+                                    value={filterMainMuscle}
+                                    onChange={e => { setFilterMainMuscle(e.target.value); setFilterSubMuscle(''); }}
+                                >
+                                    <option value="">כל השרירים</option>
+                                    {Object.keys(muscles).map(k => (
+                                        <option key={k} value={k}>{muscles[k].label}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    className="neu-input text-sm py-2"
+                                    value={filterSubMuscle}
+                                    onChange={e => setFilterSubMuscle(e.target.value)}
+                                    disabled={!filterMainMuscle}
+                                >
+                                    <option value="">כל תתי-השרירים</option>
+                                    {filterMainMuscle && muscles[filterMainMuscle]?.subMuscles?.map(sub => (
+                                        <option key={sub} value={sub}>{sub}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="max-h-[500px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                {filteredExercises.map(ex => (
+                                    <div key={ex.id} className="bg-white rounded-xl p-4 flex justify-between items-center border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                        <div>
+                                            <div className="font-bold text-gray-800">{ex.name}</div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {muscles[ex.mainMuscle]?.label || ex.mainMuscle} • {ex.subMuscle} • {ex.equipment}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => handleEditExercise(ex)} className="text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-colors text-sm font-medium">ערוך</button>
+                                            <button type="button" onClick={() => handleDeleteExercise(ex.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors text-sm font-medium">מחק</button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
+                ) : (
+                    <div className="space-y-8 animate-fade-in">
+                        {/* Muscle Form */}
+                        <div className="neu-card">
+                            <h3 className="text-xl font-bold mb-4 text-gray-800">
+                                {editingMuscleKey ? 'עריכת שריר' : 'הוספת שריר חדש'}
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input
+                                        className="neu-input"
+                                        placeholder="מפתח באנגלית (למשל: Chest)"
+                                        value={muscleForm.key}
+                                        onChange={e => setMuscleForm({ ...muscleForm, key: e.target.value })}
+                                        disabled={!!editingMuscleKey}
+                                    />
+                                    <input
+                                        className="neu-input"
+                                        placeholder="תווית בעברית (למשל: חזה)"
+                                        value={muscleForm.label}
+                                        onChange={e => setMuscleForm({ ...muscleForm, label: e.target.value })}
+                                    />
+                                </div>
 
-                    {/* List with Filters */}
-                    <div className="neu-card">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-gray-800">רשימת תרגילים ({filteredExercises.length})</h3>
-                        </div>
-
-                        {/* Filters */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <select
-                                className="neu-input text-sm py-2"
-                                value={filterMainMuscle}
-                                onChange={e => { setFilterMainMuscle(e.target.value); setFilterSubMuscle(''); }}
-                            >
-                                <option value="">כל השרירים</option>
-                                {Object.keys(muscles).map(k => (
-                                    <option key={k} value={k}>{muscles[k].label}</option>
-                                ))}
-                            </select>
-                            <select
-                                className="neu-input text-sm py-2"
-                                value={filterSubMuscle}
-                                onChange={e => setFilterSubMuscle(e.target.value)}
-                                disabled={!filterMainMuscle}
-                            >
-                                <option value="">כל תתי-השרירים</option>
-                                {filterMainMuscle && muscles[filterMainMuscle]?.subMuscles?.map(sub => (
-                                    <option key={sub} value={sub}>{sub}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="max-h-[500px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                            {filteredExercises.map(ex => (
-                                <div key={ex.id} className="bg-white rounded-xl p-4 flex justify-between items-center border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                    <div>
-                                        <div className="font-bold text-gray-800">{ex.name}</div>
-                                        <div className="text-xs text-gray-500 mt-1">
-                                            {muscles[ex.mainMuscle]?.label || ex.mainMuscle} • {ex.subMuscle} • {ex.equipment}
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">אייקון (קובץ תמונה או אימוג'י):</label>
+                                    <div className="flex flex-wrap gap-4 items-center">
+                                        <input
+                                            type="file"
+                                            accept="image/png, image/svg+xml, image/jpeg"
+                                            className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                                            onChange={e => setMuscleIconFile(e.target.files[0])}
+                                        />
+                                        <span className="text-sm text-gray-400">או</span>
+                                        <input
+                                            className="neu-input w-32"
+                                            placeholder="אימוג'י"
+                                            value={muscleForm.icon}
+                                            onChange={e => setMuscleForm({ ...muscleForm, icon: e.target.value })}
+                                        />
+                                    </div>
+                                    {muscleForm.icon && (
+                                        <div className="mt-2 text-xs text-gray-500">
+                                            נוכחי: {muscleForm.icon.startsWith('http') ? 'תמונה מותאמת' : muscleForm.icon}
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Sub Muscles Manager */}
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">תתי שרירים:</label>
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {muscleForm.subMuscles.map(sub => (
+                                            <span key={sub} className="bg-white px-3 py-1 rounded-full text-sm border border-gray-200 flex items-center gap-2 shadow-sm">
+                                                {sub}
+                                                <button type="button" onClick={() => handleRemoveSubMuscle(sub)} className="text-red-400 hover:text-red-600 font-bold">×</button>
+                                            </span>
+                                        ))}
                                     </div>
                                     <div className="flex gap-2">
-                                        <button type="button" onClick={() => handleEditExercise(ex)} className="text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-colors text-sm font-medium">ערוך</button>
-                                        <button type="button" onClick={() => handleDeleteExercise(ex.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors text-sm font-medium">מחק</button>
+                                        <input
+                                            className="neu-input"
+                                            placeholder="הוסף תת-שריר..."
+                                            value={newSubMuscle}
+                                            onChange={e => setNewSubMuscle(e.target.value)}
+                                        />
+                                        <button type="button" onClick={handleAddSubMuscle} className="neu-btn px-6">+</button>
                                     </div>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={handleSaveMuscle} className="neu-btn primary flex-1">
+                                        {editingMuscleKey ? 'שמור שינויים' : 'הוסף שריר'}
+                                    </button>
+                                    {editingMuscleKey && (
+                                        <button
+                                            type="button"
+                                            onClick={() => { setEditingMuscleKey(null); setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] }); setMuscleIconFile(null); }}
+                                            className="neu-btn"
+                                        >
+                                            ביטול
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Muscles List */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {Object.keys(muscles).map(key => (
+                                <div key={key} className="neu-card flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-3xl w-12 h-12 flex items-center justify-center bg-gray-50 rounded-full">
+                                            {muscles[key].icon && muscles[key].icon.startsWith('http') ? (
+                                                <img
+                                                    src={muscles[key].icon}
+                                                    alt={muscles[key].label}
+                                                    className="w-8 h-8 object-contain"
+                                                />
+                                            ) : (
+                                                muscles[key].icon
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-gray-800">{muscles[key].label}</div>
+                                            <div className="text-xs text-gray-500">{key}</div>
+                                        </div>
+                                    </div>
+                                    <button type="button" onClick={() => handleEditMuscle(key)} className="neu-btn text-xs px-3 py-2">ערוך</button>
                                 </div>
                             ))}
                         </div>
                     </div>
-                </div>
-            ) : (
-                <div className="space-y-8 animate-fade-in">
-                    {/* Muscle Form */}
-                    <div className="neu-card">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800">
-                            {editingMuscleKey ? 'עריכת שריר' : 'הוספת שריר חדש'}
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input
-                                    className="neu-input"
-                                    placeholder="מפתח באנגלית (למשל: Chest)"
-                                    value={muscleForm.key}
-                                    onChange={e => setMuscleForm({ ...muscleForm, key: e.target.value })}
-                                    disabled={!!editingMuscleKey}
-                                />
-                                <input
-                                    className="neu-input"
-                                    placeholder="תווית בעברית (למשל: חזה)"
-                                    value={muscleForm.label}
-                                    onChange={e => setMuscleForm({ ...muscleForm, label: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">אייקון (קובץ תמונה או אימוג'י):</label>
-                                <div className="flex flex-wrap gap-4 items-center">
-                                    <input
-                                        type="file"
-                                        accept="image/png, image/svg+xml, image/jpeg"
-                                        className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                                        onChange={e => setMuscleIconFile(e.target.files[0])}
-                                    />
-                                    <span className="text-sm text-gray-400">או</span>
-                                    <input
-                                        className="neu-input w-32"
-                                        placeholder="אימוג'י"
-                                        value={muscleForm.icon}
-                                        onChange={e => setMuscleForm({ ...muscleForm, icon: e.target.value })}
-                                    />
-                                </div>
-                                {muscleForm.icon && (
-                                    <div className="mt-2 text-xs text-gray-500">
-                                        נוכחי: {muscleForm.icon.startsWith('http') ? 'תמונה מותאמת' : muscleForm.icon}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Sub Muscles Manager */}
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">תתי שרירים:</label>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {muscleForm.subMuscles.map(sub => (
-                                        <span key={sub} className="bg-white px-3 py-1 rounded-full text-sm border border-gray-200 flex items-center gap-2 shadow-sm">
-                                            {sub}
-                                            <button type="button" onClick={() => handleRemoveSubMuscle(sub)} className="text-red-400 hover:text-red-600 font-bold">×</button>
-                                        </span>
-                                    ))}
-                                </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        className="neu-input"
-                                        placeholder="הוסף תת-שריר..."
-                                        value={newSubMuscle}
-                                        onChange={e => setNewSubMuscle(e.target.value)}
-                                    />
-                                    <button type="button" onClick={handleAddSubMuscle} className="neu-btn px-6">+</button>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-4">
-                                <button type="button" onClick={handleSaveMuscle} className="neu-btn primary flex-1">
-                                    {editingMuscleKey ? 'שמור שינויים' : 'הוסף שריר'}
-                                </button>
-                                {editingMuscleKey && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { setEditingMuscleKey(null); setMuscleForm({ key: '', label: '', icon: '', subMuscles: [] }); setMuscleIconFile(null); }}
-                                        className="neu-btn"
-                                    >
-                                        ביטול
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Muscles List */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.keys(muscles).map(key => (
-                            <div key={key} className="neu-card flex justify-between items-center">
-                                <div className="flex items-center gap-4">
-                                    <div className="text-3xl w-12 h-12 flex items-center justify-center bg-gray-50 rounded-full">
-                                        {muscles[key].icon && muscles[key].icon.startsWith('http') ? (
-                                            <img
-                                                src={muscles[key].icon}
-                                                alt={muscles[key].label}
-                                                className="w-8 h-8 object-contain"
-                                            />
-                                        ) : (
-                                            muscles[key].icon
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-gray-800">{muscles[key].label}</div>
-                                        <div className="text-xs text-gray-500">{key}</div>
-                                    </div>
-                                </div>
-                                <button type="button" onClick={() => handleEditMuscle(key)} className="neu-btn text-xs px-3 py-2">ערוך</button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

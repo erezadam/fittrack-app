@@ -44,14 +44,14 @@ export default function LoginScreen({ onLogin }) {
                     <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-sm"></div>
                     <div className="relative z-10">
                         <div className="text-6xl mb-4">💪</div>
-                        <h1 className="text-3xl font-extrabold tracking-tight">FitTrack</h1>
+                        <h1 className="text-3xl font-extrabold tracking-tight">RepUp</h1>
                         <p className="text-teal-100 mt-2 font-medium">המאמן האישי שלך</p>
                     </div>
                 </div>
 
                 {/* Form */}
                 <div className="p-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">כניסה למערכת</h2>
+                    <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">Welcome to RepUp</h2>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
