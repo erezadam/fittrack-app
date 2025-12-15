@@ -15,9 +15,18 @@ function App() {
   const [activeExercises, setActiveExercises] = useState([]);
   const [activeWorkoutName, setActiveWorkoutName] = useState('');
 
-  // useEffect(() => {
-  //   // Legacy auto-login logic if needed later
-  // }, []);
+  useEffect(() => {
+    const isDevMode = localStorage.getItem('dev_mode') === 'true';
+    if (isDevMode) {
+      setUser({
+        id: 'dev_admin',
+        firstName: 'Admin',
+        lastName: 'User',
+        phone: '0547895818',
+        isAdmin: true
+      });
+    }
+  }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);

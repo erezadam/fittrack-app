@@ -24,6 +24,19 @@ const WORKOUT_TYPES = [
     'משקל גוף'
 ];
 
+const HEBREW_MUSCLE_NAMES = {
+    'Chest': 'חזה',
+    'Back': 'גב',
+    'Legs': 'רגליים',
+    'Shoulders': 'כתפיים',
+    'Arms': 'ידיים',
+    'Core': 'בטן',
+    'Glutes': 'ישבן',
+    'Cardio': 'אירובי',
+    'Full Body': 'כל הגוף',
+    'Abs': 'בטן'
+};
+
 export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
@@ -272,6 +285,8 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                                 }).map(m => {
                                     const isSelected = selectedMuscles.includes(m);
                                     const mapping = muscles[m] || { label: m, icon: '💪' };
+                                    const label = HEBREW_MUSCLE_NAMES[m] || mapping.label || m;
+
                                     return (
                                         <div
                                             key={m}
@@ -285,7 +300,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                                                 {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
                                                     <img
                                                         src={mapping.icon}
-                                                        alt={mapping.label}
+                                                        alt={label}
                                                         className="w-12 h-12 object-contain mx-auto"
                                                     />
                                                 ) : (() => {
@@ -297,7 +312,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                                                 })()}
                                             </div>
                                             <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
-                                                {mapping.label}
+                                                {label}
                                             </div>
                                         </div>
                                     );
@@ -339,8 +354,11 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                 {selectedMuscles.map(m => {
                     const mapping = muscles[m] || { label: m };
                     const allMuscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
-                    const definedSubMuscles = mapping.subMuscles || [];
-                    const subMuscles = definedSubMuscles;
+
+                    // Dynamically derive sub-muscles from the actual exercises to ensure filters match data
+                    const derivedSubMuscles = [...new Set(allMuscleExercises.map(e => e.subMuscle).filter(Boolean))].sort();
+                    const subMuscles = derivedSubMuscles.length > 0 ? derivedSubMuscles : (mapping.subMuscles || []);
+
                     const muscleEquipment = selectedEquipment[m] || [];
 
                     const displayedExercises = allMuscleExercises.filter(ex => {

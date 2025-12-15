@@ -45,6 +45,83 @@ export default function AdminPage({ user, onBack }) {
         loadData();
     }, []);
 
+    const handleSyncFilters = async () => {
+        if (!window.confirm('פעולה זו תסרוק את כל התרגילים ותעדכן את רשימת תתי-השרירים במסננים בהתאם לנתונים הקיימים. להמשיך?')) return;
+
+        setLoading(true);
+        try {
+            const allExercises = await storageService.getExercises();
+            const muscleMap = {};
+
+            // 1. Collect sub-muscles from exercises
+            allExercises.forEach(ex => {
+                if (!ex.mainMuscle || !ex.subMuscle) return;
+
+                // Normalize main muscle key (e.g. 'Arms' or 'ידיים' -> 'Arms')
+                // We need to find the key in 'muscles' object that corresponds to this label or key
+                let muscleKey = Object.keys(muscles).find(k => k === ex.mainMuscle || muscles[k].label === ex.mainMuscle);
+
+                if (!muscleKey) {
+                    // Try to map Hebrew label to English key if possible, or just use the key as is if it exists in muscles
+                    // If not found, maybe it's a new muscle group? For now, skip or log.
+                    console.warn(`Unknown muscle group: ${ex.mainMuscle}`);
+                    return;
+                }
+
+                if (!muscleMap[muscleKey]) {
+                    muscleMap[muscleKey] = new Set();
+                }
+                muscleMap[muscleKey].add(ex.subMuscle.trim());
+            });
+
+            // 2. Update muscles object
+            const updatedMuscles = { ...muscles };
+            let updatesCount = 0;
+
+            for (const [key, subMuscleSet] of Object.entries(muscleMap)) {
+                if (updatedMuscles[key]) {
+                    const newSubMuscles = Array.from(subMuscleSet).sort();
+                    // Check if different
+                    const currentSubMuscles = updatedMuscles[key].subMuscles || [];
+                    const isDifferent = JSON.stringify(newSubMuscles) !== JSON.stringify(currentSubMuscles.sort());
+
+                    if (isDifferent) {
+                        updatedMuscles[key] = { ...updatedMuscles[key], subMuscles: newSubMuscles };
+                        await storageService.saveMuscle(key, updatedMuscles[key]);
+                        updatesCount++;
+                        console.log(`Updated ${key}:`, newSubMuscles);
+                    }
+                }
+            }
+
+            setMuscles(updatedMuscles);
+            alert(`סנכרון הושלם! עודכנו ${updatesCount} קבוצות שרירים.`);
+        } catch (error) {
+            console.error("Error syncing filters:", error);
+            alert("שגיאה בסנכרון המסננים");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFixData = async () => {
+        if (!window.confirm('פעולה זו תסרוק את כל התרגילים ותתקן שמות שרירים (למשל "Chest" -> "חזה") אם חסרים. להמשיך?')) return;
+
+        setLoading(true);
+        try {
+            await migrateMuscleNames();
+            // Reload
+            const updatedEx = await storageService.getExercises();
+            setExercises(updatedEx);
+            alert('תיקון נתונים הושלם!');
+        } catch (error) {
+            console.error("Error fixing data:", error);
+            alert("שגיאה בתיקון נתונים");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -460,6 +537,12 @@ export default function AdminPage({ user, onBack }) {
                     </h3>
                     <div className="space-y-4">
                         <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <button onClick={handleFixData} className="neu-btn text-sm bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100">
+                                🛠️ תיקון מסד נתונים
+                            </button>
+                            <button onClick={handleSyncFilters} className="neu-btn text-sm bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
+                                🔄 סנכרן מסננים
+                            </button>
                             <button onClick={handleExportCSV} className="w-full neu-btn bg-white text-blue-700 border-blue-200 hover:bg-blue-100 mb-1">
                                 הורד דוח תרגילים (CSV)
                             </button>
@@ -504,6 +587,25 @@ export default function AdminPage({ user, onBack }) {
                                 מחק כל התרגילים
                             </button>
                             <p className="text-xs text-gray-500">פעולה בלתי הפיכה. מוחק את כל התרגילים ממסד הנתונים.</p>
+                        </div>
+
+                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                            <button
+                                onClick={() => {
+                                    const current = localStorage.getItem('dev_mode') === 'true';
+                                    if (current) {
+                                        localStorage.removeItem('dev_mode');
+                                        alert('מצב פיתוח בוטל. כעת תידרש התחברות.');
+                                    } else {
+                                        localStorage.setItem('dev_mode', 'true');
+                                        alert('מצב פיתוח הופעל! הכניסה הבאה תהיה אוטומטית.');
+                                    }
+                                }}
+                                className="w-full neu-btn bg-white text-purple-700 border-purple-200 hover:bg-purple-100 mb-1"
+                            >
+                                {localStorage.getItem('dev_mode') === 'true' ? 'בטל מצב פיתוח (Auto Login)' : 'הפעל מצב פיתוח (Auto Login)'}
+                            </button>
+                            <p className="text-xs text-gray-500">מאפשר כניסה אוטומטית ללא מסך לוג-אין.</p>
                         </div>
                     </div>
                 </div>

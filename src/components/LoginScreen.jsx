@@ -106,8 +106,19 @@ export default function LoginScreen({ onLogin }) {
                     </form>
                 </div>
 
-                <div className="bg-gray-50 p-4 text-center text-xs text-gray-400">
-                    גרסה 1.0.0 | כל הזכויות שמורות
+                <div className="bg-gray-50 p-4 text-center text-xs text-gray-400 flex justify-between items-center">
+                    <span>גרסה 1.0.0 | כל הזכויות שמורות</span>
+                    <button
+                        onClick={() => {
+                            setFirstName('Admin');
+                            setLastName('User');
+                            setPhone('054-7895818');
+                        }}
+                        className="text-gray-300 hover:text-gray-500 transition-colors"
+                        title="Dev Mode"
+                    >
+                        ⚡
+                    </button>
                 </div>
             </div>
         </div>

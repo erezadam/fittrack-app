@@ -87,9 +87,12 @@ export default function WorkoutHistory({ user, onBack }) {
                             <div className="p-4 flex justify-between items-center cursor-pointer">
                                 <div>
                                     <div className="text-lg font-bold text-white mb-1">
+                                        {log.workoutName || 'אימון'}
+                                    </div>
+                                    <div className="text-sm text-gray-300 mb-1">
                                         {formatDate(log.timestamp || log.date)}
                                     </div>
-                                    <div className="text-sm text-gray-400">
+                                    <div className="text-xs text-gray-400">
                                         {getMainMuscles(log.exercises)}
                                     </div>
                                 </div>
