@@ -7,6 +7,7 @@ const MUSCLE_COLLECTION = 'muscles';
 const TEMPLATE_COLLECTION = 'templates';
 const WORKOUT_LOGS_COLLECTION = 'workout_logs';
 const USERS_COLLECTION = 'users';
+const SYSTEM_SETTINGS_COLLECTION = 'system_settings';
 
 export const storageService = {
     // Users
@@ -340,6 +341,48 @@ export const storageService = {
         } catch (error) {
             console.error("Error getting last workout:", error);
             return null;
+        }
+    },
+
+    // System Config
+    getSystemConfig: async () => {
+        try {
+            const docRef = doc(db, SYSTEM_SETTINGS_COLLECTION, 'config');
+            const docSnap = await getDocs(query(collection(db, SYSTEM_SETTINGS_COLLECTION)));
+
+            // We expect a single document named 'config', but let's be robust
+            // Actually, let's just use getDoc if we knew the ID, but getDocs is fine for a collection.
+            // Let's try to get specific doc 'config'
+            // Wait, getDoc is not imported. Let's import getDoc or use getDocs.
+            // I'll stick to getDocs for consistency with existing imports if getDoc isn't there.
+            // Checking imports: import { ... getDocs ... } from 'firebase/firestore';
+            // getDoc is NOT imported. I will use getDocs on the collection and look for id 'config' or just take the first one.
+
+            // Better approach: Use setDoc/getDoc logic but since I can't change imports easily without checking, 
+            // I'll use getDocs.
+
+            const q = query(collection(db, SYSTEM_SETTINGS_COLLECTION));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                return { devMode: false };
+            }
+
+            const configDoc = snapshot.docs.find(d => d.id === 'config');
+            return configDoc ? configDoc.data() : (snapshot.docs[0]?.data() || { devMode: false });
+        } catch (error) {
+            console.error("Error getting system config:", error);
+            return { devMode: false };
+        }
+    },
+
+    saveSystemConfig: async (config) => {
+        try {
+            // We need setDoc, which IS imported.
+            await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
+        } catch (error) {
+            console.error("Error saving system config:", error);
+            throw error;
         }
     },
 

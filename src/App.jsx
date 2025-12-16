@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { storageService } from './services/storageService';
 import WorkoutBuilder from './components/WorkoutBuilder';
 import ActiveWorkout from './components/ActiveWorkout';
 import AdminPage from './components/AdminPage';
@@ -14,18 +15,28 @@ function App() {
   const [view, setView] = useState('dashboard'); // dashboard, builder, active, admin
   const [activeExercises, setActiveExercises] = useState([]);
   const [activeWorkoutName, setActiveWorkoutName] = useState('');
+  const [tempWorkoutData, setTempWorkoutData] = useState(null); // Store progress when adding exercises
 
   useEffect(() => {
-    const isDevMode = localStorage.getItem('dev_mode') === 'true';
-    if (isDevMode) {
-      setUser({
-        id: 'dev_admin',
-        firstName: 'Admin',
-        lastName: 'User',
-        phone: '0547895818',
-        isAdmin: true
-      });
-    }
+    const checkDevMode = async () => {
+      try {
+        const config = await storageService.getSystemConfig();
+        if (config && config.devMode) {
+          console.log("Dev Mode Enabled (Global)");
+          setUser({
+            id: 'dev_admin',
+            firstName: 'Admin',
+            lastName: 'User',
+            phone: '0547895818',
+            isAdmin: true
+          });
+        }
+      } catch (error) {
+        console.error("Failed to check dev mode:", error);
+      }
+    };
+
+    checkDevMode();
   }, []);
 
   const handleLogin = (userData) => {
@@ -49,6 +60,21 @@ function App() {
     setView('dashboard'); // Return to dashboard after workout
     setActiveExercises([]);
     setActiveWorkoutName('');
+    setTempWorkoutData(null);
+  };
+
+  const handleAddExercises = (currentData) => {
+    setTempWorkoutData(currentData);
+    setView('builder_add'); // Special view state for adding exercises
+  };
+
+  const handleExercisesAdded = (newExercises) => {
+    // Merge new exercises with existing ones, avoiding duplicates
+    const existingIds = new Set(activeExercises.map(e => e.id));
+    const uniqueNew = newExercises.filter(e => !existingIds.has(e.id));
+
+    setActiveExercises([...activeExercises, ...uniqueNew]);
+    setView('active');
   };
 
   if (!user) {
@@ -75,12 +101,24 @@ function App() {
         />
       )}
 
+      {view === 'builder_add' && (
+        <WorkoutBuilder
+          user={user}
+          mode="add"
+          initialSelectedExercises={activeExercises}
+          onAdd={handleExercisesAdded}
+          onBack={() => setView('active')} // Cancel adding goes back to active
+        />
+      )}
+
       {view === 'active' && (
         <ActiveWorkout
           user={user}
           exercises={activeExercises}
           workoutName={activeWorkoutName}
+          initialData={tempWorkoutData}
           onFinish={finishWorkout}
+          onAddExercises={handleAddExercises}
           onCancel={() => setView('builder')}
         />
       )}

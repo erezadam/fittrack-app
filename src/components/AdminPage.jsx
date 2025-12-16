@@ -41,9 +41,22 @@ export default function AdminPage({ user, onBack }) {
     const [filterMainMuscle, setFilterMainMuscle] = useState('');
     const [filterSubMuscle, setFilterSubMuscle] = useState('');
 
+    // System Config State
+    const [isDevMode, setIsDevMode] = useState(false);
+
     useEffect(() => {
         loadData();
+        loadSystemConfig();
     }, []);
+
+    const loadSystemConfig = async () => {
+        try {
+            const config = await storageService.getSystemConfig();
+            setIsDevMode(config?.devMode || false);
+        } catch (error) {
+            console.error("Failed to load system config:", error);
+        }
+    };
 
     const handleSyncFilters = async () => {
         if (!window.confirm('פעולה זו תסרוק את כל התרגילים ותעדכן את רשימת תתי-השרירים במסננים בהתאם לנתונים הקיימים. להמשיך?')) return;
@@ -591,21 +604,25 @@ export default function AdminPage({ user, onBack }) {
 
                         <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
                             <button
-                                onClick={() => {
-                                    const current = localStorage.getItem('dev_mode') === 'true';
-                                    if (current) {
-                                        localStorage.removeItem('dev_mode');
-                                        alert('מצב פיתוח בוטל. כעת תידרש התחברות.');
-                                    } else {
-                                        localStorage.setItem('dev_mode', 'true');
-                                        alert('מצב פיתוח הופעל! הכניסה הבאה תהיה אוטומטית.');
+                                onClick={async () => {
+                                    const newMode = !isDevMode;
+                                    setLoading(true);
+                                    try {
+                                        await storageService.saveSystemConfig({ devMode: newMode });
+                                        setIsDevMode(newMode);
+                                        alert(newMode ? 'מצב פיתוח הופעל! הכניסה הבאה תהיה אוטומטית לכולם.' : 'מצב פיתוח בוטל.');
+                                    } catch (error) {
+                                        console.error("Failed to toggle dev mode:", error);
+                                        alert("שגיאה בשינוי מצב פיתוח");
+                                    } finally {
+                                        setLoading(false);
                                     }
                                 }}
                                 className="w-full neu-btn bg-white text-purple-700 border-purple-200 hover:bg-purple-100 mb-1"
                             >
-                                {localStorage.getItem('dev_mode') === 'true' ? 'בטל מצב פיתוח (Auto Login)' : 'הפעל מצב פיתוח (Auto Login)'}
+                                {isDevMode ? 'בטל מצב פיתוח (Auto Login)' : 'הפעל מצב פיתוח (Auto Login)'}
                             </button>
-                            <p className="text-xs text-gray-500">מאפשר כניסה אוטומטית ללא מסך לוג-אין.</p>
+                            <p className="text-xs text-gray-500">מאפשר כניסה אוטומטית ללא מסך לוג-אין (גלובלי).</p>
                         </div>
                     </div>
                 </div>

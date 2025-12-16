@@ -37,7 +37,7 @@ const HEBREW_MUSCLE_NAMES = {
     'Abs': 'בטן'
 };
 
-export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack }) {
+export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack, mode = 'create', initialSelectedExercises = [], onAdd }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
     const [showAICoach, setShowAICoach] = useState(false);
@@ -63,7 +63,15 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
         // storageService.resetData(); // Uncomment to force update data
         storageService.initialize();
         loadData();
-    }, [user]);
+
+        if (mode === 'add' && initialSelectedExercises.length > 0) {
+            setStep('selection');
+            setSelectedExercises(initialSelectedExercises);
+            // Pre-select muscles based on exercises
+            const muscles = [...new Set(initialSelectedExercises.map(e => e.muscle_group_id || e.mainMuscle))];
+            setSelectedMuscles(muscles);
+        }
+    }, [user, mode]);
 
     const loadData = async () => {
         try {
@@ -196,6 +204,11 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
             return;
         }
 
+        if (mode === 'add') {
+            onAdd(selectedExercises);
+            return;
+        }
+
         // Save as template if new
         if (selectedTemplateId === 'new') {
             storageService.saveTemplate(workoutName, selectedExercises, user?.id).catch(console.error);
@@ -228,9 +241,9 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                     </div>
                     <div className="text-left">
                         <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-teal-600 mb-1">
-                            איזה כיף שחזרת להתאמן
+                            {mode === 'add' ? 'הוספת תרגילים' : 'איזה כיף שחזרת להתאמן'}
                         </h1>
-                        <div className="text-gray-500 font-medium">יצירת/פתיחת אימון</div>
+                        <div className="text-gray-500 font-medium">{mode === 'add' ? 'בחר תרגילים נוספים לאימון' : 'יצירת/פתיחת אימון'}</div>
                     </div>
                 </div>
 
@@ -244,34 +257,38 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                     />
                 )}
 
-                {/* Section A: Choose Workout */}
-                <div className="neu-card mb-8 animate-fade-in">
-                    <label className="block mb-3 font-bold text-gray-700">בחר אימון</label>
-                    <select
-                        className="neu-input"
-                        value={selectedTemplateId}
-                        onChange={handleTemplateChange}
-                    >
-                        <option value="new">צור אימון חדש +</option>
-                        {templates.map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                    </select>
-                </div>
+                {/* Section A: Choose Workout (Hide in Add Mode) */}
+                {mode !== 'add' && (
+                    <div className="neu-card mb-8 animate-fade-in">
+                        <label className="block mb-3 font-bold text-gray-700">בחר אימון</label>
+                        <select
+                            className="neu-input"
+                            value={selectedTemplateId}
+                            onChange={handleTemplateChange}
+                        >
+                            <option value="new">צור אימון חדש +</option>
+                            {templates.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
-                {/* Section B & C: Only if New Workout */}
-                {selectedTemplateId === 'new' && (
+                {/* Section B & C: Only if New Workout OR Add Mode */}
+                {(selectedTemplateId === 'new' || mode === 'add') && (
                     <div className="animate-fade-in space-y-8">
-                        <div className="neu-card">
-                            <label className="block mb-3 font-bold text-gray-700">שם האימון החדש</label>
-                            <input
-                                type="text"
-                                className="neu-input"
-                                placeholder="למשל: אימון חזה וכתפיים"
-                                value={workoutName}
-                                onChange={(e) => setWorkoutName(e.target.value)}
-                            />
-                        </div>
+                        {mode !== 'add' && (
+                            <div className="neu-card">
+                                <label className="block mb-3 font-bold text-gray-700">שם האימון החדש</label>
+                                <input
+                                    type="text"
+                                    className="neu-input"
+                                    placeholder="למשל: אימון חזה וכתפיים"
+                                    value={workoutName}
+                                    onChange={(e) => setWorkoutName(e.target.value)}
+                                />
+                            </div>
+                        )}
 
                         <div>
                             <h3 className="text-xl font-bold mb-4 text-gray-800">בחר שרירים לאימון</h3>
@@ -328,13 +345,15 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                         onClick={handleContinue}
                         className="neu-btn primary w-full max-w-md mx-auto text-lg py-4"
                     >
-                        {selectedTemplateId === 'new' ? 'המשך לבחירת תרגילים ←' : 'התחל אימון ←'}
+                        {mode === 'add'
+                            ? 'המשך לבחירת תרגילים ←'
+                            : (selectedTemplateId === 'new' ? 'המשך לבחירת תרגילים ←' : 'התחל אימון ←')}
                     </button>
                 </div>
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: 8f2a1c2 | תאריך: 14/12/2025
+                    גרסה: f5abb33 | תאריך: 15/12/2025
                 </div>
             </div>
         );
@@ -347,7 +366,9 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                 <button onClick={() => setStep('dashboard')} className="neu-btn text-sm">
                     → חזרה
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800">בחירת תרגילים</h2>
+                <h2 className="text-2xl font-bold text-gray-800">
+                    {mode === 'add' ? 'הוספת תרגילים' : 'בחירת תרגילים'}
+                </h2>
             </div>
 
             <div className="space-y-8">
@@ -480,7 +501,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                     onClick={handleStart}
                     className="neu-btn primary w-full py-4 text-xl shadow-2xl"
                 >
-                    התחל אימון ({selectedExercises.length})
+                    {mode === 'add' ? `עדכן אימון (${selectedExercises.length})` : `התחל אימון (${selectedExercises.length})`}
                 </button>
             </div>
             <div className="h-24"></div>
