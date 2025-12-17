@@ -8,6 +8,21 @@ export default function LoginScreen({ onLogin }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Load saved details on mount
+    React.useEffect(() => {
+        try {
+            const savedDetails = localStorage.getItem('fittrack_last_details');
+            if (savedDetails) {
+                const { firstName, lastName, phone } = JSON.parse(savedDetails);
+                setFirstName(firstName || '');
+                setLastName(lastName || '');
+                setPhone(phone || '');
+            }
+        } catch (e) {
+            console.error("Failed to load saved details:", e);
+        }
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!firstName || !lastName || !phone) {
@@ -26,6 +41,9 @@ export default function LoginScreen({ onLogin }) {
         setError('');
 
         try {
+            // Save details for next time (even before login success, to remember attempt)
+            localStorage.setItem('fittrack_last_details', JSON.stringify({ firstName, lastName, phone }));
+
             const user = await storageService.loginUser(firstName.trim(), lastName.trim(), phone.replace(/-/g, ''));
             onLogin(user);
         } catch (err) {
@@ -107,7 +125,7 @@ export default function LoginScreen({ onLogin }) {
                 </div>
 
                 <div className="bg-gray-50 p-4 text-center text-xs text-gray-400 flex justify-between items-center">
-                    <span>גרסה 1.0.0 | כל הזכויות שמורות</span>
+                    <span>גרסה: e7x9p21 (תרגילים מטוייבים) | תאריך: 16/12/2025 19:08</span>
                     <button
                         onClick={() => {
                             setFirstName('Admin');

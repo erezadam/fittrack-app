@@ -46,11 +46,12 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     // Data State
     const [exercises, setExercises] = useState([]);
     const [templates, setTemplates] = useState([]);
+    const [recentLogs, setRecentLogs] = useState([]); // Array of recent workout logs
     const [muscles, setMuscles] = useState({}); // Object: { 'Chest': { label: '...', ... } }
 
     // Workout State
     const [workoutName, setWorkoutName] = useState('');
-    const [selectedTemplateId, setSelectedTemplateId] = useState('new');
+    // const [selectedTemplateId, setSelectedTemplateId] = useState('new'); // REMOVED
     const [selectedExercises, setSelectedExercises] = useState([]);
 
     // Selection State
@@ -105,6 +106,9 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
             const userTemplates = await storageService.getTemplates(user?.id);
             setTemplates(userTemplates);
 
+            const userLogs = await storageService.getRecentWorkoutLogs(user?.id);
+            setRecentLogs(userLogs);
+
             const muscleData = await storageService.getMuscles();
             setMuscles(muscleData);
         } catch (error) {
@@ -113,31 +117,6 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     };
 
     // --- Logic ---
-
-    const handleTemplateChange = (e) => {
-        const val = e.target.value;
-        setSelectedTemplateId(val);
-
-        if (val !== 'new') {
-            // Template IDs are strings in Firestore
-            const template = templates.find(t => t.id === val);
-            if (template) {
-                setWorkoutName(template.name);
-                // Hydrate exercises
-                const fullExercises = template.exercises.map(te => {
-                    const fullEx = exercises.find(e => e.id === te.id);
-                    return fullEx ? { ...fullEx, ...te } : null;
-                }).filter(Boolean);
-                setSelectedExercises(fullExercises);
-            }
-        } else {
-            setWorkoutName('');
-            setSelectedExercises([]);
-            setSelectedMuscles([]);
-            setSelectedSubMuscles([]);
-            setSelectedEquipment({});
-        }
-    };
 
     const toggleMuscle = (muscleKey) => {
         if (selectedMuscles.includes(muscleKey)) {
@@ -181,21 +160,16 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     };
 
     const handleContinue = () => {
-        if (selectedTemplateId !== 'new') {
-            // If template selected, go straight to workout
-            onStartWorkout(selectedExercises, workoutName);
-        } else {
-            // New workout flow
-            if (!workoutName) {
-                alert('נא להזין שם לאימון');
-                return;
-            }
-            if (selectedMuscles.length === 0) {
-                alert('נא לבחור לפחות שריר אחד');
-                return;
-            }
-            setStep('selection');
+        // New workout flow
+        if (!workoutName) {
+            alert('נא להזין שם לאימון');
+            return;
         }
+        if (selectedMuscles.length === 0) {
+            alert('נא לבחור לפחות שריר אחד');
+            return;
+        }
+        setStep('selection');
     };
 
     const handleStart = () => {
@@ -209,10 +183,8 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
             return;
         }
 
-        // Save as template if new
-        if (selectedTemplateId === 'new') {
-            storageService.saveTemplate(workoutName, selectedExercises, user?.id).catch(console.error);
-        }
+        // Save as template if new (always true now for this flow)
+        storageService.saveTemplate(workoutName, selectedExercises, user?.id).catch(console.error);
 
         onStartWorkout(selectedExercises, workoutName);
     };
@@ -257,87 +229,69 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                     />
                 )}
 
-                {/* Section A: Choose Workout (Hide in Add Mode) */}
-                {mode !== 'add' && (
-                    <div className="neu-card mb-8 animate-fade-in">
-                        <label className="block mb-3 font-bold text-gray-700">בחר אימון</label>
-                        <select
-                            className="neu-input"
-                            value={selectedTemplateId}
-                            onChange={handleTemplateChange}
-                        >
-                            <option value="new">צור אימון חדש +</option>
-                            {templates.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
+                {/* Section: Workout Name Input */}
+                <div className="animate-fade-in space-y-8">
+                    {mode !== 'add' && (
+                        <div className="neu-card">
+                            <label className="block mb-3 font-bold text-gray-700">הקלד את שם האימון</label>
+                            <input
+                                type="text"
+                                className="neu-input"
+                                placeholder="למשל: אימון חזה וכתפיים"
+                                value={workoutName}
+                                onChange={(e) => setWorkoutName(e.target.value)}
+                            />
+                        </div>
+                    )}
 
-                {/* Section B & C: Only if New Workout OR Add Mode */}
-                {(selectedTemplateId === 'new' || mode === 'add') && (
-                    <div className="animate-fade-in space-y-8">
-                        {mode !== 'add' && (
-                            <div className="neu-card">
-                                <label className="block mb-3 font-bold text-gray-700">שם האימון החדש</label>
-                                <input
-                                    type="text"
-                                    className="neu-input"
-                                    placeholder="למשל: אימון חזה וכתפיים"
-                                    value={workoutName}
-                                    onChange={(e) => setWorkoutName(e.target.value)}
-                                />
-                            </div>
-                        )}
+                    <div>
+                        <h3 className="text-xl font-bold mb-4 text-gray-800">בחר שרירים לאימון</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {availableMuscleKeys.filter(m => {
+                                const label = muscles[m]?.label || '';
+                                const hidden = ['אירובי', 'ישבן', 'cardio', 'glutes', 'כל הגוף', 'full body', 'fullbody'];
+                                const shouldHide = hidden.includes(m.toLowerCase()) || hidden.includes(label.toLowerCase());
+                                if (shouldHide) console.log(`Hiding muscle: ${m} (${label})`);
+                                return !shouldHide;
+                            }).map(m => {
+                                const isSelected = selectedMuscles.includes(m);
+                                const mapping = muscles[m] || { label: m, icon: '💪' };
+                                const label = HEBREW_MUSCLE_NAMES[m] || mapping.label || m;
 
-                        <div>
-                            <h3 className="text-xl font-bold mb-4 text-gray-800">בחר שרירים לאימון</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {availableMuscleKeys.filter(m => {
-                                    const label = muscles[m]?.label || '';
-                                    const hidden = ['אירובי', 'ישבן', 'cardio', 'glutes', 'כל הגוף', 'full body', 'fullbody'];
-                                    const shouldHide = hidden.includes(m.toLowerCase()) || hidden.includes(label.toLowerCase());
-                                    if (shouldHide) console.log(`Hiding muscle: ${m} (${label})`);
-                                    return !shouldHide;
-                                }).map(m => {
-                                    const isSelected = selectedMuscles.includes(m);
-                                    const mapping = muscles[m] || { label: m, icon: '💪' };
-                                    const label = HEBREW_MUSCLE_NAMES[m] || mapping.label || m;
-
-                                    return (
-                                        <div
-                                            key={m}
-                                            onClick={() => toggleMuscle(m)}
-                                            className={`neu-card cursor-pointer transition-all duration-300 flex items-center justify-between flex-row-reverse p-4 ${isSelected
-                                                ? 'ring-2 ring-cyan-400 transform scale-105 shadow-lg'
-                                                : 'hover:translate-y-[-2px]'
-                                                }`}
-                                        >
-                                            <div className="text-4xl mb-2 flex justify-center">
-                                                {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
-                                                    <img
-                                                        src={mapping.icon}
-                                                        alt={label}
-                                                        className="w-12 h-12 object-contain mx-auto"
-                                                    />
-                                                ) : (() => {
-                                                    const IconComponent = MUSCLE_ICONS[m.toLowerCase()] || MUSCLE_ICONS[mapping.label.toLowerCase()] || null;
-                                                    if (IconComponent) {
-                                                        return <IconComponent size={40} strokeWidth={1.5} className={isSelected ? 'text-cyan-500' : 'text-slate-400'} />;
-                                                    }
-                                                    return <span>{mapping.icon || '💪'}</span>;
-                                                })()}
-                                            </div>
-                                            <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
-                                                {label}
-                                            </div>
+                                return (
+                                    <div
+                                        key={m}
+                                        onClick={() => toggleMuscle(m)}
+                                        className={`neu-card cursor-pointer transition-all duration-300 flex items-center justify-between flex-row-reverse p-4 ${isSelected
+                                            ? 'ring-2 ring-cyan-400 transform scale-105 shadow-lg'
+                                            : 'hover:translate-y-[-2px]'
+                                            }`}
+                                    >
+                                        <div className="text-4xl mb-2 flex justify-center">
+                                            {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
+                                                <img
+                                                    src={mapping.icon}
+                                                    alt={label}
+                                                    className="w-12 h-12 object-contain mx-auto"
+                                                />
+                                            ) : (() => {
+                                                const IconComponent = MUSCLE_ICONS[m.toLowerCase()] || MUSCLE_ICONS[mapping.label.toLowerCase()] || null;
+                                                if (IconComponent) {
+                                                    return <IconComponent size={40} strokeWidth={1.5} className={isSelected ? 'text-cyan-500' : 'text-slate-400'} />;
+                                                }
+                                                return <span>{mapping.icon || '💪'}</span>;
+                                            })()}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
+                                            {label}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
-                )}
+                </div>
+
 
                 {/* Main Action Button */}
                 <div className="text-center mt-12 mb-8">
@@ -347,13 +301,13 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
                     >
                         {mode === 'add'
                             ? 'המשך לבחירת תרגילים ←'
-                            : (selectedTemplateId === 'new' ? 'המשך לבחירת תרגילים ←' : 'התחל אימון ←')}
+                            : 'המשך לבחירת תרגילים ←'}
                     </button>
                 </div>
 
                 {/* Version Footer */}
                 <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: f5abb33 | תאריך: 15/12/2025
+                    גרסה: e7x9p21 (תרגילים מטוייבים) | תאריך: 16/12/2025 19:08
                 </div>
             </div>
         );

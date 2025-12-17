@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 
-export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToHistory, onLogout }) {
+export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToHistory, onLogout, onResume }) {
     const [stats, setStats] = useState({
         monthCount: 0,
         weekCount: 0,
         lastWorkoutDate: '-',
-        lastWorkoutExercises: []
+        lastWorkoutName: ''
     });
     const [loading, setLoading] = useState(true);
 
@@ -41,20 +41,24 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
         let monthCount = 0;
         let weekCount = 0;
         let lastDateStr = '-';
-        let lastExercises = [];
+        let lastWorkoutName = '';
 
-        if (logs.length > 0) {
-            const lastLog = logs[0];
-            const lastDate = new Date(lastLog.timestamp);
+        // Find last COMPLETED workout (not in_progress)
+        // Assuming logs are sorted by date desc (newest first)
+        const lastCompletedLog = logs.find(log => log.status !== 'in_progress');
+
+        if (lastCompletedLog) {
+            const lastDate = new Date(lastCompletedLog.timestamp || lastCompletedLog.date);
             lastDateStr = lastDate.toLocaleDateString('he-IL');
-
-            if (lastLog.exercises && Array.isArray(lastLog.exercises)) {
-                lastExercises = lastLog.exercises.map(e => e.exercise_id);
-            }
+            lastWorkoutName = lastCompletedLog.workoutName || 'אימון ללא שם';
         }
 
         logs.forEach(log => {
-            const logDate = new Date(log.timestamp);
+            // Only count completed workouts for stats? Or all? 
+            // Usually stats count completed workouts.
+            if (log.status === 'in_progress') return;
+
+            const logDate = new Date(log.timestamp || log.date);
             if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
                 monthCount++;
             }
@@ -67,7 +71,7 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
             monthCount,
             weekCount,
             lastWorkoutDate: lastDateStr,
-            lastWorkoutExercises: lastExercises
+            lastWorkoutName
         });
     };
 
@@ -110,7 +114,7 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 items-start">
                 {/* Card 1: Month */}
                 <div className="neu-card p-6 flex flex-col items-center justify-center text-center h-full">
                     <div className="text-gray-500 font-medium mb-2">אימונים החודש</div>
@@ -123,30 +127,15 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
                     <div className="text-4xl font-extrabold text-cyan-600">{stats.weekCount}</div>
                 </div>
 
-                {/* Card 3: Last Workout Date */}
+                {/* Card 3: Last Workout */}
                 <div className="neu-card p-6 flex flex-col items-center justify-center text-center h-full">
                     <div className="text-gray-500 font-medium mb-2">אימון אחרון</div>
                     <div className="text-xl font-bold text-gray-800">{stats.lastWorkoutDate}</div>
-                </div>
-
-                {/* Card 4: Last Exercises */}
-                <div className="neu-card p-6 flex flex-col text-center relative">
-                    <div className="text-gray-500 font-medium mb-2">תרגילים שבוצעו</div>
-                    <div className="w-full">
-                        {stats.lastWorkoutExercises.length > 0 ? (
-                            <ul className="text-sm text-gray-700 space-y-1">
-                                {stats.lastWorkoutExercises.map((exId, idx) => (
-                                    <li key={idx} className="truncate">
-                                        {exerciseMap[exId] || 'תרגיל לא ידוע'}
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="text-gray-400 text-sm flex items-center justify-center h-full min-h-[3rem]">
-                                טרם בוצע
-                            </div>
-                        )}
-                    </div>
+                    {stats.lastWorkoutName && (
+                        <div className="text-sm text-teal-600 mt-1 font-medium truncate w-full px-2">
+                            {stats.lastWorkoutName}
+                        </div>
+                    )}
                 </div>
             </div>
 

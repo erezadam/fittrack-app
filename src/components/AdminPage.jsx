@@ -28,7 +28,7 @@ export default function AdminPage({ user, onBack }) {
 
     // Exercise Form State
     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
-    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] });
+    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', video_url: '', imageUrls: [] });
 
     // Muscle Form State
     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
@@ -58,25 +58,20 @@ export default function AdminPage({ user, onBack }) {
         }
     };
 
-    const handleSyncFilters = async () => {
-        if (!window.confirm('פעולה זו תסרוק את כל התרגילים ותעדכן את רשימת תתי-השרירים במסננים בהתאם לנתונים הקיימים. להמשיך?')) return;
-
-        setLoading(true);
+    const runSyncFilters = async (silent = false) => {
         try {
             const allExercises = await storageService.getExercises();
+            const currentMuscles = await storageService.getMuscles(); // Fetch fresh muscles
             const muscleMap = {};
 
             // 1. Collect sub-muscles from exercises
             allExercises.forEach(ex => {
                 if (!ex.mainMuscle || !ex.subMuscle) return;
 
-                // Normalize main muscle key (e.g. 'Arms' or 'ידיים' -> 'Arms')
-                // We need to find the key in 'muscles' object that corresponds to this label or key
-                let muscleKey = Object.keys(muscles).find(k => k === ex.mainMuscle || muscles[k].label === ex.mainMuscle);
+                // Normalize main muscle key
+                let muscleKey = Object.keys(currentMuscles).find(k => k === ex.mainMuscle || currentMuscles[k].label === ex.mainMuscle);
 
                 if (!muscleKey) {
-                    // Try to map Hebrew label to English key if possible, or just use the key as is if it exists in muscles
-                    // If not found, maybe it's a new muscle group? For now, skip or log.
                     console.warn(`Unknown muscle group: ${ex.mainMuscle}`);
                     return;
                 }
@@ -88,30 +83,55 @@ export default function AdminPage({ user, onBack }) {
             });
 
             // 2. Update muscles object
-            const updatedMuscles = { ...muscles };
+            const updatedMuscles = { ...currentMuscles };
             let updatesCount = 0;
 
+            // First, reset ALL sub-muscles to empty to ensure we don't keep stale data
+            Object.keys(updatedMuscles).forEach(key => {
+                updatedMuscles[key] = { ...updatedMuscles[key], subMuscles: [] };
+            });
+
+            // Now populate with found sub-muscles
             for (const [key, subMuscleSet] of Object.entries(muscleMap)) {
                 if (updatedMuscles[key]) {
                     const newSubMuscles = Array.from(subMuscleSet).sort();
-                    // Check if different
-                    const currentSubMuscles = updatedMuscles[key].subMuscles || [];
-                    const isDifferent = JSON.stringify(newSubMuscles) !== JSON.stringify(currentSubMuscles.sort());
+                    updatedMuscles[key] = { ...updatedMuscles[key], subMuscles: newSubMuscles };
 
-                    if (isDifferent) {
-                        updatedMuscles[key] = { ...updatedMuscles[key], subMuscles: newSubMuscles };
-                        await storageService.saveMuscle(key, updatedMuscles[key]);
-                        updatesCount++;
-                        console.log(`Updated ${key}:`, newSubMuscles);
-                    }
+                    // We always save because we reset everything first, so likely it changed if it had data before
+                    // But to be efficient, we could check against original, but let's just save to be safe and consistent.
+                    await storageService.saveMuscle(key, updatedMuscles[key]);
+                    updatesCount++;
+                    console.log(`Updated ${key}:`, newSubMuscles);
+                }
+            }
+
+            // Save any that were reset to empty but didn't get new ones (cleaned up)
+            for (const key of Object.keys(updatedMuscles)) {
+                if (!muscleMap[key] && currentMuscles[key]?.subMuscles?.length > 0) {
+                    await storageService.saveMuscle(key, updatedMuscles[key]);
+                    updatesCount++;
+                    console.log(`Cleared ${key}`);
                 }
             }
 
             setMuscles(updatedMuscles);
-            alert(`סנכרון הושלם! עודכנו ${updatesCount} קבוצות שרירים.`);
+            if (!silent) {
+                alert(`סנכרון הושלם! עודכנו ${updatesCount} קבוצות שרירים.`);
+            }
+            return updatesCount;
         } catch (error) {
             console.error("Error syncing filters:", error);
-            alert("שגיאה בסנכרון המסננים");
+            if (!silent) alert("שגיאה בסנכרון המסננים");
+            throw error;
+        }
+    };
+
+    const handleSyncFilters = async () => {
+        if (!window.confirm('פעולה זו תסרוק את כל התרגילים ותעדכן את רשימת תתי-השרירים במסננים בהתאם לנתונים הקיימים. להמשיך?')) return;
+
+        setLoading(true);
+        try {
+            await runSyncFilters();
         } finally {
             setLoading(false);
         }
@@ -183,7 +203,7 @@ export default function AdminPage({ user, onBack }) {
 
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
-        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
+        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
         window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
@@ -206,13 +226,13 @@ export default function AdminPage({ user, onBack }) {
 
     const handleExportCSV = () => {
         const csvContent = [
-            '\uFEFFID,Hebrew Name,English Name,Main Muscle,Sub Muscle,Equipment,Video URL,Image 1,Image 2,Image 3', // Header
+            '\uFEFFID,Hebrew Name,English Name,Main Muscle,Sub Muscle,Equipment,Position,Video URL,Image 1,Image 2,Image 3', // Header
             ...exercises.map(ex => {
                 const clean = (str) => `"${(str || '').replace(/"/g, '""')}"`;
                 const img1 = ex.imageUrls?.[0] || '';
                 const img2 = ex.imageUrls?.[1] || '';
                 const img3 = ex.imageUrls?.[2] || '';
-                return `${clean(ex.id)},${clean(ex.name)},${clean(ex.nameEn)},${clean(muscles[ex.mainMuscle]?.label || ex.mainMuscle)},${clean(ex.subMuscle)},${clean(ex.equipment)},${clean(ex.video_url)},${clean(img1)},${clean(img2)},${clean(img3)}`;
+                return `${clean(ex.id)},${clean(ex.name)},${clean(ex.nameEn)},${clean(muscles[ex.mainMuscle]?.label || ex.mainMuscle)},${clean(ex.subMuscle)},${clean(ex.equipment)},${clean(ex.position)},${clean(ex.video_url)},${clean(img1)},${clean(img2)},${clean(img3)}`;
             })
         ].join('\n');
 
@@ -275,6 +295,7 @@ export default function AdminPage({ user, onBack }) {
                 if (header.includes('שריר ראשי') || header === 'Main Muscle') colMap['mainMuscle'] = index;
                 if (header.includes('תת שריר') || header === 'Sub Muscle') colMap['subMuscle'] = index;
                 if (header.includes('סוג הציוד') || header === 'Equipment') colMap['equipment'] = index;
+                if (header.includes('מנח') || header === 'Position') colMap['position'] = index;
                 if (header.includes('Video') || header.includes('וידאו')) colMap['video_url'] = index;
                 if (header.includes('לינק תמונה 1') || header === 'Image 1') colMap['img1'] = index;
                 if (header.includes('לינק תמונה 2') || header === 'Image 2') colMap['img2'] = index;
@@ -294,7 +315,7 @@ export default function AdminPage({ user, onBack }) {
 
                 const values = parseCSVLine(line);
 
-                let name, nameEn, mainMuscle, subMuscle, workoutType, video_url = '', img1 = '', img2 = '', img3 = '';
+                let name, nameEn, mainMuscle, subMuscle, workoutType, position = '', video_url = '', img1 = '', img2 = '', img3 = '';
 
                 if (useLegacy) {
                     // Legacy logic (ID, Name, NameEn, Main, Sub, Eq, Video, Img1...)
@@ -317,6 +338,7 @@ export default function AdminPage({ user, onBack }) {
                     mainMuscle = colMap['mainMuscle'] !== undefined ? values[colMap['mainMuscle']] : '';
                     subMuscle = colMap['subMuscle'] !== undefined ? values[colMap['subMuscle']] : '';
                     workoutType = colMap['equipment'] !== undefined ? values[colMap['equipment']] : '';
+                    position = colMap['position'] !== undefined ? values[colMap['position']] : '';
                     video_url = colMap['video_url'] !== undefined ? values[colMap['video_url']] : '';
                     img1 = colMap['img1'] !== undefined ? values[colMap['img1']] : '';
                     img2 = colMap['img2'] !== undefined ? values[colMap['img2']] : '';
@@ -330,6 +352,7 @@ export default function AdminPage({ user, onBack }) {
                 mainMuscle = clean(mainMuscle);
                 subMuscle = clean(subMuscle);
                 workoutType = clean(workoutType);
+                position = clean(position);
                 video_url = clean(video_url);
                 img1 = clean(img1);
                 img2 = clean(img2);
@@ -373,6 +396,7 @@ export default function AdminPage({ user, onBack }) {
                     mainMuscle,
                     subMuscle,
                     equipment: finalType,
+                    position,
                     video_url,
                     imageUrls
                 });
@@ -384,7 +408,11 @@ export default function AdminPage({ user, onBack }) {
                     await storageService.saveExercisesBatch(newExercises);
                     const updatedEx = await storageService.getExercises();
                     setExercises(updatedEx);
-                    alert(`נוספו בהצלחה ${newExercises.length} תרגילים. (${skipped} נדלגו)`);
+                    alert(`נוספו בהצלחה ${newExercises.length} תרגילים. (${skipped} נדלגו)\n\nמבצע סנכרון מסננים...`);
+
+                    // Auto-sync filters
+                    await runSyncFilters(true);
+                    alert('הייבוא והסנכרון הושלמו בהצלחה!');
                 } catch (error) {
                     console.error("Failed to batch save", error);
                     alert("שגיאה בייבוא תרגילים");
@@ -563,7 +591,7 @@ export default function AdminPage({ user, onBack }) {
                         </div>
 
                         <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <a href="/exercises_template_v2.csv" download className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 block text-center">
+                            <a href="/exercises_template_v3.csv" download className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 block text-center">
                                 הורד תבנית CSV
                             </a>
                             <p className="text-xs text-gray-500">תבנית ריקה לייבוא תרגילים חדשים.</p>
@@ -578,9 +606,10 @@ export default function AdminPage({ user, onBack }) {
                     </h3>
                     <div className="space-y-4">
                         <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
-                            <button onClick={migrateMuscleNames} className="w-full neu-btn bg-white text-orange-700 border-orange-200 hover:bg-orange-100 mb-1">
-                                תיקון שמות (Migration)
+                            <button onClick={handleRestoreDefaults} className="w-full neu-btn bg-white text-orange-700 border-orange-200 hover:bg-orange-100 mb-1">
+                                שחזר שרירי ברירת מחדל
                             </button>
+                            <p className="text-xs text-gray-500">מאפס את הגדרות השרירים (אייקונים ושמות) לברירת המחדל. לא מוחק תרגילים.</p>
                             <p className="text-xs text-gray-500">מריץ סקריפט לתיקון שמות שרירים מאנגלית לעברית. להפעיל רק אם תרגילים נעלמו.</p>
                         </div>
 
@@ -708,6 +737,12 @@ export default function AdminPage({ user, onBack }) {
                                     <option value="כבלים">כבלים</option>
                                     <option value="משקל גוף">משקל גוף</option>
                                 </select>
+                                <input
+                                    className="neu-input"
+                                    placeholder="מנח (למשל: עמידה, ישיבה, שכיבה)"
+                                    value={exForm.position}
+                                    onChange={e => setExForm({ ...exForm, position: e.target.value })}
+                                />
                                 <input
                                     className="neu-input"
                                     placeholder="קישור לוידאו (YouTube)"

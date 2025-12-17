@@ -1,15 +1,22 @@
 {
   "name": "RepUp",
   "short_name": "RepUp",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0d9488",
+  "theme_color": "#000000",
   "icons": [
     {
-      "src": "vite.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

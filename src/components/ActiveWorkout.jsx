@@ -3,7 +3,7 @@ import { storageService } from '../services/storageService';
 import VideoModal from './VideoModal';
 import ImageGalleryModal from './ImageGalleryModal';
 
-export default function ActiveWorkout({ user, exercises = [], workoutName, onFinish, onCancel, onAddExercises, initialData }) {
+export default function ActiveWorkout({ user, exercises = [], workoutName, onFinish, onCancel, onAddExercises, initialData, logId }) {
 
     const [workoutData, setWorkoutData] = useState(() => {
         const baseData = initialData || {};
@@ -43,6 +43,10 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
     };
 
     useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    useEffect(() => {
         const fetchHistory = async () => {
             console.log("Fetching history for exercises:", exercises.map(e => e.id));
             const stats = {};
@@ -58,6 +62,33 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
         };
         fetchHistory();
     }, [exercises, user]);
+
+    // Auto-Save Effect
+    useEffect(() => {
+        if (!logId) return;
+
+        const saveTimeout = setTimeout(async () => {
+            console.log("Auto-saving draft...");
+            const logData = {
+                workoutName: workoutName || 'אימון ללא שם',
+                exercises: Object.entries(workoutData).map(([id, data]) => ({
+                    exercise_id: id,
+                    name: exercises.find(e => e.id === id)?.name || 'Unknown Exercise',
+                    mainMuscle: exercises.find(e => e.id === id)?.mainMuscle,
+                    sets: data.sets
+                })),
+                status: 'in_progress'
+            };
+            try {
+                await storageService.updateWorkoutLog(logId, logData);
+                console.log("Draft auto-saved");
+            } catch (error) {
+                console.error("Auto-save failed:", error);
+            }
+        }, 3000); // Debounce for 3 seconds
+
+        return () => clearTimeout(saveTimeout);
+    }, [workoutData, logId, workoutName, exercises]);
 
     const updateSet = (exId, setIndex, field, value) => {
         const currentSets = [...workoutData[exId].sets];
@@ -89,6 +120,15 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
     const [isSaving, setIsSaving] = useState(false);
 
     const handleFinish = async () => {
+        // Check if all exercises are completed
+        const allCompleted = exercises.every(ex => completedExercises.has(ex.id));
+        console.log("Finish Check - Exercises:", exercises.length, "Completed:", completedExercises.size, "All Completed:", allCompleted);
+
+        if (!allCompleted) {
+            const confirmFinish = window.confirm("האם אתה בטוח לשמור את האימון?");
+            if (!confirmFinish) return;
+        }
+
         if (isSaving) return;
         setIsSaving(true);
         try {
@@ -100,12 +140,20 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
                     name: exercises.find(e => e.id === id)?.name || 'Unknown Exercise', // Save name for history display
                     mainMuscle: exercises.find(e => e.id === id)?.mainMuscle, // Save muscle for history display
                     sets: data.sets
-                }))
+                })),
+                status: allCompleted ? 'completed' : 'partial'
             };
 
             console.log("Saving workout data:", JSON.stringify(logData, null, 2));
-            await storageService.saveWorkout(logData, user?.id);
-            alert('האימון נשמר בהצלחה!');
+
+            if (logId) {
+                await storageService.updateWorkoutLog(logId, logData);
+                alert('האימון עודכן בהצלחה!');
+            } else {
+                await storageService.saveWorkout(logData, user?.id);
+                alert('האימון נשמר בהצלחה!');
+            }
+
             onFinish();
         } catch (error) {
             console.error("Failed to save workout:", error);
@@ -312,7 +360,7 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
                         disabled={isSaving}
                         className={`neu-btn primary w-full max-w-md text-lg py-4 shadow-xl ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        {isSaving ? 'שומר אימון...' : 'סיים אימון ✓'}
+                        {isSaving ? (logId ? 'מעדכן אימון...' : 'שומר אימון...') : (logId ? 'עדכן אימון ✓' : 'סיים אימון ✓')}
                     </button>
                 </div>
             </div>

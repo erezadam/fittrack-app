@@ -215,7 +215,8 @@ export const storageService = {
             const dataToSave = {
                 ...workoutData,
                 userId,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                status: workoutData.status || 'completed' // Default to completed if not specified
             };
             console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
@@ -245,6 +246,42 @@ export const storageService = {
         } catch (error) {
             console.error("Error getting all workout logs:", error);
             return [];
+        }
+    },
+
+    getRecentWorkoutLogs: async (userId, limitCount = 5) => {
+        try {
+            // Use same query logic as getAllWorkoutLogs but slice the result since we are doing in-memory sort
+            // Ideally we should use Firestore limit(), but due to index issues we are sorting in memory.
+            const allLogs = await storageService.getAllWorkoutLogs(userId);
+            return allLogs.slice(0, limitCount);
+        } catch (error) {
+            console.error("Error getting recent workout logs:", error);
+            return [];
+        }
+    },
+
+    updateWorkoutLog: async (logId, data) => {
+        try {
+            const logRef = doc(db, WORKOUT_LOGS_COLLECTION, logId);
+            // Update timestamp to now if resuming? Or keep original?
+            // User requested: "לאחר לחיצה על שמירה האימון ישמר על התאריך המקורי"
+            // So we do NOT update timestamp automatically.
+            await updateDoc(logRef, data);
+            return { id: logId, ...data };
+        } catch (error) {
+            console.error("Error updating workout log:", error);
+            throw error;
+        }
+    },
+
+    deleteWorkoutLog: async (logId) => {
+        try {
+            await deleteDoc(doc(db, WORKOUT_LOGS_COLLECTION, logId));
+            return logId;
+        } catch (error) {
+            console.error("Error deleting workout log:", error);
+            throw error;
         }
     },
 
