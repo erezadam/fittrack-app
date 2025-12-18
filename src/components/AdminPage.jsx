@@ -28,7 +28,7 @@ export default function AdminPage({ user, onBack }) {
 
     // Exercise Form State
     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
-    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', video_url: '', imageUrls: [] });
+    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', trackingType: 'weight', video_url: '', imageUrls: [] });
 
     // Muscle Form State
     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
@@ -155,6 +155,70 @@ export default function AdminPage({ user, onBack }) {
         }
     };
 
+    const handleFixArmSubMuscles = async () => {
+        if (!window.confirm('פעולה זו תחליף "דו ראשי" ל-"יד קידמית" ו-"תלת ראשי" ל-"יד אחורית" בכל התרגילים. להמשיך?')) return;
+
+        setLoading(true);
+        try {
+            const allExercises = await storageService.getExercises();
+            const updates = [];
+            let count = 0;
+
+            for (const ex of allExercises) {
+                let needsUpdate = false;
+                let newSubMuscle = ex.subMuscle;
+
+                if (ex.subMuscle === 'דו ראשי') {
+                    newSubMuscle = 'יד קידמית';
+                    needsUpdate = true;
+                } else if (ex.subMuscle === 'תלת ראשי') {
+                    newSubMuscle = 'יד אחורית';
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    updates.push({ ...ex, subMuscle: newSubMuscle });
+                    count++;
+                }
+            }
+
+            if (updates.length > 0) {
+                await storageService.saveExercisesBatch(updates);
+                alert(`עודכנו ${count} תרגילים.`);
+            } else {
+                alert('לא נמצאו תרגילים לתיקון (אולי כבר תוקנו).');
+            }
+
+            // Force update the Muscle definition to remove old terms from dropdowns
+            const currentMuscles = await storageService.getMuscles();
+            if (currentMuscles['Arms']) {
+                const updatedArms = {
+                    ...currentMuscles['Arms'],
+                    label: 'זרועות', // Update label
+                    subMuscles: ['יד קדמית', 'יד אחורית', 'אמות'] // Enforce new standard
+                };
+                await storageService.saveMuscle('Arms', updatedArms);
+                console.log("Updated Arms muscle definition");
+            }
+
+            alert('כעת מסנכרן מסננים...');
+            await runSyncFilters(true);
+
+            // Reload
+            const updatedEx = await storageService.getExercises();
+            setExercises(updatedEx);
+            const updatedMusclesData = await storageService.getMuscles();
+            setMuscles(updatedMusclesData);
+
+            alert('התהליך הושלם בהצלחה! המונחים הישנים הוסרו.');
+        } catch (error) {
+            console.error("Error fixing arm sub-muscles:", error);
+            alert("שגיאה בתיקון שמות תת-שריר");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -192,7 +256,7 @@ export default function AdminPage({ user, onBack }) {
                 setExercises([...exercises, savedEx]);
             }
             setEditingExercise(null);
-            setExForm({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', video_url: '', imageUrls: [] });
+            setExForm({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', trackingType: 'weight', video_url: '', imageUrls: [] });
         } catch (error) {
             console.error("Failed to save exercise", error);
             alert("שגיאה בשמירת תרגיל");
@@ -203,7 +267,7 @@ export default function AdminPage({ user, onBack }) {
 
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
-        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
+        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', trackingType: ex.trackingType || 'weight', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
         window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
@@ -584,6 +648,9 @@ export default function AdminPage({ user, onBack }) {
                             <button onClick={handleSyncFilters} className="neu-btn text-sm bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
                                 🔄 סנכרן מסננים
                             </button>
+                            <button onClick={handleFixArmSubMuscles} className="neu-btn text-sm bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100">
+                                💪 תיקון שמות תת-שריר ידיים
+                            </button>
                             <button onClick={handleExportCSV} className="w-full neu-btn bg-white text-blue-700 border-blue-200 hover:bg-blue-100 mb-1">
                                 הורד דוח תרגילים (CSV)
                             </button>
@@ -743,6 +810,14 @@ export default function AdminPage({ user, onBack }) {
                                     value={exForm.position}
                                     onChange={e => setExForm({ ...exForm, position: e.target.value })}
                                 />
+                                <select
+                                    className="neu-input"
+                                    value={exForm.trackingType || 'weight'}
+                                    onChange={e => setExForm({ ...exForm, trackingType: e.target.value })}
+                                >
+                                    <option value="weight">משקל (ק״ג)</option>
+                                    <option value="time">זמן (שניות)</option>
+                                </select>
                                 <input
                                     className="neu-input"
                                     placeholder="קישור לוידאו (YouTube)"

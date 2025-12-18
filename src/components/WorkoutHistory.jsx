@@ -74,7 +74,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat }) {
                     </div>
                 ) : (
                     logs.map(log => {
-                        const isInProgress = log.status === 'in_progress';
+                        const isInProgress = log.status === 'in_progress' || log.status === 'partial';
                         return (
                             <div
                                 key={log.id}
@@ -145,6 +145,17 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat }) {
                                 {/* Expanded Details */}
                                 {expandedLogId === log.id && (
                                     <div className="px-4 pb-4 pt-0 border-t border-white/5 animate-fade-in">
+                                        {/* Stats Row */}
+                                        <div className="flex justify-around items-center py-3 border-b border-white/5 mb-2">
+                                            <div className="text-center">
+                                                <span className="text-xs text-gray-500 block">זמן</span>
+                                                <span className="font-bold text-white">{log.durationMinutes || 0} דק'</span>
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="text-xs text-gray-500 block">קלוריות</span>
+                                                <span className="font-bold text-white">{log.calories || 0}</span>
+                                            </div>
+                                        </div>
                                         {isInProgress && (
                                             <div className="my-3">
                                                 <button

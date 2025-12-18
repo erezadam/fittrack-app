@@ -315,19 +315,22 @@ export const storageService = {
 
     getLastExercisePerformance: async (exerciseId, userId) => {
         try {
-            // Query recent workout logs, ordered by date descending
-            let q = query(
+            // Query all workout logs for the user
+            // We avoid orderBy here to prevent "Missing Index" errors if the index isn't built yet.
+            // We'll sort in memory.
+            const q = query(
                 collection(db, WORKOUT_LOGS_COLLECTION),
-                where('userId', '==', userId),
-                orderBy('timestamp', 'desc'),
-                limit(20) // Limit to recent 20 workouts to avoid scanning everything
+                where('userId', '==', userId)
             );
 
             const querySnapshot = await getDocs(q);
+            const logs = querySnapshot.docs.map(doc => doc.data());
+
+            // Sort by timestamp descending (newest first)
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             // Iterate through logs to find the first occurrence of the exercise
-            for (const doc of querySnapshot.docs) {
-                const workout = doc.data();
+            for (const workout of logs) {
                 if (workout.exercises) {
                     const exerciseData = workout.exercises.find(ex => ex.exercise_id === exerciseId);
 

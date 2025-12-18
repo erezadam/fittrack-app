@@ -29,7 +29,7 @@ const HEBREW_MUSCLE_NAMES = {
     'Back': 'גב',
     'Legs': 'רגליים',
     'Shoulders': 'כתפיים',
-    'Arms': 'ידיים',
+    'Arms': 'זרועות',
     'Core': 'בטן',
     'Glutes': 'ישבן',
     'Cardio': 'אירובי',
@@ -37,7 +37,7 @@ const HEBREW_MUSCLE_NAMES = {
     'Abs': 'בטן'
 };
 
-export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack, mode = 'create', initialSelectedExercises = [], onAdd }) {
+export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack, mode = 'create', initialSelectedExercises = [], initialWorkoutName = '', onAdd }) {
     // Flow State: 'dashboard' -> 'selection'
     const [step, setStep] = useState('dashboard');
     const [showAICoach, setShowAICoach] = useState(false);
@@ -50,7 +50,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
     const [muscles, setMuscles] = useState({}); // Object: { 'Chest': { label: '...', ... } }
 
     // Workout State
-    const [workoutName, setWorkoutName] = useState('');
+    const [workoutName, setWorkoutName] = useState(initialWorkoutName || '');
     // const [selectedTemplateId, setSelectedTemplateId] = useState('new'); // REMOVED
     const [selectedExercises, setSelectedExercises] = useState([]);
 
@@ -66,7 +66,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBa
         loadData();
 
         if (mode === 'add' && initialSelectedExercises.length > 0) {
-            setStep('selection');
+            // setStep('selection'); // CHANGED: Start at dashboard to allow adding more muscles
             setSelectedExercises(initialSelectedExercises);
             // Pre-select muscles based on exercises
             const muscles = [...new Set(initialSelectedExercises.map(e => e.muscle_group_id || e.mainMuscle))];

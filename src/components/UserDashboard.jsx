@@ -151,7 +151,7 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
                     onClick={onNavigateToHistory}
                     className="neu-btn text-xl py-4 px-12 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all bg-gray-800 text-white border-gray-700"
                 >
-                    📜 היסטוריית אימונים
+                    📜 מעקב אימונים
                 </button>
             </div>
         </div>

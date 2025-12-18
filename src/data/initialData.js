@@ -49,7 +49,7 @@ export const initialMuscles = {
     'Back': { label: 'גב', icon: '🦅', subMuscles: ['רחב גבי', 'זוקפי גב', 'מרכז גב', 'טרפזים'] },
     'Legs': { label: 'רגליים', icon: '🦵', subMuscles: ['ארבע ראשי', 'המסטרינג', 'ישבן', 'תאומים'] },
     'Shoulders': { label: 'כתפיים', icon: '🥥', subMuscles: ['כתף קדמית', 'כתף אמצעית', 'כתף אחורית'] },
-    'Arms': { label: 'ידיים', icon: '💪', subMuscles: ['דו ראשי', 'תלת ראשי', 'אמות'] },
+    'Arms': { label: 'זרועות', icon: '💪', subMuscles: ['יד קדמית', 'יד אחורית', 'אמות'] },
     'Core': { label: 'בטן', icon: '🍫', subMuscles: ['בטן עליונה', 'בטן תחתונה', 'אלכסונים', 'בטן סטטית'] },
     'Glutes': { label: 'ישבן', icon: '🍑', subMuscles: ['ישבן עליון', 'ישבן תחתון', 'צידי הישבן'] },
     'Cardio': { label: 'אירובי', icon: '🏃‍♂️', subMuscles: ['ריצה', 'הליכה', 'אופניים'] },

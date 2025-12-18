@@ -103,8 +103,9 @@ function App() {
     setTempWorkoutData(null);
   };
 
-  const handleAddExercises = (currentData) => {
+  const handleAddExercises = (currentData, name) => {
     setTempWorkoutData(currentData);
+    if (name) setActiveWorkoutName(name);
     setView('builder_add'); // Special view state for adding exercises
   };
 
@@ -121,37 +122,38 @@ function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  const handleResume = (log) => {
-    // Reconstruct exercises from log
-    // We need to map log exercises back to full exercise objects if possible, or at least structure them correctly
-    // ActiveWorkout expects 'exercises' prop to be array of exercise objects.
-    // Log exercises have { exercise_id, name, mainMuscle, sets }
+  const handleResume = async (log) => {
+    try {
+      // Fetch full exercises to get images/videos
+      const allExercises = await storageService.getExercises();
 
-    // We need to fetch full exercise details if we want images/videos etc.
-    // But for now, let's just pass what we have. ActiveWorkout uses 'exercises' mainly for ID and name.
-    // However, ActiveWorkout initializes state based on 'exercises' prop.
-    // AND it uses 'initialData' to set sets/reps.
+      const exercisesForActive = log.exercises.map(le => {
+        const fullExercise = allExercises.find(e => e.id === le.exercise_id);
+        return {
+          ...fullExercise, // Include all details (images, video, etc.)
+          id: le.exercise_id, // Ensure ID matches
+          name: le.name, // Fallback to log name
+          mainMuscle: le.mainMuscle || le.muscle || fullExercise?.mainMuscle
+        };
+      });
 
-    // So:
-    // 1. exercises = array of { id: exercise_id, name, mainMuscle }
-    // 2. initialData = object { [id]: { sets: [...] } }
+      const initialDataForActive = {};
+      log.exercises.forEach(le => {
+        initialDataForActive[le.exercise_id] = {
+          sets: le.sets,
+          isCompleted: le.isCompleted // Pass completion status if available
+        };
+      });
 
-    const exercisesForActive = log.exercises.map(le => ({
-      id: le.exercise_id,
-      name: le.name,
-      mainMuscle: le.mainMuscle || le.muscle
-    }));
-
-    const initialDataForActive = {};
-    log.exercises.forEach(le => {
-      initialDataForActive[le.exercise_id] = { sets: le.sets };
-    });
-
-    setActiveExercises(exercisesForActive);
-    setActiveWorkoutName(log.workoutName);
-    setActiveLogId(log.id);
-    setTempWorkoutData(initialDataForActive);
-    setView('active');
+      setActiveExercises(exercisesForActive);
+      setActiveWorkoutName(log.workoutName);
+      setActiveLogId(log.id);
+      setTempWorkoutData(initialDataForActive);
+      setView('active');
+    } catch (error) {
+      console.error("Failed to resume workout:", error);
+      alert("שגיאה בטעינת האימון. אנא נסה שנית.");
+    }
   };
 
   const handleRepeatWorkout = (log) => {
@@ -202,6 +204,7 @@ function App() {
           user={user}
           mode="add"
           initialSelectedExercises={activeExercises}
+          initialWorkoutName={activeWorkoutName}
           onAdd={handleExercisesAdded}
           onBack={() => setView('active')} // Cancel adding goes back to active
         />
@@ -216,7 +219,10 @@ function App() {
           initialData={tempWorkoutData}
           onFinish={finishWorkout}
           onAddExercises={handleAddExercises}
-          onCancel={() => setView('builder')}
+          onCancel={() => {
+            setActiveLogId(null);
+            setView('builder');
+          }}
         />
       )}
 
@@ -238,7 +244,7 @@ function App() {
 
       {/* Version Footer */}
       <div className="fixed bottom-2 left-0 w-full text-center text-[10px] text-gray-500 pointer-events-none z-50 opacity-50">
-        גרסה: מחיקת היסטוריה | 17.12.2025
+        גרסה: מחיקת תרגיל ודיווח קלוריות | Antigravity | 18.12.2025
       </div>
     </div>
   );
