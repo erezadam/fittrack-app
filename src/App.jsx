@@ -8,17 +8,21 @@ import WorkoutHistory from './components/WorkoutHistory';
 
 import LoginScreen from './components/LoginScreen';
 
+import TrainerDashboard from './components/TrainerDashboard';
+
 function App() {
   const [user, setUser] = useState(null);
   console.log("App Rendered - User State:", user);
 
   const [view, setView] = useState('dashboard'); // dashboard, builder, active, admin
+  const [isTrainerMode, setIsTrainerMode] = useState(false); // Trainer Mode State
   const [activeExercises, setActiveExercises] = useState([]);
   const [activeWorkoutName, setActiveWorkoutName] = useState('');
   const [activeLogId, setActiveLogId] = useState(null); // For resuming workouts
   const [tempWorkoutData, setTempWorkoutData] = useState(null); // Store progress when adding exercises
 
   useEffect(() => {
+    // ... existing useEffect ...
     const checkDevMode = async () => {
       try {
         // Check for stored user first (Auto-Login)
@@ -62,9 +66,11 @@ function App() {
     setUser(null);
     localStorage.removeItem('fittrack_user');
     setView('dashboard');
+    setIsTrainerMode(false);
   };
 
   const startWorkout = async (exercises, name, logId = null) => {
+    // ... existing startWorkout ...
     setActiveExercises(exercises);
     setActiveWorkoutName(name || 'Untitled Workout');
 
@@ -123,6 +129,7 @@ function App() {
   }
 
   const handleResume = async (log) => {
+    // ... existing handleResume ...
     try {
       // Fetch full exercises to get images/videos
       const allExercises = await storageService.getExercises();
@@ -169,22 +176,30 @@ function App() {
     startWorkout(exercisesToRepeat, log.workoutName);
   };
 
+  if (isTrainerMode) {
+    return <TrainerDashboard user={user} onBack={() => setIsTrainerMode(false)} />;
+  }
+
   if (view === 'dashboard') {
     return (
-      <UserDashboard
-        user={user}
-        onNavigateToBuilder={() => setView('builder')}
-        onNavigateToHistory={() => setView('history')} // We need to update UserDashboard to handle history view internally or change view here?
-        // Wait, UserDashboard doesn't handle history view internally. App.jsx handles views.
-        // But UserDashboard renders WorkoutHistory? No.
-        // Let's check App.jsx render logic.
-        // Ah, I need to see the render part of App.jsx.
-        onLogout={() => {
-          setUser(null);
-          localStorage.removeItem('dev_mode');
-        }}
-        onResume={handleResume}
-      />
+      <div className="relative">
+        <button
+          onClick={() => setIsTrainerMode(true)}
+          className="absolute top-4 left-4 neu-btn text-xs bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 z-10"
+        >
+          Switch to Coach Mode
+        </button>
+        <UserDashboard
+          user={user}
+          onNavigateToBuilder={() => setView('builder')}
+          onNavigateToHistory={() => setView('history')}
+          onLogout={() => {
+            setUser(null);
+            localStorage.removeItem('dev_mode');
+          }}
+          onResume={handleResume}
+        />
+      </div>
     );
   }
 
