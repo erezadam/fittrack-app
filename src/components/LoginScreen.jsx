@@ -5,6 +5,7 @@ export default function LoginScreen({ onLogin }) {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState(''); // New State
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -13,10 +14,11 @@ export default function LoginScreen({ onLogin }) {
         try {
             const savedDetails = localStorage.getItem('fittrack_last_details');
             if (savedDetails) {
-                const { firstName, lastName, phone } = JSON.parse(savedDetails);
+                const { firstName, lastName, phone, email } = JSON.parse(savedDetails);
                 setFirstName(firstName || '');
                 setLastName(lastName || '');
                 setPhone(phone || '');
+                setEmail(email || '');
             }
         } catch (e) {
             console.error("Failed to load saved details:", e);
@@ -26,7 +28,7 @@ export default function LoginScreen({ onLogin }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!firstName || !lastName || !phone) {
-            setError('נא למלא את כל השדות');
+            setError('נא למלא שם ומספר טלפון');
             return;
         }
 
@@ -42,9 +44,9 @@ export default function LoginScreen({ onLogin }) {
 
         try {
             // Save details for next time (even before login success, to remember attempt)
-            localStorage.setItem('fittrack_last_details', JSON.stringify({ firstName, lastName, phone }));
+            localStorage.setItem('fittrack_last_details', JSON.stringify({ firstName, lastName, phone, email }));
 
-            const user = await storageService.loginUser(firstName.trim(), lastName.trim(), phone.replace(/-/g, ''));
+            const user = await storageService.loginUser(firstName.trim(), lastName.trim(), phone.replace(/-/g, ''), email.trim());
             onLogin(user);
         } catch (err) {
             console.error("Login failed", err);
@@ -69,37 +71,54 @@ export default function LoginScreen({ onLogin }) {
 
                 {/* Form */}
                 <div className="p-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">Welcome to RepUp</h2>
+                    <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">ברוכים הבאים ל-RepUp</h2>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">שם פרטי</label>
-                            <input
-                                type="text"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                className="neu-input"
-                                placeholder="למשל: ישראל"
-                            />
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">שם פרטי</label>
+                                <input
+                                    type="text"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    className="neu-input w-full"
+                                    placeholder="ישראל"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">שם משפחה</label>
+                                <input
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    className="neu-input w-full"
+                                    placeholder="ישראלי"
+                                />
+                            </div>
                         </div>
+
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">שם משפחה</label>
-                            <input
-                                type="text"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                className="neu-input"
-                                placeholder="למשל: ישראלי"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">טלפון נייד</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">טלפון נייד</label>
                             <input
                                 type="tel"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
-                                className="neu-input"
+                                className="neu-input w-full"
                                 placeholder="05X-XXXXXXX"
+                                dir="ltr"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">
+                                אימייל <span className="text-teal-500 text-xs font-normal">(מומלץ לסנכרון אימונים)</span>
+                            </label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="neu-input w-full"
+                                placeholder="your@email.com"
                                 dir="ltr"
                             />
                         </div>
@@ -125,7 +144,7 @@ export default function LoginScreen({ onLogin }) {
                 </div>
 
                 <div className="bg-gray-50 p-4 text-center text-xs text-gray-400 flex justify-between items-center">
-                    <span>גרסה: e7x9p21 (תרגילים מטוייבים) | תאריך: 16/12/2025 19:08</span>
+                    <span>גרסה: תיקון מסך אימונים - Antigravity | תאריך: 22/12/2025</span>
                     <button
                         onClick={() => {
                             setFirstName('Admin');

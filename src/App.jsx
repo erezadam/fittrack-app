@@ -18,8 +18,9 @@ function App() {
   const [isTrainerMode, setIsTrainerMode] = useState(false); // Trainer Mode State
   const [activeExercises, setActiveExercises] = useState([]);
   const [activeWorkoutName, setActiveWorkoutName] = useState('');
-  const [activeLogId, setActiveLogId] = useState(null); // For resuming workouts
-  const [tempWorkoutData, setTempWorkoutData] = useState(null); // Store progress when adding exercises
+  const [activeLogId, setActiveLogId] = useState(null);
+  const [activeAssignmentId, setActiveAssignmentId] = useState(null);
+  const [tempWorkoutData, setTempWorkoutData] = useState({}); // Temporary storage for workout data when adding exercises
 
   useEffect(() => {
     // ... existing useEffect ...
@@ -69,10 +70,11 @@ function App() {
     setIsTrainerMode(false);
   };
 
-  const startWorkout = async (exercises, name, logId = null) => {
+  const startWorkout = async (exercises, name, logId = null, assignmentId = null) => {
     // ... existing startWorkout ...
     setActiveExercises(exercises);
     setActiveWorkoutName(name || 'Untitled Workout');
+    setActiveAssignmentId(assignmentId);
 
     if (logId) {
       setActiveLogId(logId);
@@ -87,7 +89,8 @@ function App() {
             mainMuscle: ex.mainMuscle,
             sets: [{ weight: '', reps: '' }]
           })),
-          status: 'in_progress'
+          status: 'in_progress',
+          assignmentId: assignmentId // Optional link in the log itself
         };
         const newLog = await storageService.saveWorkout(initialLogData, user?.id);
         setActiveLogId(newLog.id);
@@ -106,6 +109,7 @@ function App() {
     setActiveExercises([]);
     setActiveWorkoutName('');
     setActiveLogId(null);
+    setActiveAssignmentId(null);
     setTempWorkoutData(null);
   };
 
@@ -129,32 +133,47 @@ function App() {
   }
 
   const handleResume = async (log) => {
-    // ... existing handleResume ...
+    if (!log || !log.exercises) {
+      console.error("Invalid log data for resume");
+      return;
+    }
+
     try {
       // Fetch full exercises to get images/videos
-      const allExercises = await storageService.getExercises();
+      let allExercises = [];
+      try {
+        allExercises = await storageService.getExercises();
+      } catch (err) {
+        console.warn("Failed to fetch all exercises during resume, using log data only", err);
+      }
 
       const exercisesForActive = log.exercises.map(le => {
         const fullExercise = allExercises.find(e => e.id === le.exercise_id);
+        // Fallback to log data if full exercise not found
         return {
-          ...fullExercise, // Include all details (images, video, etc.)
-          id: le.exercise_id, // Ensure ID matches
-          name: le.name, // Fallback to log name
-          mainMuscle: le.mainMuscle || le.muscle || fullExercise?.mainMuscle
+          ...(fullExercise || {}), // Include full details if found
+          id: le.exercise_id,
+          name: le.name || fullExercise?.name || 'Unknown Exercise',
+          mainMuscle: le.mainMuscle || le.muscle || fullExercise?.mainMuscle || 'Other',
+          // Ensure critical fields exist
+          imageUrls: fullExercise?.imageUrls || [],
+          video_url: fullExercise?.video_url || null,
+          trackingType: fullExercise?.trackingType || 'reps' // Default tracking type
         };
       });
 
       const initialDataForActive = {};
       log.exercises.forEach(le => {
         initialDataForActive[le.exercise_id] = {
-          sets: le.sets,
-          isCompleted: le.isCompleted // Pass completion status if available
+          sets: le.sets || [],
+          isCompleted: le.isCompleted || false
         };
       });
 
       setActiveExercises(exercisesForActive);
       setActiveWorkoutName(log.workoutName);
       setActiveLogId(log.id);
+      setActiveAssignmentId(log.assignmentId || null);
       setTempWorkoutData(initialDataForActive);
       setView('active');
     } catch (error) {
@@ -176,19 +195,16 @@ function App() {
     startWorkout(exercisesToRepeat, log.workoutName);
   };
 
-  if (isTrainerMode) {
+  if (isTrainerMode && (user.role === 'trainer' || user.role === 'admin' || user.isAdmin)) {
     return <TrainerDashboard user={user} onBack={() => setIsTrainerMode(false)} />;
+  } else if (isTrainerMode) {
+    // Fallback if unauthorized
+    setIsTrainerMode(false);
   }
 
   if (view === 'dashboard') {
     return (
       <div className="relative">
-        <button
-          onClick={() => setIsTrainerMode(true)}
-          className="absolute top-4 left-4 neu-btn text-xs bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 z-10"
-        >
-          Switch to Coach Mode
-        </button>
         <UserDashboard
           user={user}
           onNavigateToBuilder={() => setView('builder')}
@@ -198,6 +214,9 @@ function App() {
             localStorage.removeItem('dev_mode');
           }}
           onResume={handleResume}
+          onStartWorkout={startWorkout}
+          onSwitchToTrainer={() => setIsTrainerMode(true)}
+          onNavigateToAdmin={() => setView('admin')}
         />
       </div>
     );
@@ -231,21 +250,32 @@ function App() {
           exercises={activeExercises}
           workoutName={activeWorkoutName}
           logId={activeLogId}
+          assignmentId={activeAssignmentId}
           initialData={tempWorkoutData}
           onFinish={finishWorkout}
           onAddExercises={handleAddExercises}
           onCancel={() => {
             setActiveLogId(null);
+            setActiveAssignmentId(null);
             setView('builder');
           }}
         />
       )}
 
-      {view === 'admin' && (
+      {(view === 'admin' && user?.role === 'admin') && (
         <AdminPage
           user={user}
           onBack={() => setView('builder')}
         />
+      )}
+
+      {/* Security Guard: If trying to view admin but not admin, revert to dashboard */}
+      {view === 'admin' && user?.role !== 'admin' && (
+        (() => {
+          console.warn("Unauthorized access attempt to Admin view");
+          setTimeout(() => setView('dashboard'), 0);
+          return null;
+        })()
       )}
 
       {view === 'history' && (
@@ -254,12 +284,13 @@ function App() {
           onBack={() => setView('dashboard')}
           onResume={handleResume}
           onRepeat={handleRepeatWorkout}
+          onStartWorkout={startWorkout}
         />
       )}
 
       {/* Version Footer */}
       <div className="fixed bottom-2 left-0 w-full text-center text-[10px] text-gray-500 pointer-events-none z-50 opacity-50">
-        גרסה: מחיקת תרגיל ודיווח קלוריות | Antigravity | 18.12.2025
+        גרסה: התחברות טרייני וסנכרון תוכניות | Antigravity | 20.12.2025
       </div>
     </div>
   );

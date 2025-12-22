@@ -1,471 +1,129 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
-import AIWorkoutModal from './AIWorkoutModal';
-import ImageGalleryModal from './ImageGalleryModal';
 import { initialExercises } from '../data/initialData';
-import { Dumbbell, Activity, Footprints, Shirt, HeartPulse, User, Zap, BicepsFlexed } from 'lucide-react';
+import { Dumbbell, Activity, Footprints, Shirt, HeartPulse, User, Zap, BicepsFlexed, Plus, Trash2, Save } from 'lucide-react';
 
-const MUSCLE_ICONS = {
-    chest: Shirt,
-    back: User,
-    legs: Footprints,
-    arms: Dumbbell,
-    shoulders: BicepsFlexed,
-    cardio: HeartPulse,
-    core: Zap,
-    abs: Zap,
-    fullbody: Activity
-};
+const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
-const WORKOUT_TYPES = [
-    'מכשירים',
-    'משקולות חופשיות',
-    'כבלים',
-    'משקל גוף'
-];
-
-const HEBREW_MUSCLE_NAMES = {
-    'Chest': 'חזה',
-    'Back': 'גב',
-    'Legs': 'רגליים',
-    'Shoulders': 'כתפיים',
-    'Arms': 'זרועות',
-    'Core': 'בטן',
-    'Glutes': 'ישבן',
-    'Cardio': 'אירובי',
-    'Full Body': 'כל הגוף',
-    'Abs': 'בטן'
-};
-
-export default function WorkoutBuilder({ user, onStartWorkout, onOpenAdmin, onBack, mode = 'create', initialSelectedExercises = [], initialWorkoutName = '', onAdd }) {
-    // Flow State: 'dashboard' -> 'selection'
+export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'create', initialSelectedExercises = [], initialWorkoutName = '', onAdd, onSave, workoutDate }) {
     const [step, setStep] = useState('dashboard');
-    const [showAICoach, setShowAICoach] = useState(false);
-    const [selectedImages, setSelectedImages] = useState(null); // { images: [], title: '' } or null
-
-    // Data State
-    const [exercises, setExercises] = useState([]);
-    const [templates, setTemplates] = useState([]);
-    const [recentLogs, setRecentLogs] = useState([]); // Array of recent workout logs
-    const [muscles, setMuscles] = useState({}); // Object: { 'Chest': { label: '...', ... } }
-
-    // Workout State
     const [workoutName, setWorkoutName] = useState(initialWorkoutName || '');
-    // const [selectedTemplateId, setSelectedTemplateId] = useState('new'); // REMOVED
     const [selectedExercises, setSelectedExercises] = useState([]);
-
-    // Selection State
-    const [selectedMuscles, setSelectedMuscles] = useState([]); // Array of strings (keys)
-    const [selectedSubMuscles, setSelectedSubMuscles] = useState([]); // Array of strings
-    const [selectedEquipment, setSelectedEquipment] = useState({}); // Object: { 'Chest': ['Machines'], ... }
+    const [exercises, setExercises] = useState([]);
+    const [muscles, setMuscles] = useState({});
+    const [activeMuscle, setActiveMuscle] = useState(null);
 
     useEffect(() => {
-        // For dev: force reset to load new Hebrew data if needed, or just init
-        // storageService.resetData(); // Uncomment to force update data
         storageService.initialize();
         loadData();
-
-        if (mode === 'add' && initialSelectedExercises.length > 0) {
-            // setStep('selection'); // CHANGED: Start at dashboard to allow adding more muscles
-            setSelectedExercises(initialSelectedExercises);
-            // Pre-select muscles based on exercises
-            const muscles = [...new Set(initialSelectedExercises.map(e => e.muscle_group_id || e.mainMuscle))];
-            setSelectedMuscles(muscles);
+        if (initialSelectedExercises && initialSelectedExercises.length > 0) {
+            // Clean init data
+            const cleanInit = initialSelectedExercises
+                .filter(e => e && e.id)
+                .map(e => ({ ...e, sets: e.sets || [{ weight: '', reps: '' }] }));
+            setSelectedExercises(cleanInit);
         }
-    }, [user, mode]);
+    }, [initialSelectedExercises]);
 
     const loadData = async () => {
         try {
             const exList = await storageService.getExercises();
-
-            // Merge with local initial data to ensure images are present if missing in DB
-            const mergedExercises = exList.map(ex => {
-                // Try exact ID match first
-                let localEx = initialExercises.find(ie => ie.id === ex.id);
-
-                // If no ID match, try name match (normalized)
-                if (!localEx) {
-                    localEx = initialExercises.find(ie => ie.name.trim() === ex.name.trim());
-                }
-
-                if (localEx && localEx.imageUrls && localEx.imageUrls.length > 0) {
-                    // console.log(`Merging images for ${ex.name}:`, localEx.imageUrls);
-                    if (!ex.imageUrls || ex.imageUrls.length === 0) {
-                        return { ...ex, imageUrls: localEx.imageUrls };
-                    }
-                }
-                return ex;
-            });
-
-            // Debug: Check if specific exercises have images
-            const debugEx = mergedExercises.find(e => e.name.includes('כפיפת מרפקים'));
-            console.log("Debug Bicep Curls:", debugEx);
-
-            setExercises(mergedExercises);
-
-            const userTemplates = await storageService.getTemplates(user?.id);
-            setTemplates(userTemplates);
-
-            const userLogs = await storageService.getRecentWorkoutLogs(user?.id);
-            setRecentLogs(userLogs);
-
+            setExercises(exList || []);
             const muscleData = await storageService.getMuscles();
-            setMuscles(muscleData);
-        } catch (error) {
-            console.error("Failed to load data:", error);
-        }
-    };
-
-    // --- Logic ---
-
-    const toggleMuscle = (muscleKey) => {
-        if (selectedMuscles.includes(muscleKey)) {
-            setSelectedMuscles(selectedMuscles.filter(m => m !== muscleKey));
-        } else {
-            setSelectedMuscles([...selectedMuscles, muscleKey]);
-        }
-    };
-
-    const toggleSubMuscle = (sub) => {
-        if (selectedSubMuscles.includes(sub)) {
-            setSelectedSubMuscles(selectedSubMuscles.filter(s => s !== sub));
-        } else {
-            setSelectedSubMuscles([...selectedSubMuscles, sub]);
-        }
-    };
-
-    const toggleEquipment = (muscle, eq) => {
-        const current = selectedEquipment[muscle] || [];
-        if (current.includes(eq)) {
-            setSelectedEquipment({
-                ...selectedEquipment,
-                [muscle]: current.filter(e => e !== eq)
-            });
-        } else {
-            setSelectedEquipment({
-                ...selectedEquipment,
-                [muscle]: [...current, eq]
-            });
-        }
+            setMuscles(muscleData || {});
+            if (muscleData && Object.keys(muscleData).length > 0) setActiveMuscle(Object.keys(muscleData)[0]);
+        } catch (e) { console.error('Data Load Error', e); }
     };
 
     const toggleExercise = (ex) => {
+        if (!ex || !ex.id) return;
         const exists = selectedExercises.find(e => e.id === ex.id);
         if (exists) {
             setSelectedExercises(selectedExercises.filter(e => e.id !== ex.id));
         } else {
-            const newExercise = { ...ex, sets: [{ weight: '', reps: '' }] };
-            setSelectedExercises([...selectedExercises, newExercise]);
+            const safeExercise = { ...ex, sets: [{ weight: '', reps: '' }] };
+            setSelectedExercises([...selectedExercises, safeExercise]);
         }
     };
 
-    const handleContinue = () => {
-        // New workout flow
-        if (!workoutName) {
-            alert('נא להזין שם לאימון');
-            return;
-        }
-        if (selectedMuscles.length === 0) {
-            alert('נא לבחור לפחות שריר אחד');
-            return;
-        }
-        setStep('selection');
+    // --- SAFETY FILTER ---
+    const getCleanExercises = () => {
+        return selectedExercises
+            .filter(e => e && e.id)
+            .map(e => ({
+                ...e,
+                sets: (Array.isArray(e.sets) && e.sets.length > 0) ? e.sets : [{ weight: '', reps: '' }]
+            }));
     };
 
-    const handleStart = () => {
-        if (selectedExercises.length === 0) {
-            alert('נא לבחור לפחות תרגיל אחד');
+    const handleStart = async () => {
+        if (selectedExercises.length === 0) { alert('נא לבחור תרגילים'); return; }
+        const safeExercises = getCleanExercises();
+
+        if (mode === 'trainer') {
+            if (onSave) onSave(safeExercises);
             return;
         }
-
         if (mode === 'add') {
-            onAdd(selectedExercises);
+            if (onAdd) onAdd(safeExercises);
             return;
         }
 
-        // Save as template if new (always true now for this flow)
-        storageService.saveTemplate(workoutName, selectedExercises, user?.id).catch(console.error);
-
-        onStartWorkout(selectedExercises, workoutName);
+        try { await storageService.saveTemplate(workoutName || 'אימון ללא שם', safeExercises, user?.id); } catch (e) { }
+        if (onStartWorkout) onStartWorkout(safeExercises, workoutName);
     };
-
-    // --- Renderers ---
-
-    const availableMuscleKeys = Object.keys(muscles);
 
     if (step === 'dashboard') {
+        const availableMuscles = Object.keys(muscles).filter(m => !['cardio', 'full body'].includes(m.toLowerCase()));
         return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl">
-                <div className="flex justify-between items-center mb-8">
-                    <div className="flex gap-4">
-                        <button onClick={onBack} className="neu-btn text-sm">
-                            → חזרה
-                        </button>
-                        <button onClick={onOpenAdmin} className="neu-btn text-sm">
-                            <span>⚙</span> מנהל
-                        </button>
-                        <button
-                            onClick={() => setShowAICoach(true)}
-                            className="neu-btn primary text-sm"
-                        >
-                            <span>🤖</span> מאמן AI
-                        </button>
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-teal-600 mb-1">
-                            {mode === 'add' ? 'הוספת תרגילים' : 'איזה כיף שחזרת להתאמן'}
-                        </h1>
-                        <div className="text-gray-500 font-medium">{mode === 'add' ? 'בחר תרגילים נוספים לאימון' : 'יצירת/פתיחת אימון'}</div>
+            <div className='p-4 max-w-4xl mx-auto'>
+                <div className='flex justify-between mb-6'>
+                    <button onClick={onBack} className='px-4 py-2 bg-gray-100 rounded text-gray-700'>חזרה</button>
+                    <h1 className='text-2xl font-bold text-gray-800'>בניית אימון</h1>
+                </div>
+                <div className='mb-8 space-y-4'>
+                    <input type='text' placeholder='שם האימון' className='w-full p-4 border border-gray-200 rounded-xl shadow-sm text-lg' value={workoutName} onChange={(e) => setWorkoutName(e.target.value)} />
+                    <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
+                        {availableMuscles.map(m => (
+                            <div key={m} onClick={() => { setActiveMuscle(m); setStep('selection'); }} className='p-6 bg-white border border-gray-100 rounded-xl shadow-sm cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-all text-center'>
+                                <span className='font-bold text-lg text-gray-700'>{HEBREW_MUSCLE_NAMES[m] || m}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
-
-                {showAICoach && (
-                    <AIWorkoutModal
-                        onClose={() => setShowAICoach(false)}
-                        onStartWorkout={(exercises, name) => {
-                            setShowAICoach(false);
-                            onStartWorkout(exercises, name);
-                        }}
-                    />
-                )}
-
-                {/* Section: Workout Name Input */}
-                <div className="animate-fade-in space-y-8">
-                    {mode !== 'add' && (
-                        <div className="neu-card">
-                            <label className="block mb-3 font-bold text-gray-700">הקלד את שם האימון</label>
-                            <input
-                                type="text"
-                                className="neu-input"
-                                placeholder="למשל: אימון חזה וכתפיים"
-                                value={workoutName}
-                                onChange={(e) => setWorkoutName(e.target.value)}
-                            />
-                        </div>
-                    )}
-
-                    <div>
-                        <h3 className="text-xl font-bold mb-4 text-gray-800">בחר שרירים לאימון</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {availableMuscleKeys.filter(m => {
-                                const label = muscles[m]?.label || '';
-                                const hidden = ['אירובי', 'ישבן', 'cardio', 'glutes', 'כל הגוף', 'full body', 'fullbody'];
-                                const shouldHide = hidden.includes(m.toLowerCase()) || hidden.includes(label.toLowerCase());
-                                if (shouldHide) console.log(`Hiding muscle: ${m} (${label})`);
-                                return !shouldHide;
-                            }).map(m => {
-                                const isSelected = selectedMuscles.includes(m);
-                                const mapping = muscles[m] || { label: m, icon: '💪' };
-                                const label = HEBREW_MUSCLE_NAMES[m] || mapping.label || m;
-
-                                return (
-                                    <div
-                                        key={m}
-                                        onClick={() => toggleMuscle(m)}
-                                        className={`neu-card cursor-pointer transition-all duration-300 flex items-center justify-between flex-row-reverse p-4 ${isSelected
-                                            ? 'ring-2 ring-cyan-400 transform scale-105 shadow-lg'
-                                            : 'hover:translate-y-[-2px]'
-                                            }`}
-                                    >
-                                        <div className="text-4xl mb-2 flex justify-center">
-                                            {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
-                                                <img
-                                                    src={mapping.icon}
-                                                    alt={label}
-                                                    className="w-12 h-12 object-contain mx-auto"
-                                                />
-                                            ) : (() => {
-                                                const IconComponent = MUSCLE_ICONS[m.toLowerCase()] || MUSCLE_ICONS[mapping.label.toLowerCase()] || null;
-                                                if (IconComponent) {
-                                                    return <IconComponent size={40} strokeWidth={1.5} className={isSelected ? 'text-cyan-500' : 'text-slate-400'} />;
-                                                }
-                                                return <span>{mapping.icon || '💪'}</span>;
-                                            })()}
-                                        </div>
-                                        <div className={`font-bold ${isSelected ? 'text-teal-600' : 'text-gray-600'}`}>
-                                            {label}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-
-                {/* Main Action Button */}
-                <div className="text-center mt-12 mb-8">
-                    <button
-                        onClick={handleContinue}
-                        className="neu-btn primary w-full max-w-md mx-auto text-lg py-4"
-                    >
-                        {mode === 'add'
-                            ? 'המשך לבחירת תרגילים ←'
-                            : 'המשך לבחירת תרגילים ←'}
-                    </button>
-                </div>
-
-                {/* Version Footer */}
-                <div className="text-center text-xs text-gray-300 mt-8 pb-4 font-mono">
-                    גרסה: e7x9p21 (תרגילים מטוייבים) | תאריך: 16/12/2025 19:08
-                </div>
+                <button onClick={() => setStep('selection')} className='w-full p-4 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl font-bold text-lg shadow-lg'>המשך לבחירת תרגילים</button>
             </div>
         );
     }
 
-    // Step 2: Selection View
+    const activeEx = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === activeMuscle);
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <div className="flex justify-between items-center mb-8">
-                <button onClick={() => setStep('dashboard')} className="neu-btn text-sm">
-                    → חזרה
-                </button>
-                <h2 className="text-2xl font-bold text-gray-800">
-                    {mode === 'add' ? 'הוספת תרגילים' : 'בחירת תרגילים'}
-                </h2>
+        <div className='p-4 max-w-4xl mx-auto pb-32'>
+            <div className='flex justify-between items-center mb-6 sticky top-0 bg-white z-10 py-4 border-b'>
+                <button onClick={() => setStep('dashboard')} className='px-4 py-2 bg-gray-100 rounded-lg'>חזרה</button>
+                <h2 className='text-xl font-bold text-teal-600'>{HEBREW_MUSCLE_NAMES[activeMuscle] || activeMuscle}</h2>
             </div>
-
-            <div className="space-y-8">
-                {selectedMuscles.map(m => {
-                    const mapping = muscles[m] || { label: m };
-                    const allMuscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
-
-                    // Dynamically derive sub-muscles from the actual exercises to ensure filters match data
-                    const derivedSubMuscles = [...new Set(allMuscleExercises.map(e => e.subMuscle).filter(Boolean))].sort();
-                    const subMuscles = derivedSubMuscles.length > 0 ? derivedSubMuscles : (mapping.subMuscles || []);
-
-                    const muscleEquipment = selectedEquipment[m] || [];
-
-                    const displayedExercises = allMuscleExercises.filter(ex => {
-                        // Filter by Sub-Muscle
-                        if (selectedSubMuscles.length > 0) {
-                            const hasActiveFilterForThisGroup = subMuscles.some(sm => selectedSubMuscles.includes(sm));
-                            if (hasActiveFilterForThisGroup) {
-                                if (!selectedSubMuscles.includes(ex.subMuscle)) return false;
-                            }
-                        }
-
-                        // Filter by Equipment (Per Muscle)
-                        if (muscleEquipment.length > 0) {
-                            if (!muscleEquipment.includes(ex.equipment)) return false;
-                        }
-
-                        return true;
-                    });
-
+            <div className='grid grid-cols-1 gap-3'>
+                {activeEx.map(ex => {
+                    const isSelected = !!selectedExercises.find(e => e.id === ex.id);
                     return (
-                        <div key={m} className="animate-fade-in">
-                            <h3 className="text-xl font-bold text-teal-600 border-b-2 border-teal-100 pb-2 inline-block mb-4">
-                                {mapping.label}
-                            </h3>
-
-                            <div className="flex flex-col gap-3 mb-4">
-                                {/* Sub-Muscle Filters */}
-                                {subMuscles.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {subMuscles.map(sm => {
-                                            const isActive = selectedSubMuscles.includes(sm);
-                                            return (
-                                                <div
-                                                    key={sm}
-                                                    onClick={() => toggleSubMuscle(sm)}
-                                                    className={`px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all shadow-sm ${isActive
-                                                        ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md'
-                                                        : 'bg-white text-gray-600 hover:bg-gray-50'
-                                                        }`}
-                                                >
-                                                    {sm}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* Equipment Filters (Per Muscle) */}
-                                <div className="mt-2">
-                                    <div className="text-xs font-bold text-gray-400 mb-2">סוג ציוד:</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(WORKOUT_TYPES || []).map(eq => {
-                                            const isActive = muscleEquipment.includes(eq);
-                                            return (
-                                                <div
-                                                    key={eq}
-                                                    onClick={() => toggleEquipment(m, eq)}
-                                                    className={`px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-all border ${isActive
-                                                        ? 'bg-indigo-100 border-indigo-300 text-indigo-800 shadow-sm'
-                                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                                                        }`}
-                                                >
-                                                    {eq}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                        <div key={ex.id} onClick={() => toggleExercise(ex)} className={`p-4 border rounded-xl flex justify-between items-center cursor-pointer transition-all ${isSelected ? 'bg-cyan-50 border-cyan-400 ring-1 ring-cyan-400' : 'bg-white border-gray-100'}`}>
+                            <div className='flex items-center gap-4'>
+                                <span className='font-bold text-gray-800'>{ex.name}</span>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {displayedExercises.map(ex => {
-                                    const isSelected = !!selectedExercises.find(e => e.id === ex.id);
-                                    return (
-                                        <div
-                                            key={ex.id}
-                                            onClick={() => toggleExercise(ex)}
-                                            className={`neu-card p-4 cursor-pointer flex justify-between items-center transition-all ${isSelected
-                                                ? 'ring-2 ring-cyan-400 bg-cyan-50/50'
-                                                : 'hover:bg-white'
-                                                }`}
-                                        >
-                                            <div>
-                                                <div className="font-bold text-gray-800 flex items-center gap-2">
-                                                    {ex.name}
-                                                    {ex.imageUrls && ex.imageUrls.length > 0 && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedImages({ images: ex.imageUrls, title: ex.name });
-                                                            }}
-                                                            className="neu-btn text-xs px-2 py-1 ml-2 bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
-                                                        >
-                                                            📷 תמונות
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {ex.subMuscle} {ex.subMuscle && ex.equipment ? '•' : ''} {ex.equipment}
-                                                </div>
-                                            </div>
-                                            <div className={`neu-checkbox ${isSelected ? 'checked' : ''}`}>
-                                                {isSelected && <span className="text-white text-sm">✓</span>}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            {displayedExercises.length === 0 && (
-                                <div className="text-gray-400 italic text-sm mt-2">אין תרגילים התואמים את הסינון.</div>
-                            )}
+                            {isSelected && <div className='w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center text-white text-xs'>✓</div>}
                         </div>
                     );
                 })}
             </div>
-
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md z-50">
-                <button
-                    onClick={handleStart}
-                    className="neu-btn primary w-full py-4 text-xl shadow-2xl"
-                >
-                    {mode === 'add' ? `עדכן אימון (${selectedExercises.length})` : `התחל אימון (${selectedExercises.length})`}
-                </button>
+            <div className='fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50'>
+                <div className='max-w-4xl mx-auto flex gap-4 items-center'>
+                    <div className='text-sm text-gray-500 font-bold'>נבחרו: {selectedExercises.length}</div>
+                    <button onClick={handleStart} className='flex-1 p-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold text-xl shadow-lg'>
+                        {mode === 'add' ? 'הוסף לאימון' : 'התחל אימון'}
+                    </button>
+                </div>
             </div>
-            <div className="h-24"></div>
-
-            <ImageGalleryModal
-                isOpen={!!selectedImages}
-                onClose={() => setSelectedImages(null)}
-                images={selectedImages?.images || []}
-                title={selectedImages?.title}
-            />
         </div>
     );
 }

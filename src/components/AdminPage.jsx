@@ -1,11 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { db, storage } from '../firebase';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { WORKOUT_TYPES } from '../data/initialData';
 
-import { migrateMuscleNames, seedMissingExercises } from '../utils/fixData';
-import { importExercises } from '../utils/importHands';
+import { seedMissingExercises } from '../utils/fixData';
+// import { importExercises } from '../utils/importHands';
+
+const AdminSection = ({ id, title, icon, color, children, isOpen, onToggle }) => (
+    <div className={`neu-card mb-8 border-t-4 border-${color}-500 transition-all duration-300`}>
+        <div
+            className="flex justify-between items-center cursor-pointer py-2"
+            onClick={() => onToggle(id)}
+        >
+            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 select-none">
+                <span className={`text-${color}-500`}>{icon}</span> {title}
+            </h3>
+            <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                {isOpen ? <ChevronUp /> : <ChevronDown />}
+            </button>
+        </div>
+
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+            {children}
+        </div>
+    </div>
+);
 
 export default function AdminPage({ user, onBack }) {
     if (!user || !user.isAdmin) {
@@ -25,6 +47,92 @@ export default function AdminPage({ user, onBack }) {
     const [exercises, setExercises] = useState([]);
     const [muscles, setMuscles] = useState({});
     const [loading, setLoading] = useState(true);
+
+    // Collapsible Sections State
+    const [openSections, setOpenSections] = useState({
+        userManagement: false,
+        dataIngestion: false,
+        reports: false,
+        maintenance: false
+    });
+
+    const toggleSection = (section) => {
+        setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    // Toast State
+    const [toast, setToast] = useState({ message: '', type: '', visible: false });
+
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type, visible: true });
+        setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+    };
+
+    // User Management State
+    const [users, setUsers] = useState([]);
+    const [userFilters, setUserFilters] = useState({ firstName: '', lastName: '', phone: '' });
+
+    useEffect(() => {
+        // Real-time Users Listener
+        const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+            const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setUsers(userList);
+        }, (error) => {
+            console.error("Error fetching users:", error);
+        });
+
+        return () => unsubscribeUsers();
+    }, []);
+
+    // Filter Users Logic
+    const filteredUsers = users.filter(u => {
+        const fName = userFilters.firstName.trim().toLowerCase();
+        const lName = userFilters.lastName.trim().toLowerCase();
+        const ph = userFilters.phone.trim().replace(/-/g, '');
+
+        if (!fName && !lName && !ph) return true;
+
+        const matchFirst = fName && (u.firstName || '').toLowerCase().includes(fName);
+        const matchLast = lName && (u.lastName || '').toLowerCase().includes(lName);
+        const matchPhone = ph && (u.phone || '').replace(/-/g, '').includes(ph);
+
+        return matchFirst || matchLast || matchPhone;
+    });
+
+    const handleRoleChange = async (userId, newRole) => {
+        console.log(`Updating role for userId: ${userId} to ${newRole}`);
+        if (!userId) {
+            console.error("Invalid userId for role update");
+            showToast('שגיאה: מזהה משתמש חסר', 'error');
+            return;
+        }
+        try {
+            await storageService.updateUserRole(userId, newRole);
+            showToast(`הרשאה עודכנה ל-${newRole}`, 'success');
+        } catch (error) {
+            console.error("Role update failed:", error);
+            showToast(`שגיאה בעדכון הרשאה: ${error.message}`, 'error');
+        }
+    };
+
+    const handleDeleteUser = async (user) => {
+        const confirmMsg = `האם אתה בטוח שברצונך למחוק את ${user.firstName} ${user.lastName}?`;
+        if (window.confirm(confirmMsg)) {
+            console.log(`Attempting to delete user: ${user.id}`);
+            if (!user.id) {
+                console.error("Invalid userId for delete");
+                showToast('שגיאה: מזהה משתמש חסר', 'error');
+                return;
+            }
+            try {
+                await storageService.deleteUser(user.id);
+                showToast('משתמש נמחק בהצלחה', 'success');
+            } catch (error) {
+                console.error("Delete error details:", error);
+                showToast(`שגיאה במחיקת משתמש: ${error.message}`, 'error');
+            }
+        }
+    };
 
     // Exercise Form State
     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
@@ -137,87 +245,9 @@ export default function AdminPage({ user, onBack }) {
         }
     };
 
-    const handleFixData = async () => {
-        if (!window.confirm('פעולה זו תסרוק את כל התרגילים ותתקן שמות שרירים (למשל "Chest" -> "חזה") אם חסרים. להמשיך?')) return;
 
-        setLoading(true);
-        try {
-            await migrateMuscleNames();
-            // Reload
-            const updatedEx = await storageService.getExercises();
-            setExercises(updatedEx);
-            alert('תיקון נתונים הושלם!');
-        } catch (error) {
-            console.error("Error fixing data:", error);
-            alert("שגיאה בתיקון נתונים");
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    const handleFixArmSubMuscles = async () => {
-        if (!window.confirm('פעולה זו תחליף "דו ראשי" ל-"יד קידמית" ו-"תלת ראשי" ל-"יד אחורית" בכל התרגילים. להמשיך?')) return;
 
-        setLoading(true);
-        try {
-            const allExercises = await storageService.getExercises();
-            const updates = [];
-            let count = 0;
-
-            for (const ex of allExercises) {
-                let needsUpdate = false;
-                let newSubMuscle = ex.subMuscle;
-
-                if (ex.subMuscle === 'דו ראשי') {
-                    newSubMuscle = 'יד קידמית';
-                    needsUpdate = true;
-                } else if (ex.subMuscle === 'תלת ראשי') {
-                    newSubMuscle = 'יד אחורית';
-                    needsUpdate = true;
-                }
-
-                if (needsUpdate) {
-                    updates.push({ ...ex, subMuscle: newSubMuscle });
-                    count++;
-                }
-            }
-
-            if (updates.length > 0) {
-                await storageService.saveExercisesBatch(updates);
-                alert(`עודכנו ${count} תרגילים.`);
-            } else {
-                alert('לא נמצאו תרגילים לתיקון (אולי כבר תוקנו).');
-            }
-
-            // Force update the Muscle definition to remove old terms from dropdowns
-            const currentMuscles = await storageService.getMuscles();
-            if (currentMuscles['Arms']) {
-                const updatedArms = {
-                    ...currentMuscles['Arms'],
-                    label: 'זרועות', // Update label
-                    subMuscles: ['יד קדמית', 'יד אחורית', 'אמות'] // Enforce new standard
-                };
-                await storageService.saveMuscle('Arms', updatedArms);
-                console.log("Updated Arms muscle definition");
-            }
-
-            alert('כעת מסנכרן מסננים...');
-            await runSyncFilters(true);
-
-            // Reload
-            const updatedEx = await storageService.getExercises();
-            setExercises(updatedEx);
-            const updatedMusclesData = await storageService.getMuscles();
-            setMuscles(updatedMusclesData);
-
-            alert('התהליך הושלם בהצלחה! המונחים הישנים הוסרו.');
-        } catch (error) {
-            console.error("Error fixing arm sub-muscles:", error);
-            alert("שגיאה בתיקון שמות תת-שריר");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const loadData = async () => {
         setLoading(true);
@@ -594,6 +624,14 @@ export default function AdminPage({ user, onBack }) {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-6xl">
+            {/* Toast Notification */}
+            {toast.visible && (
+                <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-50 transition-all ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                    }`}>
+                    {toast.message}
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <button type="button" onClick={onBack} className="neu-btn text-sm">
@@ -602,22 +640,116 @@ export default function AdminPage({ user, onBack }) {
                 <h2 className="text-2xl font-bold text-gray-800">לוח בקרה למנהל</h2>
             </div>
 
+            {/* User Management Card (Collapsible) */}
+            <AdminSection
+                id="userManagement"
+                title="ניהול משתמשים והרשאות"
+                icon="👥"
+                color="indigo"
+                isOpen={openSections.userManagement}
+                onToggle={toggleSection}
+            >
+                {/* Search Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">חיפוש לפי שם פרטי</label>
+                        <input
+                            type="text"
+                            className="neu-input w-full"
+                            placeholder="הקלד שם פרטי..."
+                            value={userFilters.firstName}
+                            onChange={(e) => setUserFilters({ ...userFilters, firstName: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">חיפוש לפי שם משפחה</label>
+                        <input
+                            type="text"
+                            className="neu-input w-full"
+                            placeholder="הקלד שם משפחה..."
+                            value={userFilters.lastName}
+                            onChange={(e) => setUserFilters({ ...userFilters, lastName: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">חיפוש לפי נייד</label>
+                        <input
+                            type="text"
+                            className="neu-input w-full"
+                            placeholder="הקלד מס' טלפון..."
+                            value={userFilters.phone}
+                            onChange={(e) => setUserFilters({ ...userFilters, phone: e.target.value })}
+                            dir="ltr"
+                        />
+                    </div>
+                </div>
+
+                {/* Users Table */}
+                <div className="overflow-x-auto bg-gray-50 rounded-xl border border-gray-100 max-h-[400px] overflow-y-auto">
+                    <table className="w-full text-right">
+                        <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
+                            <tr>
+                                <th className="p-4 font-bold">שם מלא</th>
+                                <th className="p-4 font-bold">טלפון</th>
+                                <th className="p-4 font-bold">הרשאה</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {filteredUsers.map(u => (
+                                <tr key={u.id} className="hover:bg-white transition-colors">
+                                    <td className="p-4 font-medium text-gray-800">
+                                        {u.firstName} {u.lastName}
+                                        {u.email && <div className="text-xs text-gray-400 font-normal">{u.email}</div>}
+                                    </td>
+                                    <td className="p-4 text-gray-600" dir="ltr">{u.phone}</td>
+                                    <td className="p-4 flex items-center gap-2">
+                                        <select
+                                            className={`neu-input py-1 px-2 text-sm ${u.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : (u.role === 'trainer' ? 'bg-teal-50 text-teal-700 border-teal-200' : '')}`}
+                                            value={u.role || 'trainee'}
+                                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                        >
+                                            <option value="trainee">מתאמן</option>
+                                            <option value="trainer">מאמן</option>
+                                            <option value="admin">מנהל</option>
+                                        </select>
+                                        <button
+                                            onClick={() => handleDeleteUser(u)}
+                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                            title="מחק משתמש"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan="3" className="p-8 text-center text-gray-400 italic">
+                                        לא נמצאו משתמשים התואמים לחיפוש.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="text-xs text-gray-400 mt-2 px-2">
+                    מוצגים {filteredUsers.length} משתמשים (מתוך {users.length})
+                </div>
+            </AdminSection>
+
             {/* Main Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
 
                 {/* Zone A: Data Ingestion */}
-                <div className="neu-card border-t-4 border-green-500 bg-white/80 backdrop-blur-sm">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="text-green-500">📥</span> ייבוא והוספת תוכן
-                    </h3>
+                <AdminSection
+                    id="dataIngestion"
+                    title="ייבוא והוספת תוכן"
+                    icon="📥"
+                    color="green"
+                    isOpen={openSections.dataIngestion}
+                    onToggle={toggleSection}
+                >
                     <div className="space-y-4">
-                        <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-                            <button onClick={importExercises} className="w-full neu-btn bg-white text-green-700 border-green-200 hover:bg-green-100 mb-1">
-                                טען תרגילי ידיים (חדש)
-                            </button>
-                            <p className="text-xs text-gray-500">מוסיף את רשימת תרגילי הידיים מהקובץ האחרון. מדלג אוטומטית על כפילויות.</p>
-                        </div>
-
                         <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                             <label className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 cursor-pointer block text-center">
                                 טען קובץ CSV
@@ -633,25 +765,23 @@ export default function AdminPage({ user, onBack }) {
                             <p className="text-xs text-gray-500">משלים תרגילים בסיסיים אם הם חסרים במערכת.</p>
                         </div>
                     </div>
-                </div>
+                </AdminSection>
 
                 {/* Zone B: Reports & Export */}
-                <div className="neu-card border-t-4 border-blue-500 bg-white/80 backdrop-blur-sm">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="text-blue-500">📊</span> דוחות ובקרה (בטוח לשימוש)
-                    </h3>
+                <AdminSection
+                    id="reports"
+                    title="דוחות ובקרה (בטוח לשימוש)"
+                    icon="📊"
+                    color="blue"
+                    isOpen={openSections.reports}
+                    onToggle={toggleSection}
+                >
                     <div className="space-y-4">
                         <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <button onClick={handleFixData} className="neu-btn text-sm bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100">
-                                🛠️ תיקון מסד נתונים
-                            </button>
                             <button onClick={handleSyncFilters} className="neu-btn text-sm bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
                                 🔄 סנכרן מסננים
                             </button>
-                            <button onClick={handleFixArmSubMuscles} className="neu-btn text-sm bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100">
-                                💪 תיקון שמות תת-שריר ידיים
-                            </button>
-                            <button onClick={handleExportCSV} className="w-full neu-btn bg-white text-blue-700 border-blue-200 hover:bg-blue-100 mb-1">
+                            <button onClick={handleExportCSV} className="w-full neu-btn bg-white text-blue-700 border-blue-200 hover:bg-blue-100 mb-1 mt-1">
                                 הורד דוח תרגילים (CSV)
                             </button>
                             <p className="text-xs text-gray-500">מוריד קובץ אקסל המכיל את כל התרגילים במערכת, כולל בדיקה האם יש להם תמונה.</p>
@@ -664,13 +794,17 @@ export default function AdminPage({ user, onBack }) {
                             <p className="text-xs text-gray-500">תבנית ריקה לייבוא תרגילים חדשים.</p>
                         </div>
                     </div>
-                </div>
+                </AdminSection>
 
                 {/* Zone C: Maintenance & Danger Zone */}
-                <div className="neu-card border-t-4 border-red-500 bg-white/80 backdrop-blur-sm">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <span className="text-red-500">⚠️</span> תחזוקת מערכת (זהירות!)
-                    </h3>
+                <AdminSection
+                    id="maintenance"
+                    title="תחזוקת מערכת (זהירות!)"
+                    icon="⚠️"
+                    color="red"
+                    isOpen={openSections.maintenance}
+                    onToggle={toggleSection}
+                >
                     <div className="space-y-4">
                         <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
                             <button onClick={handleRestoreDefaults} className="w-full neu-btn bg-white text-orange-700 border-orange-200 hover:bg-orange-100 mb-1">
@@ -721,7 +855,7 @@ export default function AdminPage({ user, onBack }) {
                             <p className="text-xs text-gray-500">מאפשר כניסה אוטומטית ללא מסך לוג-אין (גלובלי).</p>
                         </div>
                     </div>
-                </div>
+                </AdminSection>
             </div>
 
             {/* Legacy Management Section (Collapsible or below) */}

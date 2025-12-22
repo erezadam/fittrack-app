@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- שמירה על הקיים (כדי לא לשבור את ה-Live) ---
+    // זה משאיר את הגישה פתוחה כמו שהיא היום באפליקציה שלך
+    // --- שמירה על הקיים (כדי לא לשבור את ה-Live) ---
+    // זה משאיר את הגישה פתוחה כמו שהיא היום באפליקציה שלך
+    match /{document=**} {
+      allow read, write: if true;
+    }
+
+    // Explicitly allow users collection for logged in users (per request)
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // --- הגדרות ספציפיות למאמן (אופציונלי, אבל טוב שיהיה כתוב) ---
+    
+    // פרופיל מתאמן - כרגע פתוח כדי למנוע שגיאות הרשאה בפיתוח
+    match /trainee_profiles/{docId} {
+      allow read, write: if true;
+    }
+
+    // תוכניות אימון - כרגע פתוח
+    match /training_programs/{docId} {
+       allow read, write: if true;
+    }
+    
+    // הקצאות אימון
+    match /assignments/{docId} {
+       allow read, write: if true;
+    }
+  }
+}

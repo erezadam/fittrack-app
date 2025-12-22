@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
+import { trainerService } from '../services/trainerService'; // Import trainerService
 
-export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToHistory, onLogout, onResume }) {
+export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToHistory, onLogout, onResume, onStartWorkout, onSwitchToTrainer, onNavigateToAdmin }) {
     const [stats, setStats] = useState({
         monthCount: 0,
         weekCount: 0,
@@ -11,20 +12,20 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchData = async () => {
             try {
-                // Fetch logs for this specific user
+                // 1. Fetch Stats
                 const logs = await storageService.getAllWorkoutLogs(user.id);
                 calculateStats(logs);
             } catch (error) {
-                console.error("Failed to fetch stats", error);
+                console.error("Failed to fetch dashboard data", error);
             } finally {
                 setLoading(false);
             }
         };
 
         if (user) {
-            fetchStats();
+            fetchData();
         }
     }, [user]);
 
@@ -44,7 +45,6 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
         let lastWorkoutName = '';
 
         // Find last COMPLETED workout (not in_progress)
-        // Assuming logs are sorted by date desc (newest first)
         const lastCompletedLog = logs.find(log => log.status !== 'in_progress');
 
         if (lastCompletedLog) {
@@ -54,8 +54,6 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
         }
 
         logs.forEach(log => {
-            // Only count completed workouts for stats? Or all? 
-            // Usually stats count completed workouts.
             if (log.status === 'in_progress') return;
 
             const logDate = new Date(log.timestamp || log.date);
@@ -75,18 +73,6 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
         });
     };
 
-    // We need exercise names for the last workout list
-    const [exerciseMap, setExerciseMap] = useState({});
-    useEffect(() => {
-        const loadExercises = async () => {
-            const exs = await storageService.getExercises();
-            const map = {};
-            exs.forEach(e => map[e.id] = e.name);
-            setExerciseMap(map);
-        };
-        loadExercises();
-    }, []);
-
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -96,43 +82,38 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="container mx-auto px-2 md:px-4 py-2 md:py-8 max-w-4xl">
             {/* Header */}
-            <div className="mb-8 flex justify-between items-start">
+            <div className="mb-1 md:mb-8 flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        ברוך הבא, <span className="text-teal-600">{user.firstName}</span> 👋
+                    <h1 className="text-xl md:text-3xl font-bold text-gray-800 leading-tight">
+                        ברוך הבא, <span className="text-teal-600">{user.firstName}</span>
                     </h1>
-                    <p className="text-gray-500 mt-1">הנה סיכום הפעילות שלך</p>
+                    <p className="text-gray-400 mt-0.5 text-[10px] md:text-base hidden md:block">הנה סיכום הפעילות שלך</p>
                 </div>
                 <button
                     onClick={onLogout}
-                    className="neu-btn text-xs text-red-500 bg-red-50 hover:bg-red-100"
+                    className="neu-btn text-[10px] md:text-xs text-red-500 bg-red-50 hover:bg-red-100 px-2 py-1 md:px-4 md:py-2"
                 >
                     יציאה
                 </button>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 items-start">
-                {/* Card 1: Month */}
-                <div className="neu-card p-6 flex flex-col items-center justify-center text-center h-full">
-                    <div className="text-gray-500 font-medium mb-2">אימונים החודש</div>
-                    <div className="text-4xl font-extrabold text-teal-600">{stats.monthCount}</div>
+            {/* Stats Grid - Aggressive Mobile Optimization */}
+            <div className="grid grid-cols-3 gap-1 md:gap-4 mb-3 md:mb-12 items-stretch">
+                <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-gray-500 text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים החודש</div>
+                    <div className="text-lg md:text-4xl font-extrabold text-teal-600 leading-none">{stats.monthCount}</div>
                 </div>
-
-                {/* Card 2: Week */}
-                <div className="neu-card p-6 flex flex-col items-center justify-center text-center h-full">
-                    <div className="text-gray-500 font-medium mb-2">אימונים השבוע</div>
-                    <div className="text-4xl font-extrabold text-cyan-600">{stats.weekCount}</div>
+                <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-gray-500 text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים השבוע</div>
+                    <div className="text-lg md:text-4xl font-extrabold text-cyan-600 leading-none">{stats.weekCount}</div>
                 </div>
-
-                {/* Card 3: Last Workout */}
-                <div className="neu-card p-6 flex flex-col items-center justify-center text-center h-full">
-                    <div className="text-gray-500 font-medium mb-2">אימון אחרון</div>
-                    <div className="text-xl font-bold text-gray-800">{stats.lastWorkoutDate}</div>
+                <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-gray-500 text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימון אחרון</div>
+                    <div className="text-sm md:text-xl font-bold text-gray-800 leading-none">{stats.lastWorkoutDate}</div>
                     {stats.lastWorkoutName && (
-                        <div className="text-sm text-teal-600 mt-1 font-medium truncate w-full px-2">
+                        <div className="hidden md:block text-xs md:text-sm text-teal-600 mt-0.5 md:mt-1 font-medium truncate w-full px-2 max-w-[200px] md:max-w-none">
                             {stats.lastWorkoutName}
                         </div>
                     )}
@@ -140,19 +121,35 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
             </div>
 
             {/* CTA */}
-            <div className="text-center flex flex-col md:flex-row gap-4 justify-center">
+            <div className="text-center flex flex-col md:flex-row gap-3 md:gap-4 justify-center">
                 <button
                     onClick={onNavigateToBuilder}
-                    className="neu-btn primary text-xl py-4 px-12 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all"
+                    className="neu-btn primary text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all"
                 >
-                    עבור לתכנון האימון ←
+                    בנה אימון חופשי +
                 </button>
                 <button
                     onClick={onNavigateToHistory}
-                    className="neu-btn text-xl py-4 px-12 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all bg-gray-800 text-white border-gray-700"
+                    className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-gray-800 text-white border-gray-700"
                 >
-                    📜 מעקב אימונים
+                    📜 היסטוריית אימונים
                 </button>
+                {(user.role === 'trainer' || user.role === 'admin' || user.isAdmin) && (
+                    <button
+                        onClick={onSwitchToTrainer}
+                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-teal-500 hover:bg-teal-600 text-white border-teal-600"
+                    >
+                        תכנון מאמן
+                    </button>
+                )}
+                {user.role === 'admin' && (
+                    <button
+                        onClick={onNavigateToAdmin}
+                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-600"
+                    >
+                        ניהול
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -11,41 +11,101 @@ const SYSTEM_SETTINGS_COLLECTION = 'system_settings';
 
 export const storageService = {
     // Users
-    loginUser: async (firstName, lastName, phone) => {
+    loginUser: async (firstName, lastName, phone, email = '') => {
         try {
-            // Normalize phone
+            // Normalize inputs
             const cleanPhone = phone.replace(/-/g, '');
+            const cleanEmail = email ? email.toLowerCase().trim() : '';
             const ADMIN_PHONE = '0547895818';
             const isAdmin = cleanPhone === ADMIN_PHONE;
 
-            const q = query(collection(db, USERS_COLLECTION), where('phone', '==', cleanPhone));
-            const querySnapshot = await getDocs(q);
+            let userDoc = null;
+            let userData = null;
 
-            if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
+            // 1. Try to find by Email first (Priority for Trainees)
+            if (cleanEmail) {
+                const qEmail = query(collection(db, USERS_COLLECTION), where('email', '==', cleanEmail));
+                const snapshotEmail = await getDocs(qEmail);
+                if (!snapshotEmail.empty) {
+                    userDoc = snapshotEmail.docs[0];
+                    userData = userDoc.data();
+                }
+            }
 
-                // If user should be admin but isn't marked as such in DB, update it
-                if (isAdmin && !userData.isAdmin) {
-                    await updateDoc(doc(db, USERS_COLLECTION, userDoc.id), { isAdmin: true });
-                    return { id: userDoc.id, ...userData, isAdmin: true };
+            // 2. If not found by email, try by Phone
+            if (!userDoc) {
+                const qPhone = query(collection(db, USERS_COLLECTION), where('phone', '==', cleanPhone));
+                const snapshotPhone = await getDocs(qPhone);
+                if (!snapshotPhone.empty) {
+                    userDoc = snapshotPhone.docs[0];
+                    userData = userDoc.data();
+                }
+            }
+
+            if (userDoc) {
+                // User Found - Update details to "Claim/Refresh"
+                const updates = {};
+
+                // If user should be admin but isn't, update it
+                if (isAdmin && (userData.role !== 'admin' || !userData.isAdmin)) {
+                    updates.role = 'admin';
+                    updates.isAdmin = true;
+                }
+
+                // Update basic details if changed or missing
+                if (firstName && firstName !== userData.firstName) updates.firstName = firstName;
+                if (lastName && lastName !== userData.lastName) updates.lastName = lastName;
+                if (cleanPhone && cleanPhone !== userData.phone) updates.phone = cleanPhone;
+                if (cleanEmail && cleanEmail !== userData.email) updates.email = cleanEmail;
+
+                // Ensure role exists for legacy users (default to trainee if missing, unless admin)
+                if (!userData.role && !updates.role) {
+                    updates.role = 'trainee';
+                }
+
+                // Only perform update if there are changes
+                if (Object.keys(updates).length > 0) {
+                    await updateDoc(doc(db, USERS_COLLECTION, userDoc.id), updates);
+                    userData = { ...userData, ...updates };
                 }
 
                 return { id: userDoc.id, ...userData };
             } else {
-                // Register new user
+                // User not found - Register new user
                 const newUser = {
                     firstName,
                     lastName,
                     phone: cleanPhone,
-                    createdAt: new Date().toISOString(),
-                    isAdmin: isAdmin
+                    email: cleanEmail,
+                    createdAt: new Date().toISOString(), // Use ISO string for consistency with other parts? Or serverTimestamp? Using string for now to match other usage.
+                    isAdmin: isAdmin,
+                    role: isAdmin ? 'admin' : 'trainee' // Default role
                 };
                 const docRef = await addDoc(collection(db, USERS_COLLECTION), newUser);
                 return { id: docRef.id, ...newUser };
             }
         } catch (error) {
             console.error("Error logging in user:", error);
+            throw error;
+        }
+    },
+
+    updateUserRole: async (userId, newRole) => {
+        try {
+            await updateDoc(doc(db, USERS_COLLECTION, userId), { role: newRole });
+            return { id: userId, role: newRole };
+        } catch (error) {
+            console.error("Error updating user role:", error);
+            throw error;
+        }
+    },
+
+    deleteUser: async (userId) => {
+        try {
+            await deleteDoc(doc(db, USERS_COLLECTION, userId));
+            return userId;
+        } catch (error) {
+            console.error("Error deleting user:", error);
             throw error;
         }
     },
@@ -246,6 +306,23 @@ export const storageService = {
         } catch (error) {
             console.error("Error getting all workout logs:", error);
             return [];
+        }
+    },
+
+    getWorkoutLog: async (logId) => {
+        try {
+            const docRef = doc(db, WORKOUT_LOGS_COLLECTION, logId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                return { id: docSnap.id, ...docSnap.data() };
+            } else {
+                console.error("No such workout log!");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error getting workout log:", error);
+            throw error;
         }
     },
 

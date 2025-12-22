@@ -2,11 +2,14 @@ import { db } from '../firebase';
 import {
     collection,
     addDoc,
+    setDoc,
+    doc,
     query,
     where,
     getDocs,
     serverTimestamp,
-    Timestamp
+    Timestamp,
+    updateDoc
 } from 'firebase/firestore';
 
 const TRAINING_PROGRAMS_COLLECTION = 'training_programs';
@@ -72,38 +75,174 @@ export const trainerService = {
     },
 
     /**
-     * Initiates the trainee invitation flow.
-     * Checks if a user with the email exists (optional logic can be added here),
-     * then creates a training program which triggers the email sending Cloud Function.
+     * Creates a new trainee profile without sending an invite.
      * 
-     * @param {string} email - The trainee's email.
      * @param {string} coachId - The coach's ID.
-     * @param {string} templateId - The ID of the workout template to assign.
-     * @param {Date} startDate - Program start date.
-     * @param {Date} endDate - Program end date.
-     * @returns {Promise<string>} The ID of the created program (invite).
+     * @param {Object} traineeData - Trainee details (firstName, lastName, email, phone, age, notes).
+     * @returns {Promise<string>} The ID of the created profile.
      */
-    inviteTrainee: async (email, coachId, templateId, startDate, endDate) => {
+    createTraineeProfile: async (coachId, traineeData) => {
         try {
-            // 1. Check if user exists (Optional: could link immediately if they do)
-            // For now, we follow the invite flow: create program -> trigger email
+            const email = traineeData.email.toLowerCase().trim();
+            const firstName = traineeData.firstName || '';
+            const lastName = traineeData.lastName || '';
+            const fullName = `${firstName} ${lastName}`.trim() || email;
 
-            const inviteToken = crypto.randomUUID(); // Generate a unique token
+            // 1. Sync with 'users' collection (The "Shadow User")
+            let userId = null;
+            const usersRef = collection(db, USERS_COLLECTION);
+
+            // Check if user exists by email
+            const q = query(usersRef, where('email', '==', email));
+            const querySnapshot = await getDocs(q);
+
+            const userPayload = {
+                email,
+                firstName,
+                lastName,
+                displayName: fullName,
+                phoneNumber: traineeData.phone || '',
+                role: 'trainee',
+                coachId,
+                lastUpdated: serverTimestamp()
+            };
+
+            if (!querySnapshot.empty) {
+                // User exists - Update details (careful merge)
+                const userDoc = querySnapshot.docs[0];
+                userId = userDoc.id;
+                await setDoc(doc(db, USERS_COLLECTION, userId), userPayload, { merge: true });
+            } else {
+                // User does not exist - Create new
+                const newUserRef = await addDoc(usersRef, {
+                    ...userPayload,
+                    createdAt: serverTimestamp()
+                });
+                userId = newUserRef.id;
+            }
+
+            // 2. Create Trainee Profile (linked to userId)
+            const profileData = {
+                userId, // Link to the user doc
+                coachId,
+                email,
+                firstName,
+                lastName,
+                name: fullName,
+                phone: traineeData.phone || '',
+                age: traineeData.age || '',
+                notes: traineeData.notes || '',
+                photoURL: null, // Placeholder
+                status: 'created', // Initial status before invitation
+                joinedAt: serverTimestamp()
+            };
+
+            const profileRef = await addDoc(collection(db, TRAINEE_PROFILES_COLLECTION), profileData);
+            return profileRef.id;
+        } catch (error) {
+            console.error("Error creating trainee profile:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Assigns a workout to a trainee.
+     * @param {Object} params
+     * @param {string} params.coachId
+     * @param {string} params.traineeId
+     * @param {string} params.date - Date string YYYY-MM-DD
+     * @param {Array} params.exercises - List of exercises
+     * @param {string} params.name - Workout name
+     */
+    assignWorkout: async ({ coachId, traineeId, date, exercises, name }) => {
+        try {
+            const startDate = new Date(date);
+            const endDate = new Date(date);
+            // set to end of day? or just same date. 
+            // createTrainingProgram expects Date objects.
 
             const programData = {
                 coachId,
-                traineeId: null, // Pending invite
-                templateId,
-                inviteToken,
-                traineeEmail: email, // Store email to send invite to
+                traineeId,
+                name,
+                exercises, // Store exercises directly
                 startDate,
-                endDate
+                endDate,
+                status: 'assigned'
             };
 
-            const programId = await trainerService.createTrainingProgram(programData);
-            return programId;
+            // Reuse createTrainingProgram
+            // Ensure createTrainingProgram handles 'exercises' field if we added it (it spreads ...programData so it should be fine).
+            return await trainerService.createTrainingProgram(programData);
         } catch (error) {
-            console.error("Error inviting trainee:", error);
+            console.error("Error assigning workout:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Updates a training program status to 'completed'.
+     * @param {string} programId 
+     */
+    completeTrainingProgram: async (programId) => {
+        try {
+            const programRef = doc(db, TRAINING_PROGRAMS_COLLECTION, programId);
+            await updateDoc(programRef, {
+                status: 'completed',
+                completedAt: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error completing training program:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Fetches details and history for a specific trainee.
+     * @param {string} traineeId 
+     * @returns {Promise<Object>} Object containing profile, logs, and assignments.
+     */
+    getTraineeDetails: async (traineeId) => {
+        try {
+            // 1. Fetch Assignments (Training Programs)
+            const assignmentsQuery = query(
+                collection(db, TRAINING_PROGRAMS_COLLECTION),
+                where('traineeId', '==', traineeId)
+            );
+            const assignmentsSnapshot = await getDocs(assignmentsQuery);
+            const assignments = assignmentsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    type: 'assignment',
+                    date: data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate),
+                    ...data
+                };
+            });
+
+            // 2. Fetch Completed Workouts (Logs)
+            // Note: Logs collection is usually 'workout_logs'
+            const logsQuery = query(
+                collection(db, 'workout_logs'),
+                where('userId', '==', traineeId)
+            );
+            const logsSnapshot = await getDocs(logsQuery);
+            const logs = logsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    type: 'log',
+                    date: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
+                    ...data
+                };
+            });
+
+            return {
+                assignments,
+                logs
+            };
+        } catch (error) {
+            console.error("Error fetching trainee details:", error);
             throw error;
         }
     }
