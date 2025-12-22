@@ -144,7 +144,7 @@ export default function LoginScreen({ onLogin }) {
                 </div>
 
                 <div className="bg-gray-50 p-4 text-center text-xs text-gray-400 flex justify-between items-center">
-                    <span>גרסה: תיקון מסך אימונים - Antigravity | תאריך: 22/12/2025</span>
+                    <span>גרסה: שדרוג ממשק מלא - Antigravity | תאריך: 22/12/2025</span>
                     <button
                         onClick={() => {
                             setFirstName('Admin');

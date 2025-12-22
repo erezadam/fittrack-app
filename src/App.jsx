@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from './services/storageService';
+import { trainerService } from './services/trainerService';
 import WorkoutBuilder from './components/WorkoutBuilder';
-import ActiveWorkout from './components/ActiveWorkout';
+import WorkoutSession from './components/WorkoutSession';
 import AdminPage from './components/AdminPage';
 import UserDashboard from './components/UserDashboard';
 import WorkoutHistory from './components/WorkoutHistory';
@@ -111,6 +112,51 @@ function App() {
     setActiveLogId(null);
     setActiveAssignmentId(null);
     setTempWorkoutData(null);
+  };
+
+  // New handler for WorkoutSession finish
+  const handleSessionFinish = async (resultData) => {
+    console.log("Workout Session Finished:", resultData);
+    const { exercises, duration } = resultData;
+
+    try {
+      const logData = {
+        workout_id: activeAssignmentId || null,
+        workoutName: activeWorkoutName || 'אימון ללא שם',
+        exercises: exercises.map(ex => ({
+          exercise_id: ex.id,
+          name: ex.name,
+          mainMuscle: ex.mainMuscle,
+          sets: ex.sets,
+          isCompleted: ex.isCompleted
+        })),
+        status: 'completed',
+        durationMinutes: Math.round(duration / 60),
+        assignmentId: activeAssignmentId || null,
+        date: new Date().toISOString()
+      };
+
+      if (activeLogId) {
+        await storageService.updateWorkoutLog(activeLogId, logData);
+      } else {
+        await storageService.saveWorkout(logData, user?.id);
+      }
+
+      if (activeAssignmentId) {
+        try {
+          await trainerService.completeTrainingProgram(activeAssignmentId);
+        } catch (err) {
+          console.error("Failed to complete assignment:", err);
+        }
+      }
+
+      alert('האימון נשמר בהצלחה! כל הכבוד!');
+      finishWorkout();
+
+    } catch (error) {
+      console.error("Failed to save workout:", error);
+      alert("שגיאה בשמירת האימון");
+    }
   };
 
   const handleAddExercises = (currentData, name) => {
@@ -245,19 +291,19 @@ function App() {
       )}
 
       {view === 'active' && (
-        <ActiveWorkout
-          user={user}
-          exercises={activeExercises}
-          workoutName={activeWorkoutName}
-          logId={activeLogId}
-          assignmentId={activeAssignmentId}
-          initialData={tempWorkoutData}
-          onFinish={finishWorkout}
-          onAddExercises={handleAddExercises}
-          onCancel={() => {
-            setActiveLogId(null);
-            setActiveAssignmentId(null);
-            setView('builder');
+        <WorkoutSession
+          workout={{
+            exercises: activeExercises,
+            name: activeWorkoutName,
+            id: activeLogId
+          }}
+          onFinish={handleSessionFinish}
+          onBack={() => {
+            if (window.confirm('האם אתה בטוח שברצונך לבטל? השינויים לא יישמרו.')) {
+              setActiveLogId(null);
+              setActiveAssignmentId(null);
+              setView('dashboard');
+            }
           }}
         />
       )}
