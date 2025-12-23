@@ -175,7 +175,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
                     const muscleLabel = HEBREW_MUSCLE_NAMES[m] || m;
                     const muscleExercises = exercises.filter(ex => (ex.muscle_group_id || ex.mainMuscle) === m);
 
-                    const availableSubs = [...new Set(muscleExercises.map(e => e.subMuscle).filter(Boolean))];
+                    const availableSubs = muscles[m]?.subMuscles || [];
 
                     const displayedEx = muscleExercises.filter(ex => {
                         if (selectedSubMuscles.length > 0) {

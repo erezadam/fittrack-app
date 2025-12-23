@@ -130,9 +130,9 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
                 </button>
                 <button
                     onClick={onNavigateToHistory}
-                    className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-gray-800 text-white border-gray-700"
+                    className="neu-btn primary text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all"
                 >
-                    📜 היסטוריית אימונים
+                    📅 תוכנית אימונים
                 </button>
                 {(user.role === 'trainer' || user.role === 'admin' || user.isAdmin) && (
                     <button
