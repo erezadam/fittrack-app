@@ -222,8 +222,11 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (onResume) {
-                                                                    onResume(log);
+                                                                const exercisesToLoad = log?.exercises || [];
+                                                                if (onStartWorkout) {
+                                                                    onStartWorkout(exercisesToLoad, log?.workoutName || 'אימון מהיסטוריה', log);
+                                                                } else if (onResume) {
+                                                                    onResume({ ...log, exercises: exercisesToLoad });
                                                                 }
                                                             }}
                                                             className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"

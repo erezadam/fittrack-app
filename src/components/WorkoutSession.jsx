@@ -5,7 +5,7 @@ import ImageGalleryModal from './ImageGalleryModal';
 const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
 export default function WorkoutSession({ workout, onBack, onFinish }) {
-    const [exercises, setExercises] = useState(workout.exercises || []);
+    const [exercises, setExercises] = useState(workout?.exercises || []);
     const [duration, setDuration] = useState(0);
     const [expandedEx, setExpandedEx] = useState({});
     const [selectedImages, setSelectedImages] = useState(null);
@@ -22,21 +22,27 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
     };
 
     const toggleSetComplete = (exIndex, setIndex) => {
-        const newExercises = [...exercises];
-        const set = newExercises[exIndex].sets[setIndex];
+        const newExercises = [...(exercises || [])];
+        if (!newExercises[exIndex]) return;
+
+        const set = newExercises[exIndex].sets?.[setIndex];
+        if (!set) return;
+
         set.isCompleted = !set.isCompleted;
 
-        const allSetsDone = newExercises[exIndex].sets.every(s => s.isCompleted);
+        const allSetsDone = newExercises[exIndex].sets?.every(s => s.isCompleted);
         newExercises[exIndex].isCompleted = allSetsDone;
 
         setExercises(newExercises);
     };
 
     const toggleExerciseComplete = (exIndex) => {
-        const newExercises = [...exercises];
+        const newExercises = [...(exercises || [])];
+        if (!newExercises[exIndex]) return;
+
         const isComplete = !newExercises[exIndex].isCompleted;
         newExercises[exIndex].isCompleted = isComplete;
-        newExercises[exIndex].sets.forEach(s => s.isCompleted = isComplete);
+        newExercises[exIndex].sets?.forEach(s => s.isCompleted = isComplete);
         setExercises(newExercises);
     };
 
@@ -45,22 +51,23 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
     };
 
     const handleFinish = () => {
-        const completedCount = exercises.filter(e => e.isCompleted).length;
-        if (completedCount < exercises.length) {
-            if (!window.confirm(`סיימת רק ${completedCount} מתוך ${exercises.length} תרגילים. לסיים בכל זאת?`)) return;
+        const safeExercises = exercises || [];
+        const completedCount = safeExercises.filter(e => e.isCompleted).length;
+        if (completedCount < safeExercises.length) {
+            if (!window.confirm(`סיימת רק ${completedCount} מתוך ${safeExercises.length} תרגילים. לסיים בכל זאת?`)) return;
         }
-        onFinish({ ...workout, exercises, duration });
+        onFinish({ ...workout, exercises: safeExercises, duration });
     };
 
     // Grouping Logic
-    const groupedExercises = exercises.reduce((acc, ex, index) => {
+    const groupedExercises = (exercises || []).reduce((acc, ex, index) => {
         const muscleKey = ex.muscle_group_id || ex.mainMuscle || 'Other';
         if (!acc[muscleKey]) acc[muscleKey] = [];
         acc[muscleKey].push({ ...ex, originalIndex: index });
         return acc;
     }, {});
 
-    const completedCount = exercises.filter(e => e.isCompleted).length;
+    const completedCount = (exercises || []).filter(e => e.isCompleted).length;
 
     return (
         <div className="min-h-screen bg-gray-50 pb-32">
@@ -78,7 +85,7 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
                 <div className="text-center">
                     <h1 className="text-xl font-bold mb-1">אימון פעיל</h1>
                     <div className="text-teal-100 text-sm">
-                        <span className="font-bold">{completedCount}</span> / {exercises.length} בוצעו
+                        <span className="font-bold">{completedCount}</span> / {exercises?.length || 0} בוצעו
                     </div>
                 </div>
             </div>
@@ -92,7 +99,7 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
                         </h3>
 
                         <div className="space-y-3">
-                            {groupExs.map((ex) => {
+                            {groupExs?.map((ex) => {
                                 const realIndex = ex.originalIndex;
                                 const isExpanded = expandedEx[ex.id];
 
@@ -123,7 +130,7 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
                                                         {ex.name}
                                                     </div>
                                                     <div className="text-xs text-gray-500 truncate mt-0.5">
-                                                        {ex.sets.length} סטים • {ex.equipment || 'ללא'}
+                                                        {ex.sets?.length || 0} סטים • {ex.equipment || 'ללא'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -138,7 +145,7 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
                                         {isExpanded && (
                                             <div className="border-t border-gray-100 p-3 bg-gray-50/50">
                                                 <div className="space-y-2">
-                                                    {ex.sets.map((set, sIdx) => (
+                                                    {ex.sets?.map((set, sIdx) => (
                                                         <div key={sIdx} className="flex items-center gap-2">
                                                             <div className="w-5 text-xs font-bold text-gray-400">#{sIdx + 1}</div>
                                                             <input type="number" placeholder="קג" defaultValue={set.weight} className="w-16 p-2 border rounded-lg text-center bg-white shadow-sm text-sm" />
