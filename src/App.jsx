@@ -159,9 +159,16 @@ function App() {
     }
   };
 
-  const handleAddExercises = (currentData, name) => {
-    setTempWorkoutData(currentData);
-    if (name) setActiveWorkoutName(name);
+  const handleAddExercises = (currentExercises, currentDuration) => {
+    console.log("Handling Add Exercises. Duration:", currentDuration);
+    // Save current progress before switching view
+    setTempWorkoutData({
+      exercises: currentExercises,
+      duration: currentDuration
+    });
+    // Update active exercises state immediately so we don't lose progress if we just switch back
+    setActiveExercises(currentExercises);
+
     setView('builder_add'); // Special view state for adding exercises
   };
 
@@ -297,6 +304,8 @@ function App() {
             name: activeWorkoutName,
             id: activeLogId
           }}
+          initialDuration={tempWorkoutData?.duration || 0}
+          onAdd={handleAddExercises}
           onFinish={handleSessionFinish}
           onBack={() => {
             if (window.confirm('האם אתה בטוח שברצונך לבטל? השינויים לא יישמרו.')) {

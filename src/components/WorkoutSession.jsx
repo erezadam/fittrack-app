@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon, Trash2 } from 'lucide-react';
 import ImageGalleryModal from './ImageGalleryModal';
 
 const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
-export default function WorkoutSession({ workout, onBack, onFinish }) {
+export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0 }) {
     const [exercises, setExercises] = useState(workout?.exercises || []);
-    const [duration, setDuration] = useState(0);
+    const [duration, setDuration] = useState(initialDuration);
     const [expandedEx, setExpandedEx] = useState({});
     const [selectedImages, setSelectedImages] = useState(null);
 
@@ -48,6 +48,26 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
 
     const toggleExpand = (id) => {
         setExpandedEx(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const handleRemoveExercise = (exerciseId) => {
+        if (!window.confirm('להסיר את התרגיל מהאימון?')) return;
+        const newExercises = exercises.filter(e => e.id !== exerciseId);
+        setExercises(newExercises);
+    };
+
+    const handleAddSet = (exIndex) => {
+        const newExercises = [...exercises];
+        if (!newExercises[exIndex].sets) newExercises[exIndex].sets = [];
+
+        // Add new set with previous set's weight/reps if available, or empty
+        const lastSet = newExercises[exIndex].sets[newExercises[exIndex].sets.length - 1];
+        newExercises[exIndex].sets.push({
+            weight: lastSet?.weight || '',
+            reps: lastSet?.reps || '',
+            isCompleted: false
+        });
+        setExercises(newExercises);
     };
 
     const handleFinish = () => {
@@ -135,28 +155,93 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
                                                 </div>
                                             </div>
 
-                                            {/* Arrow Icon */}
-                                            <div className="text-gray-400 pl-1 shrink-0">
-                                                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                            {/* Arrow & Trash Icons */}
+                                            <div className="flex items-center gap-3 shrink-0 pl-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRemoveExercise(ex.id);
+                                                    }}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                                <div className="text-gray-400">
+                                                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* EXPANDED SETS */}
                                         {isExpanded && (
                                             <div className="border-t border-gray-100 p-3 bg-gray-50/50">
-                                                <div className="space-y-2">
+                                                <div className="space-y-3">
                                                     {ex.sets?.map((set, sIdx) => (
-                                                        <div key={sIdx} className="flex items-center gap-2">
-                                                            <div className="w-5 text-xs font-bold text-gray-400">#{sIdx + 1}</div>
-                                                            <input type="number" placeholder="קג" defaultValue={set.weight} className="w-16 p-2 border rounded-lg text-center bg-white shadow-sm text-sm" />
-                                                            <input type="number" placeholder="חזרות" defaultValue={set.reps} className="w-16 p-2 border rounded-lg text-center bg-white shadow-sm text-sm" />
+                                                        <div key={sIdx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                                            <div className="flex items-center gap-3 mb-3">
+                                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                                    {sIdx + 1}
+                                                                </div>
 
-                                                            <button onClick={() => toggleSetComplete(realIndex, sIdx)} className={`flex-1 p-2 rounded-lg flex items-center justify-center font-medium transition-colors shadow-sm text-sm ${set.isCompleted ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
-                                                                {set.isCompleted ? '✓' : 'סיים'}
+                                                                <div className="flex-1 grid grid-cols-2 gap-2">
+                                                                    <div className="relative">
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder="0"
+                                                                            defaultValue={set.weight}
+                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                                                                            onChange={(e) => {
+                                                                                const newExercises = [...exercises];
+                                                                                if (newExercises[realIndex]?.sets?.[sIdx]) {
+                                                                                    newExercises[realIndex].sets[sIdx].weight = e.target.value;
+                                                                                    setExercises(newExercises);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
+                                                                    </div>
+                                                                    <div className="relative">
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder="0"
+                                                                            defaultValue={set.reps}
+                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                                                                            onChange={(e) => {
+                                                                                const newExercises = [...exercises];
+                                                                                if (newExercises[realIndex]?.sets?.[sIdx]) {
+                                                                                    newExercises[realIndex].sets[sIdx].reps = e.target.value;
+                                                                                    setExercises(newExercises);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">חזרות</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => toggleSetComplete(realIndex, sIdx)}
+                                                                className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
+                                                                        ? 'bg-teal-500 text-white shadow-md shadow-teal-200'
+                                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                                                    }`}
+                                                            >
+                                                                {set.isCompleted ? (
+                                                                    <>
+                                                                        <CheckCircle size={18} /> הושלם
+                                                                    </>
+                                                                ) : (
+                                                                    'סמן כבוצע'
+                                                                )}
                                                             </button>
                                                         </div>
                                                     ))}
-                                                    <button className="w-full py-2 text-teal-600 text-sm font-bold border border-teal-200 rounded-lg bg-white mt-2 hover:bg-teal-50 transition-colors">+ הוסף סט</button>
+                                                    <button
+                                                        onClick={() => handleAddSet(realIndex)}
+                                                        className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={16} /> הוסף סט
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}
@@ -171,7 +256,10 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
             {/* FOOTER ACTIONS */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-20">
                 <div className="max-w-4xl mx-auto flex gap-3">
-                    <button className="p-3 rounded-xl border-2 border-gray-100 text-gray-500 font-bold flex items-center justify-center hover:bg-gray-50 transition-colors" onClick={() => alert('בקרוב: הוספת תרגיל תוך כדי אימון')}>
+                    <button
+                        className="p-3 rounded-xl border-2 border-teal-100 text-teal-600 font-bold flex items-center justify-center hover:bg-teal-50 transition-colors bg-white shadow-sm"
+                        onClick={() => onAdd(exercises, duration)}
+                    >
                         <Plus size={20} />
                     </button>
                     <button onClick={handleFinish} className="flex-1 p-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transform active:scale-95 transition-all">

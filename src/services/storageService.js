@@ -272,6 +272,7 @@ export const storageService = {
     // Workout Logs
     saveWorkout: async (workoutData, userId) => {
         try {
+            console.log("Attempting to save workout for user:", userId);
             const dataToSave = {
                 ...workoutData,
                 userId,
@@ -280,7 +281,7 @@ export const storageService = {
             };
             console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
-            console.log("Workout saved with ID: ", docRef.id);
+            console.log("Workout saved successfully with ID: ", docRef.id);
             return { id: docRef.id, ...dataToSave };
         } catch (error) {
             console.error("Error saving workout log:", error);
