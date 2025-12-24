@@ -178,7 +178,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                 <div className="space-y-3">
                                                     {ex.sets?.map((set, sIdx) => (
                                                         <div key={sIdx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                                            <div className="flex items-center gap-3 mb-3">
+                                                            <div className="flex items-center gap-3">
                                                                 <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
                                                                     {sIdx + 1}
                                                                 </div>
@@ -221,23 +221,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                 </div>
                                                             </div>
 
-                                                            {!ex.isCompleted && (
-                                                                <button
-                                                                    onClick={() => toggleSetComplete(realIndex, sIdx)}
-                                                                    className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
-                                                                        ? 'bg-teal-500 text-white shadow-md shadow-teal-200'
-                                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                                                                        }`}
-                                                                >
-                                                                    {set.isCompleted ? (
-                                                                        <>
-                                                                            <CheckCircle size={18} /> הושלם
-                                                                        </>
-                                                                    ) : (
-                                                                        'סמן כבוצע'
-                                                                    )}
-                                                                </button>
-                                                            )}
+
                                                         </div>
                                                     ))}
                                                     {!ex.isCompleted && (
