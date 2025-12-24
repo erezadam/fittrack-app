@@ -189,7 +189,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                             type="number"
                                                                             placeholder="0"
                                                                             defaultValue={set.weight}
-                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                                                                            disabled={ex.isCompleted}
+                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
                                                                             onChange={(e) => {
                                                                                 const newExercises = [...exercises];
                                                                                 if (newExercises[realIndex]?.sets?.[sIdx]) {
@@ -205,7 +206,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                             type="number"
                                                                             placeholder="0"
                                                                             defaultValue={set.reps}
-                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+                                                                            disabled={ex.isCompleted}
+                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
                                                                             onChange={(e) => {
                                                                                 const newExercises = [...exercises];
                                                                                 if (newExercises[realIndex]?.sets?.[sIdx]) {
@@ -219,29 +221,33 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                 </div>
                                                             </div>
 
-                                                            <button
-                                                                onClick={() => toggleSetComplete(realIndex, sIdx)}
-                                                                className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
+                                                            {!ex.isCompleted && (
+                                                                <button
+                                                                    onClick={() => toggleSetComplete(realIndex, sIdx)}
+                                                                    className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
                                                                         ? 'bg-teal-500 text-white shadow-md shadow-teal-200'
                                                                         : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                                                                    }`}
-                                                            >
-                                                                {set.isCompleted ? (
-                                                                    <>
-                                                                        <CheckCircle size={18} /> הושלם
-                                                                    </>
-                                                                ) : (
-                                                                    'סמן כבוצע'
-                                                                )}
-                                                            </button>
+                                                                        }`}
+                                                                >
+                                                                    {set.isCompleted ? (
+                                                                        <>
+                                                                            <CheckCircle size={18} /> הושלם
+                                                                        </>
+                                                                    ) : (
+                                                                        'סמן כבוצע'
+                                                                    )}
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     ))}
-                                                    <button
-                                                        onClick={() => handleAddSet(realIndex)}
-                                                        className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        <Plus size={16} /> הוסף סט
-                                                    </button>
+                                                    {!ex.isCompleted && (
+                                                        <button
+                                                            onClick={() => handleAddSet(realIndex)}
+                                                            className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
+                                                        >
+                                                            <Plus size={16} /> הוסף סט
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
