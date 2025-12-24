@@ -183,24 +183,26 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                     {sIdx + 1}
                                                                 </div>
 
-                                                                <div className="flex-1 grid grid-cols-2 gap-2">
-                                                                    <div className="relative">
-                                                                        <input
-                                                                            type="number"
-                                                                            placeholder="0"
-                                                                            defaultValue={set.weight}
-                                                                            disabled={ex.isCompleted}
-                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
-                                                                            onChange={(e) => {
-                                                                                const newExercises = [...exercises];
-                                                                                if (newExercises[realIndex]?.sets?.[sIdx]) {
-                                                                                    newExercises[realIndex].sets[sIdx].weight = e.target.value;
-                                                                                    setExercises(newExercises);
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
-                                                                    </div>
+                                                                <div className={`flex-1 grid gap-2 ${ex.trackingType === 'reps' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                                                    {(ex.trackingType === 'weight' || !ex.trackingType) && (
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type="number"
+                                                                                placeholder="0"
+                                                                                defaultValue={set.weight}
+                                                                                disabled={ex.isCompleted}
+                                                                                className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
+                                                                                onChange={(e) => {
+                                                                                    const newExercises = [...exercises];
+                                                                                    if (newExercises[realIndex]?.sets?.[sIdx]) {
+                                                                                        newExercises[realIndex].sets[sIdx].weight = e.target.value;
+                                                                                        setExercises(newExercises);
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="relative">
                                                                         <input
                                                                             type="number"

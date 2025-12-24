@@ -950,6 +950,7 @@ export default function AdminPage({ user, onBack }) {
                                     onChange={e => setExForm({ ...exForm, trackingType: e.target.value })}
                                 >
                                     <option value="weight">משקל (ק״ג)</option>
+                                    <option value="reps">חזרות בלבד (ללא משקל)</option>
                                     <option value="time">זמן (שניות)</option>
                                 </select>
                                 <input
