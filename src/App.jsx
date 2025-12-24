@@ -115,9 +115,15 @@ function App() {
   };
 
   // New handler for WorkoutSession finish
+  // New handler for WorkoutSession finish
   const handleSessionFinish = async (resultData) => {
-    console.log("Workout Session Finished:", resultData);
+    console.log("Workout Session Finished. Processing data:", resultData);
     const { exercises, duration } = resultData;
+
+    if (!user || !user.id) {
+      alert("שגיאה: משתמש לא מחובר. לא ניתן לשמור את האימון.");
+      return;
+    }
 
     try {
       const logData = {
@@ -136,26 +142,38 @@ function App() {
         date: new Date().toISOString()
       };
 
+      console.log("Saving workout to storage...", logData);
+
       if (activeLogId) {
         await storageService.updateWorkoutLog(activeLogId, logData);
+        console.log("Workout log updated:", activeLogId);
       } else {
-        await storageService.saveWorkout(logData, user?.id);
+        await storageService.saveWorkout(logData, user.id);
+        console.log("New workout log saved for user:", user.id);
       }
 
       if (activeAssignmentId) {
         try {
           await trainerService.completeTrainingProgram(activeAssignmentId);
+          console.log("Assignment marked completed:", activeAssignmentId);
         } catch (err) {
           console.error("Failed to complete assignment:", err);
         }
       }
 
       alert('האימון נשמר בהצלחה! כל הכבוד!');
+
+      // CRITICAL: Switch view AFTER save
+      console.log("Switching to dashboard...");
       finishWorkout();
 
     } catch (error) {
       console.error("Failed to save workout:", error);
-      alert("שגיאה בשמירת האימון");
+      alert("שגיאה בשמירת האימון: " + error.message);
+      // Optional: Ask user if they want to exit anyway?
+      if (window.confirm("השמירה נכשלה. האם לצאת בכל זאת? (הנתונים יאבדו)")) {
+        finishWorkout();
+      }
     }
   };
 

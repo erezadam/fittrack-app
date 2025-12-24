@@ -16,20 +16,31 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
         if (!user) return;
         setLoading(true);
         try {
-            // Fetch logs AND assignments via the unified service if possible, or separately
-            // Assuming traineeService has getTraineeDetails which returns both
-            const details = await trainerService.getTraineeDetails(user.id);
+            console.log("Loading history for user:", user.id);
 
-            // Filter assignments to show only "future" or "pending" ones?
-            // For now, show all 'assigned' or 'pending' ones
-            const pendingAssignments = details.assignments
-                .filter(a => a.status === 'assigned' || a.status === 'pending')
-                .sort((a, b) => new Date(a.date) - new Date(b.date)); // Earliest first
+            // 1. Fetch Logs directly from storageService (Reliable)
+            const workoutLogs = await storageService.getAllWorkoutLogs(user.id);
+            console.log("Fetched logs:", workoutLogs);
+            setLogs(workoutLogs);
 
-            setAssignments(pendingAssignments);
-            setLogs(details.logs);
+            // 2. Fetch Assignments via trainerService
+            try {
+                // We only need assignments here, but we can use getTraineeDetails or a new method.
+                // Using getTraineeDetails for now but ignoring its logs return
+                const details = await trainerService.getTraineeDetails(user.id);
+
+                const pendingAssignments = details.assignments
+                    .filter(a => a.status === 'assigned' || a.status === 'pending')
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                setAssignments(pendingAssignments);
+            } catch (err) {
+                console.warn("Failed to load assignments (User might not be a trainee):", err);
+                // Don't fail the whole page if just assignments fail
+            }
+
         } catch (error) {
-            console.error("Failed to load workout history/data", error);
+            console.error("Failed to load workout history:", error);
         } finally {
             setLoading(false);
         }
