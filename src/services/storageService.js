@@ -570,30 +570,27 @@ export const storageService = {
             return null;
         }
     },
-    console.error("Error getting last exercise performance:", error);
-    return null;
-}
-    },
 
-getLastWorkout: async (userId) => {
-    try {
-        const q = query(
-            collection(db, WORKOUT_LOGS_COLLECTION),
-            where('userId', '==', userId),
-            orderBy('timestamp', 'desc'),
-            limit(1)
-        );
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const doc = querySnapshot.docs[0];
-            return { id: doc.id, ...doc.data() };
+
+    getLastWorkout: async (userId) => {
+        try {
+            const q = query(
+                collection(db, WORKOUT_LOGS_COLLECTION),
+                where('userId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const doc = querySnapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error("Error getting last workout:", error);
+            return null;
         }
-        return null;
-    } catch (error) {
-        console.error("Error getting last workout:", error);
-        return null;
-    }
-},
+    },
 
     // System Config
     getSystemConfig: async () => {
@@ -627,47 +624,47 @@ getLastWorkout: async (userId) => {
         }
     },
 
-        saveSystemConfig: async (config) => {
-            try {
-                // We need setDoc, which IS imported.
-                await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
-            } catch (error) {
-                console.error("Error saving system config:", error);
-                throw error;
-            }
-        },
+    saveSystemConfig: async (config) => {
+        try {
+            // We need setDoc, which IS imported.
+            await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
+        } catch (error) {
+            console.error("Error saving system config:", error);
+            throw error;
+        }
+    },
 
-            initialize: async () => {
-                // No-op for now, or maybe check connection
-                console.log("Storage service initialized");
-            },
-                savePlannedWorkout: async (workout, date, name, userId) => {
-                    try {
-                        console.log("Saving planned workout:", name, date);
-                        const rawData = {
-                            userId,
-                            workoutName: name || 'אימון מתוכנן',
-                            date: new Date(date).toISOString(),
-                            timestamp: new Date(date).getTime(),
-                            duration: 0,
-                            exercises: workout.map(ex => ({
-                                exercise_id: ex.id,
-                                name: ex.name,
-                                muscle: ex.muscle_group_id || ex.mainMuscle,
-                                sets: ex.sets || [],
-                                isCompleted: false
-                            })),
-                            status: 'planned',
-                            createdAt: new Date().toISOString()
-                        };
+    initialize: async () => {
+        // No-op for now, or maybe check connection
+        console.log("Storage service initialized");
+    },
+    savePlannedWorkout: async (workout, date, name, userId) => {
+        try {
+            console.log("Saving planned workout:", name, date);
+            const rawData = {
+                userId,
+                workoutName: name || 'אימון מתוכנן',
+                date: new Date(date).toISOString(),
+                timestamp: new Date(date).getTime(),
+                duration: 0,
+                exercises: workout.map(ex => ({
+                    exercise_id: ex.id,
+                    name: ex.name,
+                    muscle: ex.muscle_group_id || ex.mainMuscle,
+                    sets: ex.sets || [],
+                    isCompleted: false
+                })),
+                status: 'planned',
+                createdAt: new Date().toISOString()
+            };
 
-                        const dataToSave = storageService.cleanData(rawData);
-                        const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
-                        console.log("Planned workout saved with ID:", docRef.id);
-                        return docRef.id;
-                    } catch (error) {
-                        console.error("Error saving planned workout:", error);
-                        throw error;
-                    }
-                }
+            const dataToSave = storageService.cleanData(rawData);
+            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+            console.log("Planned workout saved with ID:", docRef.id);
+            return docRef.id;
+        } catch (error) {
+            console.error("Error saving planned workout:", error);
+            throw error;
+        }
+    }
 };
