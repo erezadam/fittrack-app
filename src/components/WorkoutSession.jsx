@@ -6,7 +6,16 @@ import { storageService } from '../services/storageService';
 const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
 export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0 }) {
-    const [exercises, setExercises] = useState(workout?.exercises || []);
+    const [exercises, setExercises] = useState(() => {
+        const initial = workout?.exercises || [];
+        // Ensure every exercise has at least one set to start
+        return initial.map(ex => ({
+            ...ex,
+            sets: ex.sets && ex.sets.length > 0
+                ? ex.sets
+                : [{ weight: '', reps: '', isCompleted: false }]
+        }));
+    });
     const [duration, setDuration] = useState(initialDuration);
     const [expandedEx, setExpandedEx] = useState({});
     const [selectedImages, setSelectedImages] = useState(null);
@@ -79,7 +88,14 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
     };
 
     const toggleExpand = (id) => {
-        setExpandedEx(prev => ({ ...prev, [id]: !prev[id] }));
+        setExpandedEx(prev => ({
+            // If we want accordion style (only one open):
+            // ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
+            // But user asked for standard behavior, so multiple can be open or toggle.
+            // Let's stick to simple toggle for now, BUT ensure we can Force Close.
+            ...prev,
+            [id]: !prev[id]
+        }));
     };
 
     const handleRemoveExercise = (exerciseId) => {

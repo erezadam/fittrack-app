@@ -5,22 +5,21 @@ export default function VideoModal({ isOpen, onClose, videoUrl, title }) {
 
     // Helper to get embed URL
     const getEmbedUrl = (url) => {
+        if (!url || typeof url !== 'string') return null;
         try {
             // Handle standard youtube.com/watch?v=XYZ
             if (url.includes('youtube.com/watch')) {
-                const urlObj = new URL(url);
-                const videoId = urlObj.searchParams.get('v');
-                return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                const videoId = new URLSearchParams(new URL(url).search).get('v');
+                return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
             }
             // Handle youtu.be/XYZ
             if (url.includes('youtu.be/')) {
                 const videoId = url.split('youtu.be/')[1].split('?')[0];
-                return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
             }
             // Handle already embedded or other links (best effort)
             return url;
         } catch (e) {
-            console.error("Error parsing video URL", e);
             return url;
         }
     };

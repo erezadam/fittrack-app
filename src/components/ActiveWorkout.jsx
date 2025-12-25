@@ -178,11 +178,13 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
                 assignmentId: assignmentId || null
             };
 
+            // Consolidate Save Logic: Always use saveWorkout
             if (logId) {
-                await storageService.updateWorkoutLog(logId, logData);
-            } else {
-                await storageService.saveWorkout(logData, user?.id);
+                logData.id = logId;
             }
+            // Use saveWorkout for both new and existing logs (it handles upsert)
+            // This ensures our new defensive coding applies to updates too.
+            await storageService.saveWorkout(logData, user?.id);
 
             if (assignmentId) {
                 await trainerService.completeTrainingProgram(assignmentId);

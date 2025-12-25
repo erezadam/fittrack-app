@@ -20,24 +20,28 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
 
             // 1. Fetch Logs directly from storageService (Reliable)
             const workoutLogs = await storageService.getAllWorkoutLogs(user.id);
-            console.log("Fetched logs:", workoutLogs);
-            setLogs(workoutLogs);
 
-            // 2. Fetch Assignments via trainerService
+            // Separate History vs Planned
+            const historyLogs = workoutLogs.filter(l => l.status !== 'planned');
+            const plannedLogs = workoutLogs.filter(l => l.status === 'planned');
+
+            setLogs(historyLogs);
+
+            // 2. Fetch Assignments via trainerService (if any) and merge with planned logs
+            let mergedAssignments = [...plannedLogs];
             try {
-                // We only need assignments here, but we can use getTraineeDetails or a new method.
-                // Using getTraineeDetails for now but ignoring its logs return
                 const details = await trainerService.getTraineeDetails(user.id);
+                const trainerAssignments = details.assignments
+                    .filter(a => a.status === 'assigned' || a.status === 'pending');
 
-                const pendingAssignments = details.assignments
-                    .filter(a => a.status === 'assigned' || a.status === 'pending')
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                setAssignments(pendingAssignments);
+                mergedAssignments = [...mergedAssignments, ...trainerAssignments];
             } catch (err) {
                 console.warn("Failed to load assignments (User might not be a trainee):", err);
-                // Don't fail the whole page if just assignments fail
             }
+
+            // Sort by date ascending
+            mergedAssignments.sort((a, b) => new Date(a.date || a.timestamp) - new Date(b.date || b.timestamp));
+            setAssignments(mergedAssignments);
 
         } catch (error) {
             console.error("Failed to load workout history:", error);
@@ -64,7 +68,13 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
 
     const handleStartAssignment = (assignment) => {
         if (onStartWorkout) {
-            onStartWorkout(assignment.exercises, assignment.name, null, assignment.id);
+            // If it's a planned workout log, pass ID as logId (3rd arg) so it gets updated
+            if (assignment.status === 'planned') {
+                onStartWorkout(assignment.exercises, assignment.name, assignment.id, null);
+            } else {
+                // Trainer assignment
+                onStartWorkout(assignment.exercises, assignment.name, null, assignment.id);
+            }
         }
     };
 
@@ -87,7 +97,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                     ←
                 </button>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
-                    היסטוריית אימונים
+                    אימונים מתוכננים
                 </h1>
                 <div className="w-10"></div>
             </div>

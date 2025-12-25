@@ -15,6 +15,8 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
     const [step, setStep] = useState('dashboard');
     const [showAICoach, setShowAICoach] = useState(false);
     const [workoutName, setWorkoutName] = useState(initialWorkoutName || '');
+    const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
+    const [isSaving, setIsSaving] = useState(false);
 
     // Data
     const [exercises, setExercises] = useState([]);
@@ -23,6 +25,35 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
     // Selection State
     const [selectedMuscles, setSelectedMuscles] = useState([]);
     const [selectedExercises, setSelectedExercises] = useState([]);
+
+    const handleSave = async () => {
+        if (!workoutName.trim()) {
+            alert('נא להזין שם לאימון');
+            return;
+        }
+        if (selectedExercises.length === 0) {
+            alert('נא לבחור לפחות תרגיל אחד');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await storageService.savePlannedWorkout(selectedExercises, workoutDate, workoutName, user.id);
+            // Redirect to history (Planned Workouts)
+            onBack();
+            // Ideally we should have a callback or navigation prop, but onBack usually goes to dashboard. 
+            // We want to go to 'history'. Assuming parent handles view changes or we can trigger it.
+            // If onBack just unmounts, UserDashboard will show. The user can then click "Planned Workouts".
+            // However, a direct navigation would be better if possible. 
+            // For now, let's use alert and onBack.
+            alert('האימון נשמר בהצלחה!');
+        } catch (error) {
+            console.error(error);
+            alert('שגיאה בשמירת האימון');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Filters State
     const [selectedSubMuscles, setSelectedSubMuscles] = useState([]);
@@ -126,11 +157,24 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
                 {showAICoach && <AIWorkoutModal onClose={() => setShowAICoach(false)} onStartWorkout={onStartWorkout} />}
 
                 <div className='space-y-6'>
-                    <div className="neu-card">
-                        <label className="block mb-2 font-bold">שם האימון</label>
-                        <input type="text" className="neu-input w-full" value={workoutName} onChange={(e) => setWorkoutName(e.target.value)} placeholder="למשל: אימון חזה וכתפיים" />
-                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">כינוי לאימון</label>
+                        <input
+                            type="text"
+                            value={workoutName}
+                            onChange={(e) => setWorkoutName(e.target.value)}
+                            placeholder="לדוגמה: אימון חזה ויד אחורית"
+                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
+                        />
 
+                        <label className="block text-sm font-bold text-gray-700 mt-4 mb-2">תאריך אימון (אופציונלי)</label>
+                        <input
+                            type="date"
+                            value={workoutDate}
+                            onChange={(e) => setWorkoutDate(e.target.value)}
+                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
+                        />
+                    </div>
                     <h3 className="text-xl font-bold mt-8">בחר שרירים</h3>
                     <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
                         {availableMuscles.map(m => {
@@ -142,7 +186,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
                                     className={`neu-card p-6 cursor-pointer transition-all text-center flex flex-col items-center gap-2 ${selectedMuscles.includes(m) ? 'ring-2 ring-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}>
 
                                     {/* ICON LOGIC: Try Firebase URL first, then Fallback */}
-                                    {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
+                                    {mapping.icon && ((typeof mapping.icon === 'string' && mapping.icon.startsWith('http')) || (typeof mapping.icon === 'string' && mapping.icon.startsWith('data:'))) ? (
                                         <img src={mapping.icon} alt={m} className="w-16 h-16 object-contain mb-2" />
                                     ) : (
                                         <IconComp size={48} className="text-teal-600 mb-2" strokeWidth={1} />
@@ -248,8 +292,17 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
             </div>
 
             <div className='fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50'>
-                <div className='max-w-4xl mx-auto flex gap-4 items-center'>
-                    <div className='text-sm text-gray-500 font-bold whitespace-nowrap'>נבחרו: {selectedExercises.length}</div>
+                <div className='max-w-4xl mx-auto flex gap-3 items-center'>
+                    <div className='text-sm text-gray-500 font-bold whitespace-nowrap hidden md:block'>נבחרו: {selectedExercises.length}</div>
+
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="py-4 px-6 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transform active:scale-95 transition-all"
+                    >
+                        <Save size={20} /> <span className="hidden md:inline">שמור</span>
+                    </button>
+
                     <button onClick={handleStart} className='flex-1 p-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold text-xl shadow-lg transform active:scale-95 transition-transform'>
                         {mode === 'add' ? 'הוסף לאימון' : 'התחל אימון'}
                     </button>

@@ -151,13 +151,17 @@ function App() {
 
       console.log("Saving workout to storage (App.jsx pre-check):", JSON.stringify(logData, null, 2));
 
+      console.log("Saving workout to storage (App.jsx pre-check):", JSON.stringify(logData, null, 2));
+
+      // Consolidated Save Logic: Always use saveWorkout.
+      // If activeLogId exists, we pass it inside the object (or ensure it's there) so saveWorkout can update it.
       if (activeLogId) {
-        await storageService.updateWorkoutLog(activeLogId, logData);
-        console.log("Workout log updated:", activeLogId);
-      } else {
-        await storageService.saveWorkout(logData, user.id);
-        console.log("New workout log saved for user:", user.id);
+        logData.id = activeLogId;
+        console.log("Updating existing log:", activeLogId);
       }
+
+      const savedLog = await storageService.saveWorkout(logData, user.id);
+      console.log("Workout saved/updated successfully:", savedLog.id);
 
       if (activeAssignmentId) {
         try {

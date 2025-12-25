@@ -477,7 +477,7 @@ export default function AdminPage({ user, onBack }) {
                     if (!url) return null;
                     const clean = url.replace(/^"|"$/g, '').trim();
                     if (!clean) return null;
-                    if (clean.startsWith('http') || clean.startsWith('data:')) return clean;
+                    if ((typeof clean === 'string' && clean.startsWith('http')) || (typeof clean === 'string' && clean.startsWith('data:'))) return clean;
                     // It's likely a filename
                     return `${GITHUB_BASE}${clean}`;
                 };

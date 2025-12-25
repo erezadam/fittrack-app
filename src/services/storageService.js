@@ -272,21 +272,26 @@ export const storageService = {
     // Helper to remove undefined values (Firestore doesn't like them)
     // and ensuring strings are safe
     cleanData: (data) => {
-        if (data === null || data === undefined) return null;
+        if (data === undefined) return undefined; // Return undefined so parent keys can skip it
+        if (data === null) return null;
         if (typeof data === 'string') return data;
-        if (typeof data === 'number') return data;
+        if (typeof data === 'number') return isNaN(data) ? 0 : data; // Safety for NaN
         if (typeof data === 'boolean') return data;
 
+        // Handle Date objects explicitly (convert to ISO string or keep as Timestamp if needed, but here we prefer ISO strings for simple JSON)
+        if (data instanceof Date) return data.toISOString();
+
         if (Array.isArray(data)) {
-            return data
-                .map(item => storageService.cleanData(item))
-                .filter(item => item !== undefined);
+            // recursively clean array items
+            return data.map(item => storageService.cleanData(item)).filter(i => i !== undefined);
         }
 
         if (typeof data === 'object') {
             const cleaned = {};
             Object.keys(data).forEach(key => {
                 const value = storageService.cleanData(data[key]);
+                // Only add if not undefined. 
+                // We keep nulls to preserve "cleared" fields.
                 if (value !== undefined) {
                     cleaned[key] = value;
                 }
@@ -294,7 +299,7 @@ export const storageService = {
             return cleaned;
         }
 
-        return data;
+        return data; // Fallback
     },
 
     // Workout Logs
@@ -302,23 +307,55 @@ export const storageService = {
         try {
             console.log("Attempting to save workout for user:", userId);
 
-            // 1. Prepare raw data
-            const rawData = {
-                ...workoutData,
-                userId,
-                timestamp: new Date().toISOString(), // Always set server time for ordering
-                status: workoutData.status || 'completed'
+            // Defensive Helper as requested
+            const safeStringCheck = (str, substr) => {
+                return (typeof str === 'string' && typeof substr === 'string') ? str.indexOf(substr) : -1;
             };
 
-            // 2. Clean undefined values
+            const { id: existingId, ...dataContent } = workoutData;
+
+            // 1. Prepare raw data
+            // 1. Prepare raw data
+            // Ensure status takes precedence from input, default to completed if missing
+            const finalStatus = dataContent.status || 'completed';
+
+            // Type-checking ID
+            let safeId = null;
+            if (existingId && typeof existingId === 'string' && existingId.trim() !== '') {
+                safeId = existingId;
+            }
+
+            const rawData = {
+                ...dataContent,
+                userId,
+                timestamp: new Date().toISOString(),
+                status: finalStatus,
+                exercises: (workoutData.exercises || []).map(ex => ({
+                    ...ex,
+                    name: typeof ex.name === 'string' ? ex.name : 'Unknown Exercise',
+                    imageUrls: Array.isArray(ex.imageUrls) ? ex.imageUrls.filter(url => typeof url === 'string') : [],
+                }))
+            };
+
+            // 2. Clean undefined values (CRITICAL)
             console.log("Raw Workout Data before cleanup:", JSON.stringify(rawData, null, 2));
             const dataToSave = storageService.cleanData(rawData);
             console.log("Final Workout Data (Cleaned):", JSON.stringify(dataToSave, null, 2));
 
-            // 3. Save
-            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
-            console.log("Workout saved successfully with ID: ", docRef.id);
-            return { id: docRef.id, ...dataToSave };
+            // 3. Save or Update using setDoc with merge for maximum safety
+            if (safeId) {
+                console.log(`Updating existing planned workout ${safeId} to ${finalStatus} (using setDoc merge)`);
+                const docRef = doc(db, WORKOUT_LOGS_COLLECTION, safeId);
+                await setDoc(docRef, dataToSave, { merge: true });
+                console.log("Workout updated successfully with ID: ", safeId);
+                return { id: safeId, ...dataToSave };
+            } else {
+                console.log("Creating new workout log");
+                const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+                console.log("Workout saved successfully with ID: ", docRef.id);
+                return { id: docRef.id, ...dataToSave };
+            }
+
         } catch (error) {
             console.error("Error saving workout log:", error);
             console.error("Detailed Save Error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
@@ -546,5 +583,34 @@ export const storageService = {
     initialize: async () => {
         // No-op for now, or maybe check connection
         console.log("Storage service initialized");
+    },
+    savePlannedWorkout: async (workout, date, name, userId) => {
+        try {
+            console.log("Saving planned workout:", name, date);
+            const rawData = {
+                userId,
+                workoutName: name || 'אימון מתוכנן',
+                date: new Date(date).toISOString(),
+                timestamp: new Date(date).getTime(),
+                duration: 0,
+                exercises: workout.map(ex => ({
+                    exercise_id: ex.id,
+                    name: ex.name,
+                    muscle: ex.muscle_group_id || ex.mainMuscle,
+                    sets: ex.sets || [],
+                    isCompleted: false
+                })),
+                status: 'planned',
+                createdAt: new Date().toISOString()
+            };
+
+            const dataToSave = storageService.cleanData(rawData);
+            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+            console.log("Planned workout saved with ID:", docRef.id);
+            return docRef.id;
+        } catch (error) {
+            console.error("Error saving planned workout:", error);
+            throw error;
+        }
     }
 };
