@@ -134,7 +134,8 @@ function App() {
           name: ex.name,
           mainMuscle: ex.mainMuscle,
           sets: ex.sets,
-          isCompleted: ex.isCompleted
+          isCompleted: ex.isCompleted,
+          imageUrls: ex.imageUrls || []
         })),
         status: 'completed',
         durationMinutes: Math.round(duration / 60),

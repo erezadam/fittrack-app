@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon, Trash2 } from 'lucide-react';
 import ImageGalleryModal from './ImageGalleryModal';
+import { storageService } from '../services/storageService';
 
 const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
@@ -14,6 +15,31 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
         const timer = setInterval(() => setDuration(d => d + 1), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Fallback: Fetch missing images
+    useEffect(() => {
+        const fetchMissingImages = async () => {
+            const missingImages = exercises.some(ex => !ex.imageUrls || ex.imageUrls.length === 0);
+            if (missingImages) {
+                try {
+                    console.log("WorkoutSession: Missing images detected, fetching global exercises...");
+                    const allExercises = await storageService.getExercises();
+                    setExercises(prevExs => prevExs.map(ex => {
+                        if (ex.imageUrls && ex.imageUrls.length > 0) return ex;
+                        const match = allExercises.find(a => a.id === ex.id || a.name === ex.name);
+                        return match ? { ...ex, imageUrls: match.imageUrls || [] } : ex;
+                    }));
+                } catch (error) {
+                    console.error("Failed to fetch exercises for image fallback:", error);
+                }
+            }
+        };
+
+        fetchMissingImages();
+        // ESLint might warn about 'exercises' dep, but we only want to run this once or when heavy changes happen.
+        // If we add exercises, they usually come with images. This is mainly for initial load.
+        // Let's dep on length to be safe without inf loop.
+    }, [exercises.length]);
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -183,7 +209,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                     {sIdx + 1}
                                                                 </div>
 
-                                                                <div className={`flex-1 grid gap-2 ${ex.trackingType === 'reps' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                                                <div className={`flex-1 grid gap-2 ${(ex.trackingType === 'reps' || ex.trackingType === 'time') ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                                                    {/* Weight Input - Show if trackingType is 'weight' OR undefined/null */}
                                                                     {(ex.trackingType === 'weight' || !ex.trackingType) && (
                                                                         <div className="relative">
                                                                             <input
@@ -203,6 +230,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
                                                                         </div>
                                                                     )}
+
+                                                                    {/* Reps/Time Input */}
                                                                     <div className="relative">
                                                                         <input
                                                                             type="number"
@@ -218,7 +247,9 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                                                 }
                                                                             }}
                                                                         />
-                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">חזרות</span>
+                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                                                                            {ex.trackingType === 'time' ? 'שניות' : 'חזרות'}
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                             </div>

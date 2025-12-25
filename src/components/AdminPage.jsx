@@ -136,7 +136,7 @@ export default function AdminPage({ user, onBack }) {
 
     // Exercise Form State
     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
-    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', trackingType: 'weight', video_url: '', imageUrls: [] });
+    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', measurementType: 'weight', video_url: '', imageUrls: [] });
 
     // Muscle Form State
     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
@@ -297,7 +297,7 @@ export default function AdminPage({ user, onBack }) {
 
     const handleEditExercise = (ex) => {
         setEditingExercise(ex);
-        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', trackingType: ex.trackingType || 'weight', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
+        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', measurementType: ex.measurementType || ex.trackingType || 'weight', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
         window.scrollTo(0, 0); // Scroll to top to see the form
     };
 
@@ -946,8 +946,8 @@ export default function AdminPage({ user, onBack }) {
                                 />
                                 <select
                                     className="neu-input"
-                                    value={exForm.trackingType || 'weight'}
-                                    onChange={e => setExForm({ ...exForm, trackingType: e.target.value })}
+                                    value={exForm.measurementType || 'weight'}
+                                    onChange={e => setExForm({ ...exForm, measurementType: e.target.value })}
                                 >
                                     <option value="weight">משקל (ק״ג)</option>
                                     <option value="reps">חזרות בלבד (ללא משקל)</option>
