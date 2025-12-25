@@ -199,6 +199,11 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                     </div>
                                                     <div className="text-xs text-gray-500 truncate mt-0.5">
                                                         {ex.sets?.length || 0} סטים • {ex.equipment || 'ללא'}
+                                                        {lastStats[ex.id] && (
+                                                            <span className="text-teal-600 font-bold mr-2">
+                                                                | אימון אחרון: {lastStats[ex.id]}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

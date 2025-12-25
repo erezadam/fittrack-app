@@ -518,25 +518,82 @@ export const storageService = {
         }
     },
 
-    getLastWorkout: async (userId) => {
+    /**
+     * Fetches the last stats (weight/reps) for a specific exercise for a user.
+     * returns formatted string "60kg - 10" or null.
+     */
+    fetchLastExerciseStats: async (userId, exerciseId) => {
         try {
             const q = query(
                 collection(db, WORKOUT_LOGS_COLLECTION),
-                where('userId', '==', userId),
-                orderBy('timestamp', 'desc'),
-                limit(1)
+                where('userId', '==', userId)
             );
             const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const doc = querySnapshot.docs[0];
-                return { id: doc.id, ...doc.data() };
+            const logs = querySnapshot.docs.map(doc => doc.data());
+
+            // Sort new to old
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            for (const workout of logs) {
+                // Skip planned/future workouts
+                if (workout.status === 'planned') continue;
+
+                if (workout.exercises) {
+                    const exerciseData = workout.exercises.find(ex => ex.exercise_id === exerciseId);
+                    if (exerciseData && exerciseData.sets && exerciseData.sets.length > 0) {
+                        // Find "best" set (heaviest weight, then most reps)
+                        let bestSet = null;
+                        let maxWeight = -1;
+
+                        exerciseData.sets.forEach(set => {
+                            const w = parseFloat(set.weight) || 0;
+                            if (w > maxWeight) {
+                                maxWeight = w;
+                                bestSet = set;
+                            } else if (w === maxWeight) {
+                                // Break tie with reps
+                                if ((parseFloat(set.reps) || 0) > (parseFloat(bestSet?.reps) || 0)) {
+                                    bestSet = set;
+                                }
+                            }
+                        });
+
+                        if (bestSet) {
+                            return `${bestSet.weight || 0}kg - ${bestSet.reps || 0}`;
+                        }
+                    }
+                }
             }
             return null;
         } catch (error) {
-            console.error("Error getting last workout:", error);
+            console.error("Error fetching last stats:", error);
             return null;
         }
     },
+    console.error("Error getting last exercise performance:", error);
+    return null;
+}
+    },
+
+getLastWorkout: async (userId) => {
+    try {
+        const q = query(
+            collection(db, WORKOUT_LOGS_COLLECTION),
+            where('userId', '==', userId),
+            orderBy('timestamp', 'desc'),
+            limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            return { id: doc.id, ...doc.data() };
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting last workout:", error);
+        return null;
+    }
+},
 
     // System Config
     getSystemConfig: async () => {
@@ -570,47 +627,47 @@ export const storageService = {
         }
     },
 
-    saveSystemConfig: async (config) => {
-        try {
-            // We need setDoc, which IS imported.
-            await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
-        } catch (error) {
-            console.error("Error saving system config:", error);
-            throw error;
-        }
-    },
+        saveSystemConfig: async (config) => {
+            try {
+                // We need setDoc, which IS imported.
+                await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
+            } catch (error) {
+                console.error("Error saving system config:", error);
+                throw error;
+            }
+        },
 
-    initialize: async () => {
-        // No-op for now, or maybe check connection
-        console.log("Storage service initialized");
-    },
-    savePlannedWorkout: async (workout, date, name, userId) => {
-        try {
-            console.log("Saving planned workout:", name, date);
-            const rawData = {
-                userId,
-                workoutName: name || 'אימון מתוכנן',
-                date: new Date(date).toISOString(),
-                timestamp: new Date(date).getTime(),
-                duration: 0,
-                exercises: workout.map(ex => ({
-                    exercise_id: ex.id,
-                    name: ex.name,
-                    muscle: ex.muscle_group_id || ex.mainMuscle,
-                    sets: ex.sets || [],
-                    isCompleted: false
-                })),
-                status: 'planned',
-                createdAt: new Date().toISOString()
-            };
+            initialize: async () => {
+                // No-op for now, or maybe check connection
+                console.log("Storage service initialized");
+            },
+                savePlannedWorkout: async (workout, date, name, userId) => {
+                    try {
+                        console.log("Saving planned workout:", name, date);
+                        const rawData = {
+                            userId,
+                            workoutName: name || 'אימון מתוכנן',
+                            date: new Date(date).toISOString(),
+                            timestamp: new Date(date).getTime(),
+                            duration: 0,
+                            exercises: workout.map(ex => ({
+                                exercise_id: ex.id,
+                                name: ex.name,
+                                muscle: ex.muscle_group_id || ex.mainMuscle,
+                                sets: ex.sets || [],
+                                isCompleted: false
+                            })),
+                            status: 'planned',
+                            createdAt: new Date().toISOString()
+                        };
 
-            const dataToSave = storageService.cleanData(rawData);
-            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
-            console.log("Planned workout saved with ID:", docRef.id);
-            return docRef.id;
-        } catch (error) {
-            console.error("Error saving planned workout:", error);
-            throw error;
-        }
-    }
+                        const dataToSave = storageService.cleanData(rawData);
+                        const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+                        console.log("Planned workout saved with ID:", docRef.id);
+                        return docRef.id;
+                    } catch (error) {
+                        console.error("Error saving planned workout:", error);
+                        throw error;
+                    }
+                }
 };
