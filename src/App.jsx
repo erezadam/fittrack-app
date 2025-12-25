@@ -131,11 +131,17 @@ function App() {
         workoutName: activeWorkoutName || 'אימון ללא שם',
         exercises: exercises.map(ex => ({
           exercise_id: ex.id,
-          name: ex.name,
-          mainMuscle: ex.mainMuscle,
-          sets: ex.sets,
-          isCompleted: ex.isCompleted,
-          imageUrls: ex.imageUrls || []
+          name: String(ex.name || 'Unknown Exercise'),
+          mainMuscle: String(ex.mainMuscle || 'Other'),
+          sets: Array.isArray(ex.sets) ? ex.sets.map(s => ({
+            weight: s.weight !== undefined && s.weight !== null ? String(s.weight) : '',
+            reps: s.reps !== undefined && s.reps !== null ? String(s.reps) : '',
+            isCompleted: !!s.isCompleted
+          })) : [],
+          isCompleted: !!ex.isCompleted,
+          imageUrls: Array.isArray(ex.imageUrls)
+            ? ex.imageUrls.filter(url => typeof url === 'string') // Explicitly filter non-strings
+            : []
         })),
         status: 'completed',
         durationMinutes: Math.round(duration / 60),
@@ -143,7 +149,7 @@ function App() {
         date: new Date().toISOString()
       };
 
-      console.log("Saving workout to storage...", logData);
+      console.log("Saving workout to storage (App.jsx pre-check):", JSON.stringify(logData, null, 2));
 
       if (activeLogId) {
         await storageService.updateWorkoutLog(activeLogId, logData);

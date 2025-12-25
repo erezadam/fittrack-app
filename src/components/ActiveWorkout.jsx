@@ -169,7 +169,8 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
                         name: exercises.find(e => e.id === id)?.name || 'Unknown Exercise',
                         mainMuscle: exercises.find(e => e.id === id)?.mainMuscle,
                         sets: data.sets,
-                        isCompleted: completedExercises.has(id)
+                        isCompleted: completedExercises.has(id),
+                        imageUrls: (exercises.find(e => e.id === id)?.imageUrls || []).filter(url => typeof url === 'string')
                     })),
                 status: allCompleted ? 'completed' : 'partial',
                 calories: calories ? Number(calories) : 0,

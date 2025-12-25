@@ -269,22 +269,59 @@ export const storageService = {
         }
     },
 
+    // Helper to remove undefined values (Firestore doesn't like them)
+    // and ensuring strings are safe
+    cleanData: (data) => {
+        if (data === null || data === undefined) return null;
+        if (typeof data === 'string') return data;
+        if (typeof data === 'number') return data;
+        if (typeof data === 'boolean') return data;
+
+        if (Array.isArray(data)) {
+            return data
+                .map(item => storageService.cleanData(item))
+                .filter(item => item !== undefined);
+        }
+
+        if (typeof data === 'object') {
+            const cleaned = {};
+            Object.keys(data).forEach(key => {
+                const value = storageService.cleanData(data[key]);
+                if (value !== undefined) {
+                    cleaned[key] = value;
+                }
+            });
+            return cleaned;
+        }
+
+        return data;
+    },
+
     // Workout Logs
     saveWorkout: async (workoutData, userId) => {
         try {
             console.log("Attempting to save workout for user:", userId);
-            const dataToSave = {
+
+            // 1. Prepare raw data
+            const rawData = {
                 ...workoutData,
                 userId,
-                timestamp: new Date().toISOString(),
-                status: workoutData.status || 'completed' // Default to completed if not specified
+                timestamp: new Date().toISOString(), // Always set server time for ordering
+                status: workoutData.status || 'completed'
             };
-            console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
+
+            // 2. Clean undefined values
+            console.log("Raw Workout Data before cleanup:", JSON.stringify(rawData, null, 2));
+            const dataToSave = storageService.cleanData(rawData);
+            console.log("Final Workout Data (Cleaned):", JSON.stringify(dataToSave, null, 2));
+
+            // 3. Save
             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
             console.log("Workout saved successfully with ID: ", docRef.id);
             return { id: docRef.id, ...dataToSave };
         } catch (error) {
             console.error("Error saving workout log:", error);
+            console.error("Detailed Save Error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
             throw error;
         }
     },
@@ -342,11 +379,13 @@ export const storageService = {
     updateWorkoutLog: async (logId, data) => {
         try {
             const logRef = doc(db, WORKOUT_LOGS_COLLECTION, logId);
-            // Update timestamp to now if resuming? Or keep original?
-            // User requested: "לאחר לחיצה על שמירה האימון ישמר על התאריך המקורי"
-            // So we do NOT update timestamp automatically.
-            await updateDoc(logRef, data);
-            return { id: logId, ...data };
+
+            // Clean data before update
+            const cleanedData = storageService.cleanData(data);
+            console.log("Updating workout log. Cleaned Data:", cleanedData);
+
+            await updateDoc(logRef, cleanedData);
+            return { id: logId, ...cleanedData };
         } catch (error) {
             console.error("Error updating workout log:", error);
             throw error;

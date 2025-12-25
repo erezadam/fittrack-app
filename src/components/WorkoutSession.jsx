@@ -26,7 +26,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                     const allExercises = await storageService.getExercises();
                     setExercises(prevExs => prevExs.map(ex => {
                         if (ex.imageUrls && ex.imageUrls.length > 0) return ex;
-                        const match = allExercises.find(a => a.id === ex.id || a.name === ex.name);
+                        // Safe comparison enforcing strings
+                        const match = allExercises.find(a => String(a.id) === String(ex.id) || String(a.name) === String(ex.name));
                         return match ? { ...ex, imageUrls: match.imageUrls || [] } : ex;
                     }));
                 } catch (error) {
