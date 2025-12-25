@@ -71,6 +71,11 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
         newExercises[exIndex].isCompleted = isComplete;
         newExercises[exIndex].sets?.forEach(s => s.isCompleted = isComplete);
         setExercises(newExercises);
+
+        // Auto-collapse if marking as active (completed)
+        if (isComplete) {
+            setExpandedEx(prev => ({ ...prev, [newExercises[exIndex].id]: false }));
+        }
     };
 
     const toggleExpand = (id) => {

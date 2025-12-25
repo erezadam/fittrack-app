@@ -236,7 +236,8 @@ function App() {
           // Ensure critical fields exist
           imageUrls: fullExercise?.imageUrls || [],
           video_url: fullExercise?.video_url || null,
-          trackingType: fullExercise?.trackingType || 'reps' // Default tracking type
+          trackingType: fullExercise?.trackingType || 'reps', // Default tracking type
+          isCompleted: !!le.isCompleted // Ensure boolean
         };
       });
 
