@@ -157,8 +157,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                             {/* Left Side: Checkbox + Image + Text */}
                                             <div className="flex items-center gap-3 flex-1 min-w-0">
 
-                                                {/* CHECKBOX */}
-                                                <div onClick={(e) => { e.stopPropagation(); toggleExerciseComplete(realIndex); }} className="cursor-pointer shrink-0">
+                                                {/* CHECKBOX - Status only, no click */}
+                                                <div className="shrink-0">
                                                     {ex.isCompleted ? <CheckCircle className="text-teal-500" size={24} /> : <Circle className="text-gray-300" size={24} />}
                                                 </div>
 
@@ -259,12 +259,21 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                         </div>
                                                     ))}
                                                     {!ex.isCompleted && (
-                                                        <button
-                                                            onClick={() => handleAddSet(realIndex)}
-                                                            className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
-                                                        >
-                                                            <Plus size={16} /> הוסף סט
-                                                        </button>
+                                                        <div className="space-y-3 pt-2">
+                                                            <button
+                                                                onClick={() => handleAddSet(realIndex)}
+                                                                className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                <Plus size={16} /> הוסף סט
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => toggleExerciseComplete(realIndex)}
+                                                                className="w-full py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 shadow-md transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                <CheckCircle size={16} /> סיום תרגיל
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
