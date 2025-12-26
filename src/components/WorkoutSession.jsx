@@ -5,7 +5,7 @@ import { storageService } from '../services/storageService';
 
 const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
-export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0 }) {
+export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0, userId }) {
     const [exercises, setExercises] = useState(() => {
         const initial = workout?.exercises || [];
         // Ensure every exercise has at least one set to start
@@ -19,11 +19,33 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
     const [duration, setDuration] = useState(initialDuration);
     const [expandedEx, setExpandedEx] = useState({});
     const [selectedImages, setSelectedImages] = useState(null);
+    const [lastStats, setLastStats] = useState({});
+
+    // New State for Summary/Calories
+    const [calories, setCalories] = useState('');
+    const [showSummary, setShowSummary] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setDuration(d => d + 1), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Fetch Last Stats
+    useEffect(() => {
+        const loadStats = async () => {
+            if (!userId) return;
+            const statsMap = {};
+            // Use Promise.all for parallel fetching if needed, or sequential is fine for small lists
+            for (const ex of exercises) {
+                const stats = await storageService.fetchLastExerciseStats(userId, ex.id);
+                if (stats) {
+                    statsMap[ex.id] = stats;
+                }
+            }
+            setLastStats(statsMap);
+        };
+        loadStats();
+    }, [userId, exercises.length]);
 
     // Fallback: Fetch missing images
     useEffect(() => {
@@ -118,13 +140,29 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
         setExercises(newExercises);
     };
 
+    // Updated Finish Handler
     const handleFinish = () => {
         const safeExercises = exercises || [];
         const completedCount = safeExercises.filter(e => e.isCompleted).length;
+
+        // If not all done, confirm first
         if (completedCount < safeExercises.length) {
-            if (!window.confirm(`סיימת רק ${completedCount} מתוך ${safeExercises.length} תרגילים. לסיים בכל זאת?`)) return;
+            if (!window.confirm(`סיימת רק ${completedCount} מתוך ${safeExercises.length} תרגילים. להמשיך לסיכום?`)) return;
         }
-        onFinish({ ...workout, exercises: safeExercises, duration });
+
+        // Show Summary Modal instead of immediate exit
+        setShowSummary(true);
+    };
+
+    // Final Save from Modal
+    const handleFinalSave = () => {
+        const safeExercises = exercises || [];
+        onFinish({
+            ...workout,
+            exercises: safeExercises,
+            duration,
+            calories: calories ? Number(calories) : 0
+        });
     };
 
     // Grouping Logic
@@ -328,6 +366,55 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
             </div>
 
             <ImageGalleryModal isOpen={!!selectedImages} onClose={() => setSelectedImages(null)} images={selectedImages?.images || []} title={selectedImages?.title} />
+
+            {/* SUMMARY MODAL */}
+            {showSummary && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-fade-in relative">
+                        <div className="text-6xl mb-4">🎉</div>
+                        <h2 className="text-3xl font-extrabold text-gray-800 mb-2">כל הכבוד!</h2>
+                        <p className="text-gray-500 mb-8">האימון הושלם</p>
+
+                        <div className="space-y-6 mb-8">
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                                <span className="text-gray-500">תרגילים שבוצעו</span>
+                                <span className="text-xl font-bold text-gray-800">{completedCount} / {exercises.length}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                                <span className="text-gray-500">זמן אימון</span>
+                                <span className="text-xl font-bold text-gray-800">{formatTime(duration)}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                                <span className="text-gray-500">קלוריות (משוער)</span>
+                                <div className="w-24 relative">
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={calories}
+                                        onChange={(e) => setCalories(e.target.value)}
+                                        className="w-full text-right text-xl font-bold text-gray-800 border-none outline-none focus:ring-0 p-0 bg-transparent placeholder-gray-300"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowSummary(false)}
+                                className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-colors"
+                            >
+                                חזור
+                            </button>
+                            <button
+                                onClick={handleFinalSave}
+                                className="flex-[2] py-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform active:scale-95 transition-all"
+                            >
+                                שמור וסיים
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

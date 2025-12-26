@@ -334,6 +334,7 @@ function App() {
             name: activeWorkoutName,
             id: activeLogId
           }}
+          userId={user?.id}
           initialDuration={tempWorkoutData?.duration || 0}
           onAdd={handleAddExercises}
           onFinish={handleSessionFinish}

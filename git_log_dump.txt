@@ -1,0 +1,2247 @@
+commit 63f1c2d208e6989e93463716adbe9f9336efd1f6
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 16:11:44 2025 +0200
+
+    גיבוי: לפני תיקון ReferenceError עבור lastStats
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index 9da42dd..84de328 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766666810168,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-manifest.json,1766666810168,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template_v3.csv,1766666810168,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-index.html,1766666810375,a522c9a38f57bf848ee16e032f1a00dad56f126244eef01ef5009411d6a9ade6
+-exercises_template_v2.csv,1766666810168,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template.csv,1766666810167,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-exercises_template_he.csv,1766666810168,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-assets/index-1Hqb5q2D.css,1766666810375,00ffeff20659d758e4e5e507adb9f1d3f8859e4deee3ac5360463fc9c0161064
+-assets/index-1ha-eiwf.js,1766666810375,c61e771bd48a6977f08d368682d5cc97f28205d25ac45446256135f5ff04ffb0
++vite.svg,1766671713865,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++manifest.json,1766671713865,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template_v3.csv,1766671713865,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++index.html,1766671714063,f579af79b3a08e65530dfa91463fdcbe60ffa6f7147ff56f938894dcc4d852e7
++exercises_template_he.csv,1766671713865,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template.csv,1766671713864,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_v2.csv,1766671713865,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++assets/index-Btz6OuMM.css,1766671714063,245fc0e043e06f65803eacba167fae10e5f1a7bbb599e2165956134518e8337b
++assets/index-A1yN-qYW.js,1766671714063,db53e0f71b2d939ee733ad866f3dff43a879e677cb15b424c1c7782c14f02f05
+diff --git a/src/services/storageService.js b/src/services/storageService.js
+index 73cb81e..a6d86a2 100644
+--- a/src/services/storageService.js
++++ b/src/services/storageService.js
+@@ -570,30 +570,27 @@ export const storageService = {
+             return null;
+         }
+     },
+-    console.error("Error getting last exercise performance:", error);
+-    return null;
+-}
+-    },
+ 
+-getLastWorkout: async (userId) => {
+-    try {
+-        const q = query(
+-            collection(db, WORKOUT_LOGS_COLLECTION),
+-            where('userId', '==', userId),
+-            orderBy('timestamp', 'desc'),
+-            limit(1)
+-        );
+-        const querySnapshot = await getDocs(q);
+-        if (!querySnapshot.empty) {
+-            const doc = querySnapshot.docs[0];
+-            return { id: doc.id, ...doc.data() };
++
++    getLastWorkout: async (userId) => {
++        try {
++            const q = query(
++                collection(db, WORKOUT_LOGS_COLLECTION),
++                where('userId', '==', userId),
++                orderBy('timestamp', 'desc'),
++                limit(1)
++            );
++            const querySnapshot = await getDocs(q);
++            if (!querySnapshot.empty) {
++                const doc = querySnapshot.docs[0];
++                return { id: doc.id, ...doc.data() };
++            }
++            return null;
++        } catch (error) {
++            console.error("Error getting last workout:", error);
++            return null;
+         }
+-        return null;
+-    } catch (error) {
+-        console.error("Error getting last workout:", error);
+-        return null;
+-    }
+-},
++    },
+ 
+     // System Config
+     getSystemConfig: async () => {
+@@ -627,47 +624,47 @@ getLastWorkout: async (userId) => {
+         }
+     },
+ 
+-        saveSystemConfig: async (config) => {
+-            try {
+-                // We need setDoc, which IS imported.
+-                await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
+-            } catch (error) {
+-                console.error("Error saving system config:", error);
+-                throw error;
+-            }
+-        },
+-
+-            initialize: async () => {
+-                // No-op for now, or maybe check connection
+-                console.log("Storage service initialized");
+-            },
+-                savePlannedWorkout: async (workout, date, name, userId) => {
+-                    try {
+-                        console.log("Saving planned workout:", name, date);
+-                        const rawData = {
+-                            userId,
+-                            workoutName: name || 'אימון מתוכנן',
+-                            date: new Date(date).toISOString(),
+-                            timestamp: new Date(date).getTime(),
+-                            duration: 0,
+-                            exercises: workout.map(ex => ({
+-                                exercise_id: ex.id,
+-                                name: ex.name,
+-                                muscle: ex.muscle_group_id || ex.mainMuscle,
+-                                sets: ex.sets || [],
+-                                isCompleted: false
+-                            })),
+-                            status: 'planned',
+-                            createdAt: new Date().toISOString()
+-                        };
+-
+-                        const dataToSave = storageService.cleanData(rawData);
+-                        const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+-                        console.log("Planned workout saved with ID:", docRef.id);
+-                        return docRef.id;
+-                    } catch (error) {
+-                        console.error("Error saving planned workout:", error);
+-                        throw error;
+-                    }
+-                }
++    saveSystemConfig: async (config) => {
++        try {
++            // We need setDoc, which IS imported.
++            await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
++        } catch (error) {
++            console.error("Error saving system config:", error);
++            throw error;
++        }
++    },
++
++    initialize: async () => {
++        // No-op for now, or maybe check connection
++        console.log("Storage service initialized");
++    },
++    savePlannedWorkout: async (workout, date, name, userId) => {
++        try {
++            console.log("Saving planned workout:", name, date);
++            const rawData = {
++                userId,
++                workoutName: name || 'אימון מתוכנן',
++                date: new Date(date).toISOString(),
++                timestamp: new Date(date).getTime(),
++                duration: 0,
++                exercises: workout.map(ex => ({
++                    exercise_id: ex.id,
++                    name: ex.name,
++                    muscle: ex.muscle_group_id || ex.mainMuscle,
++                    sets: ex.sets || [],
++                    isCompleted: false
++                })),
++                status: 'planned',
++                createdAt: new Date().toISOString()
++            };
++
++            const dataToSave = storageService.cleanData(rawData);
++            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
++            console.log("Planned workout saved with ID:", docRef.id);
++            return docRef.id;
++        } catch (error) {
++            console.error("Error saving planned workout:", error);
++            throw error;
++        }
++    }
+ };
+
+commit d62c16325156df6e70640f5ac7ce555f7af14af9
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 16:06:04 2025 +0200
+
+    גיבוי: לפני תיקון שגיאת סינטקס ב-storageService
+
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 9e932d2..9c940d2 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -199,6 +199,11 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                     </div>
+                                                     <div className="text-xs text-gray-500 truncate mt-0.5">
+                                                         {ex.sets?.length || 0} סטים • {ex.equipment || 'ללא'}
++                                                        {lastStats[ex.id] && (
++                                                            <span className="text-teal-600 font-bold mr-2">
++                                                                | אימון אחרון: {lastStats[ex.id]}
++                                                            </span>
++                                                        )}
+                                                     </div>
+                                                 </div>
+                                             </div>
+diff --git a/src/services/storageService.js b/src/services/storageService.js
+index 1faf7f0..73cb81e 100644
+--- a/src/services/storageService.js
++++ b/src/services/storageService.js
+@@ -518,25 +518,82 @@ export const storageService = {
+         }
+     },
+ 
+-    getLastWorkout: async (userId) => {
++    /**
++     * Fetches the last stats (weight/reps) for a specific exercise for a user.
++     * returns formatted string "60kg - 10" or null.
++     */
++    fetchLastExerciseStats: async (userId, exerciseId) => {
+         try {
+             const q = query(
+                 collection(db, WORKOUT_LOGS_COLLECTION),
+-                where('userId', '==', userId),
+-                orderBy('timestamp', 'desc'),
+-                limit(1)
++                where('userId', '==', userId)
+             );
+             const querySnapshot = await getDocs(q);
+-            if (!querySnapshot.empty) {
+-                const doc = querySnapshot.docs[0];
+-                return { id: doc.id, ...doc.data() };
++            const logs = querySnapshot.docs.map(doc => doc.data());
++
++            // Sort new to old
++            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
++
++            for (const workout of logs) {
++                // Skip planned/future workouts
++                if (workout.status === 'planned') continue;
++
++                if (workout.exercises) {
++                    const exerciseData = workout.exercises.find(ex => ex.exercise_id === exerciseId);
++                    if (exerciseData && exerciseData.sets && exerciseData.sets.length > 0) {
++                        // Find "best" set (heaviest weight, then most reps)
++                        let bestSet = null;
++                        let maxWeight = -1;
++
++                        exerciseData.sets.forEach(set => {
++                            const w = parseFloat(set.weight) || 0;
++                            if (w > maxWeight) {
++                                maxWeight = w;
++                                bestSet = set;
++                            } else if (w === maxWeight) {
++                                // Break tie with reps
++                                if ((parseFloat(set.reps) || 0) > (parseFloat(bestSet?.reps) || 0)) {
++                                    bestSet = set;
++                                }
++                            }
++                        });
++
++                        if (bestSet) {
++                            return `${bestSet.weight || 0}kg - ${bestSet.reps || 0}`;
++                        }
++                    }
++                }
+             }
+             return null;
+         } catch (error) {
+-            console.error("Error getting last workout:", error);
++            console.error("Error fetching last stats:", error);
+             return null;
+         }
+     },
++    console.error("Error getting last exercise performance:", error);
++    return null;
++}
++    },
++
++getLastWorkout: async (userId) => {
++    try {
++        const q = query(
++            collection(db, WORKOUT_LOGS_COLLECTION),
++            where('userId', '==', userId),
++            orderBy('timestamp', 'desc'),
++            limit(1)
++        );
++        const querySnapshot = await getDocs(q);
++        if (!querySnapshot.empty) {
++            const doc = querySnapshot.docs[0];
++            return { id: doc.id, ...doc.data() };
++        }
++        return null;
++    } catch (error) {
++        console.error("Error getting last workout:", error);
++        return null;
++    }
++},
+ 
+     // System Config
+     getSystemConfig: async () => {
+@@ -570,47 +627,47 @@ export const storageService = {
+         }
+     },
+ 
+-    saveSystemConfig: async (config) => {
+-        try {
+-            // We need setDoc, which IS imported.
+-            await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
+-        } catch (error) {
+-            console.error("Error saving system config:", error);
+-            throw error;
+-        }
+-    },
+-
+-    initialize: async () => {
+-        // No-op for now, or maybe check connection
+-        console.log("Storage service initialized");
+-    },
+-    savePlannedWorkout: async (workout, date, name, userId) => {
+-        try {
+-            console.log("Saving planned workout:", name, date);
+-            const rawData = {
+-                userId,
+-                workoutName: name || 'אימון מתוכנן',
+-                date: new Date(date).toISOString(),
+-                timestamp: new Date(date).getTime(),
+-                duration: 0,
+-                exercises: workout.map(ex => ({
+-                    exercise_id: ex.id,
+-                    name: ex.name,
+-                    muscle: ex.muscle_group_id || ex.mainMuscle,
+-                    sets: ex.sets || [],
+-                    isCompleted: false
+-                })),
+-                status: 'planned',
+-                createdAt: new Date().toISOString()
+-            };
+-
+-            const dataToSave = storageService.cleanData(rawData);
+-            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+-            console.log("Planned workout saved with ID:", docRef.id);
+-            return docRef.id;
+-        } catch (error) {
+-            console.error("Error saving planned workout:", error);
+-            throw error;
+-        }
+-    }
++        saveSystemConfig: async (config) => {
++            try {
++                // We need setDoc, which IS imported.
++                await setDoc(doc(db, SYSTEM_SETTINGS_COLLECTION, 'config'), config, { merge: true });
++            } catch (error) {
++                console.error("Error saving system config:", error);
++                throw error;
++            }
++        },
++
++            initialize: async () => {
++                // No-op for now, or maybe check connection
++                console.log("Storage service initialized");
++            },
++                savePlannedWorkout: async (workout, date, name, userId) => {
++                    try {
++                        console.log("Saving planned workout:", name, date);
++                        const rawData = {
++                            userId,
++                            workoutName: name || 'אימון מתוכנן',
++                            date: new Date(date).toISOString(),
++                            timestamp: new Date(date).getTime(),
++                            duration: 0,
++                            exercises: workout.map(ex => ({
++                                exercise_id: ex.id,
++                                name: ex.name,
++                                muscle: ex.muscle_group_id || ex.mainMuscle,
++                                sets: ex.sets || [],
++                                isCompleted: false
++                            })),
++                            status: 'planned',
++                            createdAt: new Date().toISOString()
++                        };
++
++                        const dataToSave = storageService.cleanData(rawData);
++                        const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
++                        console.log("Planned workout saved with ID:", docRef.id);
++                        return docRef.id;
++                    } catch (error) {
++                        console.error("Error saving planned workout:", error);
++                        throw error;
++                    }
++                }
+ };
+
+commit d921afb101e34c63d9647b894626d893ef282846
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 16:01:42 2025 +0200
+
+    שמירה תקינה
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index 9e9eb74..9da42dd 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766662483826,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-manifest.json,1766662483826,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-index.html,1766662484036,5631765c5b45de81df20e4b3247a1076c5b39e16a4b6a0ff2a59b32deb60f68d
+-exercises_template_v2.csv,1766662483826,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template_he.csv,1766662483826,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template_v3.csv,1766662483826,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-exercises_template.csv,1766662483826,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-assets/index-Bx54phCR.css,1766662484036,c96de039613ff1651f1a2a328f4d6cf33cede2b853d942ee24482846ac0f9755
+-assets/index-DnLQKBlW.js,1766662484036,d61fd68edc404427fdaed5b69265eac096cbddff0bd38d422ad9d02472303026
++vite.svg,1766666810168,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++manifest.json,1766666810168,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template_v3.csv,1766666810168,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++index.html,1766666810375,a522c9a38f57bf848ee16e032f1a00dad56f126244eef01ef5009411d6a9ade6
++exercises_template_v2.csv,1766666810168,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template.csv,1766666810167,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_he.csv,1766666810168,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++assets/index-1Hqb5q2D.css,1766666810375,00ffeff20659d758e4e5e507adb9f1d3f8859e4deee3ac5360463fc9c0161064
++assets/index-1ha-eiwf.js,1766666810375,c61e771bd48a6977f08d368682d5cc97f28205d25ac45446256135f5ff04ffb0
+diff --git a/docs/DATA_SCHEMA.md b/docs/DATA_SCHEMA.md
+new file mode 100644
+index 0000000..8d4aa6d
+--- /dev/null
++++ b/docs/DATA_SCHEMA.md
+@@ -0,0 +1,64 @@
++# Data Schema (`DATA_SCHEMA.md`)
++
++## 1. Overview
++The application uses Firebase Firestore (NoSQL). Key collections are detailed below.
++**Note**: All `undefined` values are strictly forbidden and are stripped/nullified before saving.
++
++## 2. Collections
++
++### `exercises`
++Stores the library of available exercises.
++- **id** (string): Auto-generated or custom string.
++- **name** (string): Hebrew name.
++- **nameEn** (string): English name.
++- **mainMuscle** (string): e.g., 'Chest', 'Back' (Normalized to Hebrew in UI usually).
++- **subMuscle** (string): Specific focus (e.g., 'Upper Chest').
++- **equipment** (string): e.g., 'Dumbbells', 'Machine'.
++- **trackingType** (string): 
++  - `'weight_reps'` (Default)
++  - `'reps'`
++  - `'time'`
++- **video_url** (string|null): YouTube link.
++- **imageUrls** (array<string>): List of image URLs.
++- **icon** (string|null): URL or internal icon reference.
++
++### `workout_logs`
++Stores both completed history and future planned workouts.
++- **id** (string): Auto-generated.
++- **userId** (string): Reference to `users`.
++- **workoutName** (string): User-defined title.
++- **status** (string): 
++  - `'planned'`: Future workout.
++  - `'in_progress'`: Currently active (if saved as draft).
++  - `'completed'`: Finished workout.
++  - `'partial'`: Finished but not all exercises done.
++- **timestamp** (string ISO): Date of creation or completion.
++- **date** (string ISO): Specifically for planned dates (often synced with timestamp).
++- **durationMinutes** (number): Total time spent.
++- **calories** (number): Estimated burn.
++- **exercises** (array<object>):
++  - `exercise_id` (string)
++  - `name` (string)
++  - `mainMuscle` (string)
++  - `isCompleted` (boolean)
++  - `sets` (array<object>):
++    - `weight` (string|number)
++    - `reps` (string|number)
++    - `isCompleted` (boolean)
++
++### `users`
++- **id** (string): Auth UID.
++- **email** (string)
++- **firstName** (string)
++- **lastName** (string)
++- **phone** (string)
++- **role** (string): `'admin'`, `'trainer'`, `'trainee'`.
++- **coachId** (string|null): If trainee, who manages them.
++
++### `training_programs` (Assignments)
++Trainer-assigned plans.
++- **coachId** (string)
++- **traineeId** (string)
++- **exercises** (array): Similar structure to logs.
++- **status** (string): `'assigned'`, `'completed'`.
++- **startDate** / **endDate** (Timestamp).
+diff --git a/docs/FUNCTIONAL_SPEC.md b/docs/FUNCTIONAL_SPEC.md
+new file mode 100644
+index 0000000..a43cf7a
+--- /dev/null
++++ b/docs/FUNCTIONAL_SPEC.md
+@@ -0,0 +1,55 @@
++# Functional Specifications (`FUNCTIONAL_SPEC.md`)
++
++## 1. Overview
++This document outlines the functional logic for the core modules of the application: Admin Panel, Workout Builder, Planned Workouts/History, and the Active Workout Session.
++
++## 2. Core Screens
++
++### 2.1 Admin Page
++**Purpose**: Manage the exercise database and user roles.
++- **Exercise Management**: 
++  - Add, Edit, Delete exercises.
++  - Manage "Sub-Muscles" for specific muscle groups.
++  - **CSV Import/Export**: Bulk update exercises using a specific template.
++  - **Migration Tools**: One-click fix for database name headers and muscle naming conventions.
++- **User Management**: 
++  - View all users.
++  - Assign "Admin" or "Trainer" roles.
++
++### 2.2 Workout Builder
++**Purpose**: Create custom workouts.
++- **Flow**:
++  1. **Select Muscles**: Choose target muscle groups (e.g., Chest, Back).
++  2. **Select Exercises**: Filter by sub-muscle or equipment. View icons (with fallback to default icons).
++  3. **Review & Save**:
++     - **Date Picker**: Optional field to schedule the workout for a future date.
++     - **Save Button**: Saves the workout as "Planned" into the user's history without starting it immediately.
++
++### 2.3 Planned Workouts (formerly History)
++**Purpose**: A unified hub for past performance and future plans.
++- **Display**:
++  - **Planned Workouts**: Shown at the top with a distinct badge. Sorted by date.
++  - **Completed History**: Chronological list of past workouts.
++- **Interaction**:
++  - Clicking a **Planned Workout** opens it in the *Workout Session* mode, passing its ID to ensure the final save updates this specific record.
++  - Clicking a **Completed Workout** expands it to show details or allows "Repeating" it (copying to a new workout).
++
++### 2.4 Workout Session (Active Workout)
++**Purpose**: The interface for performing the workout.
++
++#### Logic & interactions:
++- **Exercise Cards**: Grouped by main muscle or displayed as a list.
++- **Measurement Types**:
++  - **Weight + Reps**: Standard input fields for `kg` and `reps`.
++  - **Reps Only**: Single input field (e.g., for bodyweight exercises).
++  - **Time**: Input for seconds/minutes (e.g., Planks, Cardio).
++- **Blue Completion Button**:
++  - **Function**: Marks the exercise (and all its sets) as "Done".
++  - **Visual Feedback**: 
++    - The exercise header text is struck through.
++    - The card borders/background may change to indicate success.
++  - **Auto-Collapse**: Upon clicking, the card automatically collapses to save screen space, enhancing focus on the next exercise.
++  - **Input Locking**: Once marked complete, inputs are effectively "locked" (visually verified) to prevent accidental edits, though they can be reopened.
++- **Save/Finish**:
++  - **Updating**: If the session started from a "Planned Workout", saving updates the *existing* database record status to 'completed'.
++  - **New**: If spontaneous, a new record is created.
+diff --git a/docs/TECHNICAL_GUIDELINES.md b/docs/TECHNICAL_GUIDELINES.md
+new file mode 100644
+index 0000000..bca14d1
+--- /dev/null
++++ b/docs/TECHNICAL_GUIDELINES.md
+@@ -0,0 +1,39 @@
++# Technical Guidelines (`TECHNICAL_GUIDELINES.md`)
++
++## 1. Defensive Coding (CRITICAL)
++Due to the nature of dynamic data in NoSQL and potential "dirty" data from migrations, strict defensive coding is enforced.
++
++### 1.1 String Methods Protection
++**Rule**: Never call `.indexOf()`, `.includes()`, or `.startsWith()` on a variable without first verifying it is a string.
++*Why?*: Fetching legacy data or `undefined` fields can crash the React render loop ("white screen of death").
++
++**Incorrect**:
++```javascript
++if (url.includes('youtube')) { ... }
++```
++
++**Correct**:
++```javascript
++if (url && typeof url === 'string' && url.includes('youtube')) { ... }
++```
++
++### 1.2 Data Sanitization
++**Rule**: Firestore **throws an error** if fields are `undefined`. 
++**Requirement**: Before calling `setDoc`, `addDoc`, or `updateDoc`, pass certain objects through a strict cleaning utility (e.g., `storageService.cleanData`).
++
++**Sanitization Logic**:
++1. Recursively traverse objects and arrays.
++2. If value is `undefined` -> Change to `null` (or remove key).
++3. If value is `NaN` -> Change to `0`.
++4. If `Date` object -> Convert to ISO String.
++
++## 2. Storage Operations
++### 2.1 Upsert Pattern
++To support "Planned Workouts" becoming "Completed Workouts" without duplication:
++1. Check if the workout object has a valid `id`.
++2. **If ID exists**: Use `setDoc(ref, data, { merge: true })`. This updates the existing document (changing status from 'planned' to 'completed').
++3. **If ID missing**: Use `addDoc(collection, data)`.
++
++### 2.2 UI State
++- **Loading States**: Always wrap async fetch calls in `try/catch/finally` to ensure loading spinners are dismissed even on error.
++- **Console Logs**: Use descriptive prefixes in logs (e.g., `[AutoSave]: Saving...`) to aid debugging.
+diff --git a/docs/USER_FLOWS.md b/docs/USER_FLOWS.md
+new file mode 100644
+index 0000000..a4035b0
+--- /dev/null
++++ b/docs/USER_FLOWS.md
+@@ -0,0 +1,44 @@
++# User Flows (`USER_FLOWS.md`)
++
++## 1. Planned Workout to Execution (The Primary Flow)
++This flow describes how a user plans ahead and then fulfills that plan.
++
++1.  **Planning Phase**:
++    *   User navigates to **"Workout Builder"**.
++    *   Selects desired muscles and specific exercises.
++    *   **Action**: Selects a future date in the "Date Picker".
++    *   **Action**: Clicks **"Save Workout"** (not "Start").
++    *   **System**: Saves to `workout_logs` with `status: 'planned'`. Redirects to "Planned Workouts".
++
++2.  **Viewing**:
++    *   User sees the new card in **"Planned Workouts"** (top section) with a "Planned" badge.
++
++3.  **Execution Phase**:
++    *   User clicks the planned workout card.
++    *   System opens **"Workout Session"** loaded with those exercises. **Crucially**, the system keeps the `id` of the planned log.
++    *   User performs exercises, inputting weights and reps.
++    *   User marks exercises as complete (Blue Button).
++
++4.  **Completion**:
++    *   User clicks **"Finish Workout"**.
++    *   **System**: Detects existing `id`. Updates the *same* document in Firestore.
++    *   Sets `status` to `'completed'` (or `'partial'`).
++    *   Sets `timestamp` to `now`.
++    *   **Result**: The item moves from the "Planned" section to the "History" section (chronological list) without creating a duplicate.
++
++## 2. Spontaneous Workout
++This flow describes immediate action without prior planning.
++
++1.  **Start**:
++    *   User navigates to **"Workout Builder"** OR clicks "Quick Start".
++    *   Selects exercises.
++    *   Clicks **"Start Workout"**.
++
++2.  **Execution**:
++    *   System creates a temporary draft state (in memory or `in_progress` doc).
++    *   User performs workout.
++
++3.  **Completion**:
++    *   User clicks **"Finish Workout"**.
++    *   **System**: Calls `addDoc` to create a *new* record in `workout_logs` with `status: 'completed'`.
++    *   Redirects to Dashboard/History.
+diff --git a/my_documentation.zip b/my_documentation.zip
+new file mode 100644
+index 0000000..6acf95e
+Binary files /dev/null and b/my_documentation.zip differ
+diff --git a/src/App.jsx b/src/App.jsx
+index 6655982..c34e1e7 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -151,14 +151,18 @@ function App() {
+ 
+       console.log("Saving workout to storage (App.jsx pre-check):", JSON.stringify(logData, null, 2));
+ 
++      console.log("Saving workout to storage (App.jsx pre-check):", JSON.stringify(logData, null, 2));
++
++      // Consolidated Save Logic: Always use saveWorkout.
++      // If activeLogId exists, we pass it inside the object (or ensure it's there) so saveWorkout can update it.
+       if (activeLogId) {
+-        await storageService.updateWorkoutLog(activeLogId, logData);
+-        console.log("Workout log updated:", activeLogId);
+-      } else {
+-        await storageService.saveWorkout(logData, user.id);
+-        console.log("New workout log saved for user:", user.id);
++        logData.id = activeLogId;
++        console.log("Updating existing log:", activeLogId);
+       }
+ 
++      const savedLog = await storageService.saveWorkout(logData, user.id);
++      console.log("Workout saved/updated successfully:", savedLog.id);
++
+       if (activeAssignmentId) {
+         try {
+           await trainerService.completeTrainingProgram(activeAssignmentId);
+diff --git a/src/components/ActiveWorkout.jsx b/src/components/ActiveWorkout.jsx
+index 6e517a4..bb62cf6 100644
+--- a/src/components/ActiveWorkout.jsx
++++ b/src/components/ActiveWorkout.jsx
+@@ -178,11 +178,13 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
+                 assignmentId: assignmentId || null
+             };
+ 
++            // Consolidate Save Logic: Always use saveWorkout
+             if (logId) {
+-                await storageService.updateWorkoutLog(logId, logData);
+-            } else {
+-                await storageService.saveWorkout(logData, user?.id);
++                logData.id = logId;
+             }
++            // Use saveWorkout for both new and existing logs (it handles upsert)
++            // This ensures our new defensive coding applies to updates too.
++            await storageService.saveWorkout(logData, user?.id);
+ 
+             if (assignmentId) {
+                 await trainerService.completeTrainingProgram(assignmentId);
+diff --git a/src/components/AdminPage.jsx b/src/components/AdminPage.jsx
+index 45328ad..866e40e 100644
+--- a/src/components/AdminPage.jsx
++++ b/src/components/AdminPage.jsx
+@@ -477,7 +477,7 @@ export default function AdminPage({ user, onBack }) {
+                     if (!url) return null;
+                     const clean = url.replace(/^"|"$/g, '').trim();
+                     if (!clean) return null;
+-                    if (clean.startsWith('http') || clean.startsWith('data:')) return clean;
++                    if ((typeof clean === 'string' && clean.startsWith('http')) || (typeof clean === 'string' && clean.startsWith('data:'))) return clean;
+                     // It's likely a filename
+                     return `${GITHUB_BASE}${clean}`;
+                 };
+diff --git a/src/components/UserDashboard.jsx b/src/components/UserDashboard.jsx
+index 1356669..6527b96 100644
+--- a/src/components/UserDashboard.jsx
++++ b/src/components/UserDashboard.jsx
+@@ -132,7 +132,7 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
+                     onClick={onNavigateToHistory}
+                     className="neu-btn primary text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all"
+                 >
+-                    📅 תוכנית אימונים
++                    📅 אימונים מתוכננים
+                 </button>
+                 {(user.role === 'trainer' || user.role === 'admin' || user.isAdmin) && (
+                     <button
+diff --git a/src/components/VideoModal.jsx b/src/components/VideoModal.jsx
+index 47be374..e613874 100644
+--- a/src/components/VideoModal.jsx
++++ b/src/components/VideoModal.jsx
+@@ -5,22 +5,21 @@ export default function VideoModal({ isOpen, onClose, videoUrl, title }) {
+ 
+     // Helper to get embed URL
+     const getEmbedUrl = (url) => {
++        if (!url || typeof url !== 'string') return null;
+         try {
+             // Handle standard youtube.com/watch?v=XYZ
+             if (url.includes('youtube.com/watch')) {
+-                const urlObj = new URL(url);
+-                const videoId = urlObj.searchParams.get('v');
+-                return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
++                const videoId = new URLSearchParams(new URL(url).search).get('v');
++                return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+             }
+             // Handle youtu.be/XYZ
+             if (url.includes('youtu.be/')) {
+                 const videoId = url.split('youtu.be/')[1].split('?')[0];
+-                return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
++                return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+             }
+             // Handle already embedded or other links (best effort)
+             return url;
+         } catch (e) {
+-            console.error("Error parsing video URL", e);
+             return url;
+         }
+     };
+diff --git a/src/components/WorkoutBuilder.jsx b/src/components/WorkoutBuilder.jsx
+index c51db39..e1511e4 100644
+--- a/src/components/WorkoutBuilder.jsx
++++ b/src/components/WorkoutBuilder.jsx
+@@ -15,6 +15,8 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
+     const [step, setStep] = useState('dashboard');
+     const [showAICoach, setShowAICoach] = useState(false);
+     const [workoutName, setWorkoutName] = useState(initialWorkoutName || '');
++    const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
++    const [isSaving, setIsSaving] = useState(false);
+ 
+     // Data
+     const [exercises, setExercises] = useState([]);
+@@ -24,6 +26,35 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
+     const [selectedMuscles, setSelectedMuscles] = useState([]);
+     const [selectedExercises, setSelectedExercises] = useState([]);
+ 
++    const handleSave = async () => {
++        if (!workoutName.trim()) {
++            alert('נא להזין שם לאימון');
++            return;
++        }
++        if (selectedExercises.length === 0) {
++            alert('נא לבחור לפחות תרגיל אחד');
++            return;
++        }
++
++        setIsSaving(true);
++        try {
++            await storageService.savePlannedWorkout(selectedExercises, workoutDate, workoutName, user.id);
++            // Redirect to history (Planned Workouts)
++            onBack();
++            // Ideally we should have a callback or navigation prop, but onBack usually goes to dashboard. 
++            // We want to go to 'history'. Assuming parent handles view changes or we can trigger it.
++            // If onBack just unmounts, UserDashboard will show. The user can then click "Planned Workouts".
++            // However, a direct navigation would be better if possible. 
++            // For now, let's use alert and onBack.
++            alert('האימון נשמר בהצלחה!');
++        } catch (error) {
++            console.error(error);
++            alert('שגיאה בשמירת האימון');
++        } finally {
++            setIsSaving(false);
++        }
++    };
++
+     // Filters State
+     const [selectedSubMuscles, setSelectedSubMuscles] = useState([]);
+     const [selectedEquipment, setSelectedEquipment] = useState([]);
+@@ -126,11 +157,24 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
+                 {showAICoach && <AIWorkoutModal onClose={() => setShowAICoach(false)} onStartWorkout={onStartWorkout} />}
+ 
+                 <div className='space-y-6'>
+-                    <div className="neu-card">
+-                        <label className="block mb-2 font-bold">שם האימון</label>
+-                        <input type="text" className="neu-input w-full" value={workoutName} onChange={(e) => setWorkoutName(e.target.value)} placeholder="למשל: אימון חזה וכתפיים" />
++                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
++                        <label className="block text-sm font-bold text-gray-700 mb-2">כינוי לאימון</label>
++                        <input
++                            type="text"
++                            value={workoutName}
++                            onChange={(e) => setWorkoutName(e.target.value)}
++                            placeholder="לדוגמה: אימון חזה ויד אחורית"
++                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
++                        />
++
++                        <label className="block text-sm font-bold text-gray-700 mt-4 mb-2">תאריך אימון (אופציונלי)</label>
++                        <input
++                            type="date"
++                            value={workoutDate}
++                            onChange={(e) => setWorkoutDate(e.target.value)}
++                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
++                        />
+                     </div>
+-
+                     <h3 className="text-xl font-bold mt-8">בחר שרירים</h3>
+                     <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
+                         {availableMuscles.map(m => {
+@@ -142,7 +186,7 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
+                                     className={`neu-card p-6 cursor-pointer transition-all text-center flex flex-col items-center gap-2 ${selectedMuscles.includes(m) ? 'ring-2 ring-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}>
+ 
+                                     {/* ICON LOGIC: Try Firebase URL first, then Fallback */}
+-                                    {mapping.icon && (mapping.icon.startsWith('http') || mapping.icon.startsWith('data:')) ? (
++                                    {mapping.icon && ((typeof mapping.icon === 'string' && mapping.icon.startsWith('http')) || (typeof mapping.icon === 'string' && mapping.icon.startsWith('data:'))) ? (
+                                         <img src={mapping.icon} alt={m} className="w-16 h-16 object-contain mb-2" />
+                                     ) : (
+                                         <IconComp size={48} className="text-teal-600 mb-2" strokeWidth={1} />
+@@ -248,8 +292,17 @@ export default function WorkoutBuilder({ user, onStartWorkout, onBack, mode = 'c
+             </div>
+ 
+             <div className='fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50'>
+-                <div className='max-w-4xl mx-auto flex gap-4 items-center'>
+-                    <div className='text-sm text-gray-500 font-bold whitespace-nowrap'>נבחרו: {selectedExercises.length}</div>
++                <div className='max-w-4xl mx-auto flex gap-3 items-center'>
++                    <div className='text-sm text-gray-500 font-bold whitespace-nowrap hidden md:block'>נבחרו: {selectedExercises.length}</div>
++
++                    <button
++                        onClick={handleSave}
++                        disabled={isSaving}
++                        className="py-4 px-6 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transform active:scale-95 transition-all"
++                    >
++                        <Save size={20} /> <span className="hidden md:inline">שמור</span>
++                    </button>
++
+                     <button onClick={handleStart} className='flex-1 p-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold text-xl shadow-lg transform active:scale-95 transition-transform'>
+                         {mode === 'add' ? 'הוסף לאימון' : 'התחל אימון'}
+                     </button>
+diff --git a/src/components/WorkoutHistory.jsx b/src/components/WorkoutHistory.jsx
+index b0fca83..7f38fe2 100644
+--- a/src/components/WorkoutHistory.jsx
++++ b/src/components/WorkoutHistory.jsx
+@@ -20,25 +20,29 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
+ 
+             // 1. Fetch Logs directly from storageService (Reliable)
+             const workoutLogs = await storageService.getAllWorkoutLogs(user.id);
+-            console.log("Fetched logs:", workoutLogs);
+-            setLogs(workoutLogs);
+ 
+-            // 2. Fetch Assignments via trainerService
++            // Separate History vs Planned
++            const historyLogs = workoutLogs.filter(l => l.status !== 'planned');
++            const plannedLogs = workoutLogs.filter(l => l.status === 'planned');
++
++            setLogs(historyLogs);
++
++            // 2. Fetch Assignments via trainerService (if any) and merge with planned logs
++            let mergedAssignments = [...plannedLogs];
+             try {
+-                // We only need assignments here, but we can use getTraineeDetails or a new method.
+-                // Using getTraineeDetails for now but ignoring its logs return
+                 const details = await trainerService.getTraineeDetails(user.id);
++                const trainerAssignments = details.assignments
++                    .filter(a => a.status === 'assigned' || a.status === 'pending');
+ 
+-                const pendingAssignments = details.assignments
+-                    .filter(a => a.status === 'assigned' || a.status === 'pending')
+-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+-
+-                setAssignments(pendingAssignments);
++                mergedAssignments = [...mergedAssignments, ...trainerAssignments];
+             } catch (err) {
+                 console.warn("Failed to load assignments (User might not be a trainee):", err);
+-                // Don't fail the whole page if just assignments fail
+             }
+ 
++            // Sort by date ascending
++            mergedAssignments.sort((a, b) => new Date(a.date || a.timestamp) - new Date(b.date || b.timestamp));
++            setAssignments(mergedAssignments);
++
+         } catch (error) {
+             console.error("Failed to load workout history:", error);
+         } finally {
+@@ -64,7 +68,13 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
+ 
+     const handleStartAssignment = (assignment) => {
+         if (onStartWorkout) {
+-            onStartWorkout(assignment.exercises, assignment.name, null, assignment.id);
++            // If it's a planned workout log, pass ID as logId (3rd arg) so it gets updated
++            if (assignment.status === 'planned') {
++                onStartWorkout(assignment.exercises, assignment.name, assignment.id, null);
++            } else {
++                // Trainer assignment
++                onStartWorkout(assignment.exercises, assignment.name, null, assignment.id);
++            }
+         }
+     };
+ 
+@@ -87,7 +97,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
+                     ←
+                 </button>
+                 <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+-                    היסטוריית אימונים
++                    אימונים מתוכננים
+                 </h1>
+                 <div className="w-10"></div>
+             </div>
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 81c6366..9e932d2 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -6,7 +6,16 @@ import { storageService } from '../services/storageService';
+ const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
+ 
+ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0 }) {
+-    const [exercises, setExercises] = useState(workout?.exercises || []);
++    const [exercises, setExercises] = useState(() => {
++        const initial = workout?.exercises || [];
++        // Ensure every exercise has at least one set to start
++        return initial.map(ex => ({
++            ...ex,
++            sets: ex.sets && ex.sets.length > 0
++                ? ex.sets
++                : [{ weight: '', reps: '', isCompleted: false }]
++        }));
++    });
+     const [duration, setDuration] = useState(initialDuration);
+     const [expandedEx, setExpandedEx] = useState({});
+     const [selectedImages, setSelectedImages] = useState(null);
+@@ -79,7 +88,14 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+     };
+ 
+     const toggleExpand = (id) => {
+-        setExpandedEx(prev => ({ ...prev, [id]: !prev[id] }));
++        setExpandedEx(prev => ({
++            // If we want accordion style (only one open):
++            // ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
++            // But user asked for standard behavior, so multiple can be open or toggle.
++            // Let's stick to simple toggle for now, BUT ensure we can Force Close.
++            ...prev,
++            [id]: !prev[id]
++        }));
+     };
+ 
+     const handleRemoveExercise = (exerciseId) => {
+diff --git a/src/services/storageService.js b/src/services/storageService.js
+index e0b5bed..1faf7f0 100644
+--- a/src/services/storageService.js
++++ b/src/services/storageService.js
+@@ -272,21 +272,26 @@ export const storageService = {
+     // Helper to remove undefined values (Firestore doesn't like them)
+     // and ensuring strings are safe
+     cleanData: (data) => {
+-        if (data === null || data === undefined) return null;
++        if (data === undefined) return undefined; // Return undefined so parent keys can skip it
++        if (data === null) return null;
+         if (typeof data === 'string') return data;
+-        if (typeof data === 'number') return data;
++        if (typeof data === 'number') return isNaN(data) ? 0 : data; // Safety for NaN
+         if (typeof data === 'boolean') return data;
+ 
++        // Handle Date objects explicitly (convert to ISO string or keep as Timestamp if needed, but here we prefer ISO strings for simple JSON)
++        if (data instanceof Date) return data.toISOString();
++
+         if (Array.isArray(data)) {
+-            return data
+-                .map(item => storageService.cleanData(item))
+-                .filter(item => item !== undefined);
++            // recursively clean array items
++            return data.map(item => storageService.cleanData(item)).filter(i => i !== undefined);
+         }
+ 
+         if (typeof data === 'object') {
+             const cleaned = {};
+             Object.keys(data).forEach(key => {
+                 const value = storageService.cleanData(data[key]);
++                // Only add if not undefined. 
++                // We keep nulls to preserve "cleared" fields.
+                 if (value !== undefined) {
+                     cleaned[key] = value;
+                 }
+@@ -294,7 +299,7 @@ export const storageService = {
+             return cleaned;
+         }
+ 
+-        return data;
++        return data; // Fallback
+     },
+ 
+     // Workout Logs
+@@ -302,23 +307,55 @@ export const storageService = {
+         try {
+             console.log("Attempting to save workout for user:", userId);
+ 
++            // Defensive Helper as requested
++            const safeStringCheck = (str, substr) => {
++                return (typeof str === 'string' && typeof substr === 'string') ? str.indexOf(substr) : -1;
++            };
++
++            const { id: existingId, ...dataContent } = workoutData;
++
++            // 1. Prepare raw data
+             // 1. Prepare raw data
++            // Ensure status takes precedence from input, default to completed if missing
++            const finalStatus = dataContent.status || 'completed';
++
++            // Type-checking ID
++            let safeId = null;
++            if (existingId && typeof existingId === 'string' && existingId.trim() !== '') {
++                safeId = existingId;
++            }
++
+             const rawData = {
+-                ...workoutData,
++                ...dataContent,
+                 userId,
+-                timestamp: new Date().toISOString(), // Always set server time for ordering
+-                status: workoutData.status || 'completed'
++                timestamp: new Date().toISOString(),
++                status: finalStatus,
++                exercises: (workoutData.exercises || []).map(ex => ({
++                    ...ex,
++                    name: typeof ex.name === 'string' ? ex.name : 'Unknown Exercise',
++                    imageUrls: Array.isArray(ex.imageUrls) ? ex.imageUrls.filter(url => typeof url === 'string') : [],
++                }))
+             };
+ 
+-            // 2. Clean undefined values
++            // 2. Clean undefined values (CRITICAL)
+             console.log("Raw Workout Data before cleanup:", JSON.stringify(rawData, null, 2));
+             const dataToSave = storageService.cleanData(rawData);
+             console.log("Final Workout Data (Cleaned):", JSON.stringify(dataToSave, null, 2));
+ 
+-            // 3. Save
+-            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+-            console.log("Workout saved successfully with ID: ", docRef.id);
+-            return { id: docRef.id, ...dataToSave };
++            // 3. Save or Update using setDoc with merge for maximum safety
++            if (safeId) {
++                console.log(`Updating existing planned workout ${safeId} to ${finalStatus} (using setDoc merge)`);
++                const docRef = doc(db, WORKOUT_LOGS_COLLECTION, safeId);
++                await setDoc(docRef, dataToSave, { merge: true });
++                console.log("Workout updated successfully with ID: ", safeId);
++                return { id: safeId, ...dataToSave };
++            } else {
++                console.log("Creating new workout log");
++                const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
++                console.log("Workout saved successfully with ID: ", docRef.id);
++                return { id: docRef.id, ...dataToSave };
++            }
++
+         } catch (error) {
+             console.error("Error saving workout log:", error);
+             console.error("Detailed Save Error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+@@ -546,5 +583,34 @@ export const storageService = {
+     initialize: async () => {
+         // No-op for now, or maybe check connection
+         console.log("Storage service initialized");
++    },
++    savePlannedWorkout: async (workout, date, name, userId) => {
++        try {
++            console.log("Saving planned workout:", name, date);
++            const rawData = {
++                userId,
++                workoutName: name || 'אימון מתוכנן',
++                date: new Date(date).toISOString(),
++                timestamp: new Date(date).getTime(),
++                duration: 0,
++                exercises: workout.map(ex => ({
++                    exercise_id: ex.id,
++                    name: ex.name,
++                    muscle: ex.muscle_group_id || ex.mainMuscle,
++                    sets: ex.sets || [],
++                    isCompleted: false
++                })),
++                status: 'planned',
++                createdAt: new Date().toISOString()
++            };
++
++            const dataToSave = storageService.cleanData(rawData);
++            const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
++            console.log("Planned workout saved with ID:", docRef.id);
++            return docRef.id;
++        } catch (error) {
++            console.error("Error saving planned workout:", error);
++            throw error;
++        }
+     }
+ };
+
+commit ef005b31a37c9207d22422c1174b9bde5b56387c
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 13:40:16 2025 +0200
+
+    גרסה סופית: כפתור כחול לסיום תרגיל עם כיווץ אוטומטי, מסונכרן בכל המערכת
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index 46a7110..9e9eb74 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766661652179,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-manifest.json,1766661652179,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-index.html,1766661652377,4c510aa1d57026174d2cb0c57c6c581c8cf656aab4d0732aab40a9b0db445442
+-exercises_template_he.csv,1766661652179,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template.csv,1766661652179,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-exercises_template_v2.csv,1766661652179,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template_v3.csv,1766661652179,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-assets/index-Bx54phCR.css,1766661652377,c96de039613ff1651f1a2a328f4d6cf33cede2b853d942ee24482846ac0f9755
+-assets/index-r_cztrFx.js,1766661652377,e0fb83a9cf723fdb54beb72f8c4e0b0c7928baa2891202422ddd685838fc2e27
++vite.svg,1766662483826,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++manifest.json,1766662483826,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++index.html,1766662484036,5631765c5b45de81df20e4b3247a1076c5b39e16a4b6a0ff2a59b32deb60f68d
++exercises_template_v2.csv,1766662483826,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template_he.csv,1766662483826,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template_v3.csv,1766662483826,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++exercises_template.csv,1766662483826,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++assets/index-Bx54phCR.css,1766662484036,c96de039613ff1651f1a2a328f4d6cf33cede2b853d942ee24482846ac0f9755
++assets/index-DnLQKBlW.js,1766662484036,d61fd68edc404427fdaed5b69265eac096cbddff0bd38d422ad9d02472303026
+diff --git a/src/App.jsx b/src/App.jsx
+index dfe38c5..6655982 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -236,7 +236,8 @@ function App() {
+           // Ensure critical fields exist
+           imageUrls: fullExercise?.imageUrls || [],
+           video_url: fullExercise?.video_url || null,
+-          trackingType: fullExercise?.trackingType || 'reps' // Default tracking type
++          trackingType: fullExercise?.trackingType || 'reps', // Default tracking type
++          isCompleted: !!le.isCompleted // Ensure boolean
+         };
+       });
+ 
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 0c9ec5e..81c6366 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -71,6 +71,11 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+         newExercises[exIndex].isCompleted = isComplete;
+         newExercises[exIndex].sets?.forEach(s => s.isCompleted = isComplete);
+         setExercises(newExercises);
++
++        // Auto-collapse if marking as active (completed)
++        if (isComplete) {
++            setExpandedEx(prev => ({ ...prev, [newExercises[exIndex].id]: false }));
++        }
+     };
+ 
+     const toggleExpand = (id) => {
+
+commit fbbdfb895af667d56d71d4311876a302a1afee0f
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 13:23:49 2025 +0200
+
+    נקודת שמירה: כפתור סיום תרגיל קיים, עוברים להוספת פונקציית כיווץ אוטומטית
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index 489e013..46a7110 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766651464747,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-index.html,1766651464993,95e6577a83fe5ed59cf881aef35b18974229beeceeb4d5547f8b2f635a4bf542
+-manifest.json,1766651464747,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template_v3.csv,1766651464747,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-exercises_template_he.csv,1766651464746,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template_v2.csv,1766651464746,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template.csv,1766651464746,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-assets/index-DT3MzLjX.css,1766651464993,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
+-assets/index-Cozw5Ggd.js,1766651464993,14105ac11738171673a1f5d732272b281951972e3b89330e712b0a413d8e8c40
++vite.svg,1766661652179,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++manifest.json,1766661652179,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++index.html,1766661652377,4c510aa1d57026174d2cb0c57c6c581c8cf656aab4d0732aab40a9b0db445442
++exercises_template_he.csv,1766661652179,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template.csv,1766661652179,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_v2.csv,1766661652179,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template_v3.csv,1766661652179,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++assets/index-Bx54phCR.css,1766661652377,c96de039613ff1651f1a2a328f4d6cf33cede2b853d942ee24482846ac0f9755
++assets/index-r_cztrFx.js,1766661652377,e0fb83a9cf723fdb54beb72f8c4e0b0c7928baa2891202422ddd685838fc2e27
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 8fa64ed..0c9ec5e 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -157,8 +157,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                             {/* Left Side: Checkbox + Image + Text */}
+                                             <div className="flex items-center gap-3 flex-1 min-w-0">
+ 
+-                                                {/* CHECKBOX */}
+-                                                <div onClick={(e) => { e.stopPropagation(); toggleExerciseComplete(realIndex); }} className="cursor-pointer shrink-0">
++                                                {/* CHECKBOX - Status only, no click */}
++                                                <div className="shrink-0">
+                                                     {ex.isCompleted ? <CheckCircle className="text-teal-500" size={24} /> : <Circle className="text-gray-300" size={24} />}
+                                                 </div>
+ 
+@@ -259,12 +259,21 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                         </div>
+                                                     ))}
+                                                     {!ex.isCompleted && (
+-                                                        <button
+-                                                            onClick={() => handleAddSet(realIndex)}
+-                                                            className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
+-                                                        >
+-                                                            <Plus size={16} /> הוסף סט
+-                                                        </button>
++                                                        <div className="space-y-3 pt-2">
++                                                            <button
++                                                                onClick={() => handleAddSet(realIndex)}
++                                                                className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
++                                                            >
++                                                                <Plus size={16} /> הוסף סט
++                                                            </button>
++
++                                                            <button
++                                                                onClick={() => toggleExerciseComplete(realIndex)}
++                                                                className="w-full py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 shadow-md transition-all flex items-center justify-center gap-2"
++                                                            >
++                                                                <CheckCircle size={16} /> סיום תרגיל
++                                                            </button>
++                                                        </div>
+                                                     )}
+                                                 </div>
+                                             </div>
+
+commit 88f3880a4380d0df8d2a6f589406d523df35287d
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 10:34:56 2025 +0200
+
+    ניסיון תיקון נוסף: שגיאת r.indexOf בשמירת אימון
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index ef07a54..489e013 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-manifest.json,1766644478825,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template_v2.csv,1766644478824,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-index.html,1766644479032,979384a38738d5a8faf9b6eaa5beb7889b10571f76e271adb150128293804d0d
+-exercises_template.csv,1766644478824,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-exercises_template_v3.csv,1766644478825,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-exercises_template_he.csv,1766644478824,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-vite.svg,1766644478826,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-assets/index-DT3MzLjX.css,1766644479032,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
+-assets/index-8f0HQqLF.js,1766644479032,b5b9b45088e9caa4d47479702e4b0ce30d35b78f40c1a60f11a9f260734618f2
++vite.svg,1766651464747,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++index.html,1766651464993,95e6577a83fe5ed59cf881aef35b18974229beeceeb4d5547f8b2f635a4bf542
++manifest.json,1766651464747,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template_v3.csv,1766651464747,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++exercises_template_he.csv,1766651464746,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template_v2.csv,1766651464746,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template.csv,1766651464746,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++assets/index-DT3MzLjX.css,1766651464993,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
++assets/index-Cozw5Ggd.js,1766651464993,14105ac11738171673a1f5d732272b281951972e3b89330e712b0a413d8e8c40
+diff --git a/src/App.jsx b/src/App.jsx
+index b2c3365..dfe38c5 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -131,11 +131,17 @@ function App() {
+         workoutName: activeWorkoutName || 'אימון ללא שם',
+         exercises: exercises.map(ex => ({
+           exercise_id: ex.id,
+-          name: ex.name,
+-          mainMuscle: ex.mainMuscle,
+-          sets: ex.sets,
+-          isCompleted: ex.isCompleted,
+-          imageUrls: ex.imageUrls || []
++          name: String(ex.name || 'Unknown Exercise'),
++          mainMuscle: String(ex.mainMuscle || 'Other'),
++          sets: Array.isArray(ex.sets) ? ex.sets.map(s => ({
++            weight: s.weight !== undefined && s.weight !== null ? String(s.weight) : '',
++            reps: s.reps !== undefined && s.reps !== null ? String(s.reps) : '',
++            isCompleted: !!s.isCompleted
++          })) : [],
++          isCompleted: !!ex.isCompleted,
++          imageUrls: Array.isArray(ex.imageUrls)
++            ? ex.imageUrls.filter(url => typeof url === 'string') // Explicitly filter non-strings
++            : []
+         })),
+         status: 'completed',
+         durationMinutes: Math.round(duration / 60),
+@@ -143,7 +149,7 @@ function App() {
+         date: new Date().toISOString()
+       };
+ 
+-      console.log("Saving workout to storage...", logData);
++      console.log("Saving workout to storage (App.jsx pre-check):", JSON.stringify(logData, null, 2));
+ 
+       if (activeLogId) {
+         await storageService.updateWorkoutLog(activeLogId, logData);
+diff --git a/src/components/ActiveWorkout.jsx b/src/components/ActiveWorkout.jsx
+index c66a0ff..6e517a4 100644
+--- a/src/components/ActiveWorkout.jsx
++++ b/src/components/ActiveWorkout.jsx
+@@ -169,7 +169,8 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
+                         name: exercises.find(e => e.id === id)?.name || 'Unknown Exercise',
+                         mainMuscle: exercises.find(e => e.id === id)?.mainMuscle,
+                         sets: data.sets,
+-                        isCompleted: completedExercises.has(id)
++                        isCompleted: completedExercises.has(id),
++                        imageUrls: (exercises.find(e => e.id === id)?.imageUrls || []).filter(url => typeof url === 'string')
+                     })),
+                 status: allCompleted ? 'completed' : 'partial',
+                 calories: calories ? Number(calories) : 0,
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 4bdb38c..8fa64ed 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -26,7 +26,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                     const allExercises = await storageService.getExercises();
+                     setExercises(prevExs => prevExs.map(ex => {
+                         if (ex.imageUrls && ex.imageUrls.length > 0) return ex;
+-                        const match = allExercises.find(a => a.id === ex.id || a.name === ex.name);
++                        // Safe comparison enforcing strings
++                        const match = allExercises.find(a => String(a.id) === String(ex.id) || String(a.name) === String(ex.name));
+                         return match ? { ...ex, imageUrls: match.imageUrls || [] } : ex;
+                     }));
+                 } catch (error) {
+diff --git a/src/services/storageService.js b/src/services/storageService.js
+index b651aed..e0b5bed 100644
+--- a/src/services/storageService.js
++++ b/src/services/storageService.js
+@@ -269,22 +269,59 @@ export const storageService = {
+         }
+     },
+ 
++    // Helper to remove undefined values (Firestore doesn't like them)
++    // and ensuring strings are safe
++    cleanData: (data) => {
++        if (data === null || data === undefined) return null;
++        if (typeof data === 'string') return data;
++        if (typeof data === 'number') return data;
++        if (typeof data === 'boolean') return data;
++
++        if (Array.isArray(data)) {
++            return data
++                .map(item => storageService.cleanData(item))
++                .filter(item => item !== undefined);
++        }
++
++        if (typeof data === 'object') {
++            const cleaned = {};
++            Object.keys(data).forEach(key => {
++                const value = storageService.cleanData(data[key]);
++                if (value !== undefined) {
++                    cleaned[key] = value;
++                }
++            });
++            return cleaned;
++        }
++
++        return data;
++    },
++
+     // Workout Logs
+     saveWorkout: async (workoutData, userId) => {
+         try {
+             console.log("Attempting to save workout for user:", userId);
+-            const dataToSave = {
++
++            // 1. Prepare raw data
++            const rawData = {
+                 ...workoutData,
+                 userId,
+-                timestamp: new Date().toISOString(),
+-                status: workoutData.status || 'completed' // Default to completed if not specified
++                timestamp: new Date().toISOString(), // Always set server time for ordering
++                status: workoutData.status || 'completed'
+             };
+-            console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
++
++            // 2. Clean undefined values
++            console.log("Raw Workout Data before cleanup:", JSON.stringify(rawData, null, 2));
++            const dataToSave = storageService.cleanData(rawData);
++            console.log("Final Workout Data (Cleaned):", JSON.stringify(dataToSave, null, 2));
++
++            // 3. Save
+             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+             console.log("Workout saved successfully with ID: ", docRef.id);
+             return { id: docRef.id, ...dataToSave };
+         } catch (error) {
+             console.error("Error saving workout log:", error);
++            console.error("Detailed Save Error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+             throw error;
+         }
+     },
+@@ -342,11 +379,13 @@ export const storageService = {
+     updateWorkoutLog: async (logId, data) => {
+         try {
+             const logRef = doc(db, WORKOUT_LOGS_COLLECTION, logId);
+-            // Update timestamp to now if resuming? Or keep original?
+-            // User requested: "לאחר לחיצה על שמירה האימון ישמר על התאריך המקורי"
+-            // So we do NOT update timestamp automatically.
+-            await updateDoc(logRef, data);
+-            return { id: logId, ...data };
++
++            // Clean data before update
++            const cleanedData = storageService.cleanData(data);
++            console.log("Updating workout log. Cleaned Data:", cleanedData);
++
++            await updateDoc(logRef, cleanedData);
++            return { id: logId, ...cleanedData };
+         } catch (error) {
+             console.error("Error updating workout log:", error);
+             throw error;
+
+commit 7b66a86ce08af4aa1dcc31f7273d97173fe6a34e
+Author: RepUp <erez1964@gmail.com>
+Date:   Thu Dec 25 08:36:10 2025 +0200
+
+    תיקון תקלה: גיבוי לפני פתרון שגיאת שמירת אימון ל-Firebase
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index 9428da9..ef07a54 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766582575080,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-exercises_template_v2.csv,1766582575079,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-index.html,1766582575337,a1a8cccbf877a6be8d202313669ee65f90ec75417ed337f372fb3657ea1344a7
+-manifest.json,1766582575080,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template_he.csv,1766582575079,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template.csv,1766582575079,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-exercises_template_v3.csv,1766582575079,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-assets/index-DT3MzLjX.css,1766582575337,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
+-assets/index-bKKxGv3G.js,1766582575337,acc8c371c480f9c41c3cc446de34e6bcec16586e79ce43f90231851bd45394fe
++manifest.json,1766644478825,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template_v2.csv,1766644478824,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++index.html,1766644479032,979384a38738d5a8faf9b6eaa5beb7889b10571f76e271adb150128293804d0d
++exercises_template.csv,1766644478824,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_v3.csv,1766644478825,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++exercises_template_he.csv,1766644478824,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++vite.svg,1766644478826,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++assets/index-DT3MzLjX.css,1766644479032,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
++assets/index-8f0HQqLF.js,1766644479032,b5b9b45088e9caa4d47479702e4b0ce30d35b78f40c1a60f11a9f260734618f2
+diff --git a/src/App.jsx b/src/App.jsx
+index 05a71db..b2c3365 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -134,7 +134,8 @@ function App() {
+           name: ex.name,
+           mainMuscle: ex.mainMuscle,
+           sets: ex.sets,
+-          isCompleted: ex.isCompleted
++          isCompleted: ex.isCompleted,
++          imageUrls: ex.imageUrls || []
+         })),
+         status: 'completed',
+         durationMinutes: Math.round(duration / 60),
+diff --git a/src/components/AdminPage.jsx b/src/components/AdminPage.jsx
+index 6ecbab0..45328ad 100644
+--- a/src/components/AdminPage.jsx
++++ b/src/components/AdminPage.jsx
+@@ -136,7 +136,7 @@ export default function AdminPage({ user, onBack }) {
+ 
+     // Exercise Form State
+     const [editingExercise, setEditingExercise] = useState(null); // null = new, object = editing
+-    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', trackingType: 'weight', video_url: '', imageUrls: [] });
++    const [exForm, setExForm] = useState({ name: '', nameEn: '', mainMuscle: '', subMuscle: '', equipment: '', position: '', measurementType: 'weight', video_url: '', imageUrls: [] });
+ 
+     // Muscle Form State
+     const [editingMuscleKey, setEditingMuscleKey] = useState(null); // null = new, string = editing key
+@@ -297,7 +297,7 @@ export default function AdminPage({ user, onBack }) {
+ 
+     const handleEditExercise = (ex) => {
+         setEditingExercise(ex);
+-        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', trackingType: ex.trackingType || 'weight', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
++        setExForm({ name: ex.name, nameEn: ex.nameEn || '', mainMuscle: ex.mainMuscle, subMuscle: ex.subMuscle || '', equipment: ex.equipment || '', position: ex.position || '', measurementType: ex.measurementType || ex.trackingType || 'weight', video_url: ex.video_url || '', imageUrls: ex.imageUrls || [] });
+         window.scrollTo(0, 0); // Scroll to top to see the form
+     };
+ 
+@@ -946,8 +946,8 @@ export default function AdminPage({ user, onBack }) {
+                                 />
+                                 <select
+                                     className="neu-input"
+-                                    value={exForm.trackingType || 'weight'}
+-                                    onChange={e => setExForm({ ...exForm, trackingType: e.target.value })}
++                                    value={exForm.measurementType || 'weight'}
++                                    onChange={e => setExForm({ ...exForm, measurementType: e.target.value })}
+                                 >
+                                     <option value="weight">משקל (ק״ג)</option>
+                                     <option value="reps">חזרות בלבד (ללא משקל)</option>
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index a4e6ff8..4bdb38c 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -1,6 +1,7 @@
+ import React, { useState, useEffect } from 'react';
+ import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon, Trash2 } from 'lucide-react';
+ import ImageGalleryModal from './ImageGalleryModal';
++import { storageService } from '../services/storageService';
+ 
+ const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
+ 
+@@ -15,6 +16,31 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+         return () => clearInterval(timer);
+     }, []);
+ 
++    // Fallback: Fetch missing images
++    useEffect(() => {
++        const fetchMissingImages = async () => {
++            const missingImages = exercises.some(ex => !ex.imageUrls || ex.imageUrls.length === 0);
++            if (missingImages) {
++                try {
++                    console.log("WorkoutSession: Missing images detected, fetching global exercises...");
++                    const allExercises = await storageService.getExercises();
++                    setExercises(prevExs => prevExs.map(ex => {
++                        if (ex.imageUrls && ex.imageUrls.length > 0) return ex;
++                        const match = allExercises.find(a => a.id === ex.id || a.name === ex.name);
++                        return match ? { ...ex, imageUrls: match.imageUrls || [] } : ex;
++                    }));
++                } catch (error) {
++                    console.error("Failed to fetch exercises for image fallback:", error);
++                }
++            }
++        };
++
++        fetchMissingImages();
++        // ESLint might warn about 'exercises' dep, but we only want to run this once or when heavy changes happen.
++        // If we add exercises, they usually come with images. This is mainly for initial load.
++        // Let's dep on length to be safe without inf loop.
++    }, [exercises.length]);
++
+     const formatTime = (seconds) => {
+         const mins = Math.floor(seconds / 60);
+         const secs = seconds % 60;
+@@ -183,7 +209,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                     {sIdx + 1}
+                                                                 </div>
+ 
+-                                                                <div className={`flex-1 grid gap-2 ${ex.trackingType === 'reps' ? 'grid-cols-1' : 'grid-cols-2'}`}>
++                                                                <div className={`flex-1 grid gap-2 ${(ex.trackingType === 'reps' || ex.trackingType === 'time') ? 'grid-cols-1' : 'grid-cols-2'}`}>
++                                                                    {/* Weight Input - Show if trackingType is 'weight' OR undefined/null */}
+                                                                     {(ex.trackingType === 'weight' || !ex.trackingType) && (
+                                                                         <div className="relative">
+                                                                             <input
+@@ -203,6 +230,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
+                                                                         </div>
+                                                                     )}
++
++                                                                    {/* Reps/Time Input */}
+                                                                     <div className="relative">
+                                                                         <input
+                                                                             type="number"
+@@ -218,7 +247,9 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                                 }
+                                                                             }}
+                                                                         />
+-                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">חזרות</span>
++                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
++                                                                            {ex.trackingType === 'time' ? 'שניות' : 'חזרות'}
++                                                                        </span>
+                                                                     </div>
+                                                                 </div>
+                                                             </div>
+
+commit 3dec33c439299682d3664361ef4f9698a09c1f0f
+Author: RepUp <erez1964@gmail.com>
+Date:   Wed Dec 24 15:28:33 2025 +0200
+
+    נקודת שמירה: הגדרות ניהול חזרות תקינות, עוברים לתיקון תצוגת אימון
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index a333b3a..9428da9 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766581224212,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-manifest.json,1766581224212,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-index.html,1766581224408,1298226b21be7316a049bc53a69fa8ab01c529e4f80300adee20c7294132153d
+-exercises_template_v2.csv,1766581224212,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template_he.csv,1766581224212,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template.csv,1766581224212,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-exercises_template_v3.csv,1766581224212,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-assets/index-DT3MzLjX.css,1766581224408,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
+-assets/index-DLtaJuTG.js,1766581224409,539549f6140e239c4f150a98a6f33ca17415734466ed1daae5d829b23cf30f11
++vite.svg,1766582575080,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++exercises_template_v2.csv,1766582575079,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++index.html,1766582575337,a1a8cccbf877a6be8d202313669ee65f90ec75417ed337f372fb3657ea1344a7
++manifest.json,1766582575080,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template_he.csv,1766582575079,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template.csv,1766582575079,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_v3.csv,1766582575079,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++assets/index-DT3MzLjX.css,1766582575337,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
++assets/index-bKKxGv3G.js,1766582575337,acc8c371c480f9c41c3cc446de34e6bcec16586e79ce43f90231851bd45394fe
+diff --git a/src/components/AdminPage.jsx b/src/components/AdminPage.jsx
+index 750bd02..6ecbab0 100644
+--- a/src/components/AdminPage.jsx
++++ b/src/components/AdminPage.jsx
+@@ -950,6 +950,7 @@ export default function AdminPage({ user, onBack }) {
+                                     onChange={e => setExForm({ ...exForm, trackingType: e.target.value })}
+                                 >
+                                     <option value="weight">משקל (ק״ג)</option>
++                                    <option value="reps">חזרות בלבד (ללא משקל)</option>
+                                     <option value="time">זמן (שניות)</option>
+                                 </select>
+                                 <input
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 814e218..a4e6ff8 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -183,24 +183,26 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                     {sIdx + 1}
+                                                                 </div>
+ 
+-                                                                <div className="flex-1 grid grid-cols-2 gap-2">
+-                                                                    <div className="relative">
+-                                                                        <input
+-                                                                            type="number"
+-                                                                            placeholder="0"
+-                                                                            defaultValue={set.weight}
+-                                                                            disabled={ex.isCompleted}
+-                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
+-                                                                            onChange={(e) => {
+-                                                                                const newExercises = [...exercises];
+-                                                                                if (newExercises[realIndex]?.sets?.[sIdx]) {
+-                                                                                    newExercises[realIndex].sets[sIdx].weight = e.target.value;
+-                                                                                    setExercises(newExercises);
+-                                                                                }
+-                                                                            }}
+-                                                                        />
+-                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
+-                                                                    </div>
++                                                                <div className={`flex-1 grid gap-2 ${ex.trackingType === 'reps' ? 'grid-cols-1' : 'grid-cols-2'}`}>
++                                                                    {(ex.trackingType === 'weight' || !ex.trackingType) && (
++                                                                        <div className="relative">
++                                                                            <input
++                                                                                type="number"
++                                                                                placeholder="0"
++                                                                                defaultValue={set.weight}
++                                                                                disabled={ex.isCompleted}
++                                                                                className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
++                                                                                onChange={(e) => {
++                                                                                    const newExercises = [...exercises];
++                                                                                    if (newExercises[realIndex]?.sets?.[sIdx]) {
++                                                                                        newExercises[realIndex].sets[sIdx].weight = e.target.value;
++                                                                                        setExercises(newExercises);
++                                                                                    }
++                                                                                }}
++                                                                            />
++                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
++                                                                        </div>
++                                                                    )}
+                                                                     <div className="relative">
+                                                                         <input
+                                                                             type="number"
+
+commit 847b653a8b40c2c12465c9bb187543c4646d6d7b
+Author: RepUp <erez1964@gmail.com>
+Date:   Wed Dec 24 15:05:58 2025 +0200
+
+    Version: תיקון מסך תרגילים - 2025-12-24
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index ba914ac..a333b3a 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766580592676,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-manifest.json,1766580592676,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template_he.csv,1766580592675,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template_v2.csv,1766580592675,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template.csv,1766580592675,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-index.html,1766580592879,519acd8ecb4ccd0afdf7705d1a5ddb13751cf9e7eceaa5db171fc8ac382318ea
+-exercises_template_v3.csv,1766580592676,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-assets/index-C_DGpLju.css,1766580592879,d68bd095de4da1ca34187678cc9c0d77a5edaf509857f98df6cc4c6e004acb2a
+-assets/index-MOyfssGn.js,1766580592879,c4eb518dd1ede587c5ae1185866a97753200449bf9fce10490b0de95b014e769
++vite.svg,1766581224212,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++manifest.json,1766581224212,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++index.html,1766581224408,1298226b21be7316a049bc53a69fa8ab01c529e4f80300adee20c7294132153d
++exercises_template_v2.csv,1766581224212,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template_he.csv,1766581224212,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template.csv,1766581224212,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_v3.csv,1766581224212,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++assets/index-DT3MzLjX.css,1766581224408,d62423f230c44ae2a2b56b1bca4fffcfb45247662ce5968c78fff4dfa8e4e5c3
++assets/index-DLtaJuTG.js,1766581224409,539549f6140e239c4f150a98a6f33ca17415734466ed1daae5d829b23cf30f11
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index f31d656..814e218 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -178,7 +178,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                 <div className="space-y-3">
+                                                     {ex.sets?.map((set, sIdx) => (
+                                                         <div key={sIdx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+-                                                            <div className="flex items-center gap-3 mb-3">
++                                                            <div className="flex items-center gap-3">
+                                                                 <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                                     {sIdx + 1}
+                                                                 </div>
+@@ -221,23 +221,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                 </div>
+                                                             </div>
+ 
+-                                                            {!ex.isCompleted && (
+-                                                                <button
+-                                                                    onClick={() => toggleSetComplete(realIndex, sIdx)}
+-                                                                    className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
+-                                                                        ? 'bg-teal-500 text-white shadow-md shadow-teal-200'
+-                                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+-                                                                        }`}
+-                                                                >
+-                                                                    {set.isCompleted ? (
+-                                                                        <>
+-                                                                            <CheckCircle size={18} /> הושלם
+-                                                                        </>
+-                                                                    ) : (
+-                                                                        'סמן כבוצע'
+-                                                                    )}
+-                                                                </button>
+-                                                            )}
++
+                                                         </div>
+                                                     ))}
+                                                     {!ex.isCompleted && (
+
+commit d5a00a5d9b6998de7dc912bb9a7e08e363763b5c
+Author: RepUp <erez1964@gmail.com>
+Date:   Wed Dec 24 14:58:05 2025 +0200
+
+    נקודת שמירה: מוכן לשינוי לוגיקת סגירת תרגיל דרך העיגול
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index cdba5e7..ba914ac 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-manifest.json,1766579461682,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-vite.svg,1766579461682,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-exercises_template_v3.csv,1766579461682,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-index.html,1766579461889,95d697f418ba51f8d3db1916ee3b763bc4a82c5ac19b15947ee8400121227461
+-exercises_template_v2.csv,1766579461682,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template_he.csv,1766579461682,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template.csv,1766579461682,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-assets/index-BRwVEXOZ.css,1766579461889,103145543667afbb81b43cd9467886521790727b46e0a189bbb6cf2a7d95ddac
+-assets/index-9Z2H5cb-.js,1766579461889,d42922e2fcd6a6442c17e4b6ace8561f1e9e8912e85179fb6e5f38fbc79f1a0d
++vite.svg,1766580592676,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++manifest.json,1766580592676,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template_he.csv,1766580592675,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template_v2.csv,1766580592675,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template.csv,1766580592675,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++index.html,1766580592879,519acd8ecb4ccd0afdf7705d1a5ddb13751cf9e7eceaa5db171fc8ac382318ea
++exercises_template_v3.csv,1766580592676,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++assets/index-C_DGpLju.css,1766580592879,d68bd095de4da1ca34187678cc9c0d77a5edaf509857f98df6cc4c6e004acb2a
++assets/index-MOyfssGn.js,1766580592879,c4eb518dd1ede587c5ae1185866a97753200449bf9fce10490b0de95b014e769
+
+commit 3dd774fa37f788ff4e7667f040448686d2755db5
+Author: RepUp <erez1964@gmail.com>
+Date:   Wed Dec 24 14:48:15 2025 +0200
+
+    תיקון הגדרות פריסה וגיבוי לפני שינוי לוגיקת סטים
+
+diff --git a/firebase.json b/firebase.json
+index 36f9603..631738b 100644
+--- a/firebase.json
++++ b/firebase.json
+@@ -1,8 +1,4 @@
+ {
+-  "firestore": {
+-    "rules": "firestore.rules",
+-    "indexes": "firestore.indexes.json"
+-  },
+   "hosting": {
+     "public": "dist",
+     "ignore": [
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index cf5a51a..f31d656 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -189,7 +189,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                             type="number"
+                                                                             placeholder="0"
+                                                                             defaultValue={set.weight}
+-                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
++                                                                            disabled={ex.isCompleted}
++                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
+                                                                             onChange={(e) => {
+                                                                                 const newExercises = [...exercises];
+                                                                                 if (newExercises[realIndex]?.sets?.[sIdx]) {
+@@ -205,7 +206,8 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                             type="number"
+                                                                             placeholder="0"
+                                                                             defaultValue={set.reps}
+-                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
++                                                                            disabled={ex.isCompleted}
++                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none disabled:opacity-50 disabled:bg-gray-100 placeholder-gray-300"
+                                                                             onChange={(e) => {
+                                                                                 const newExercises = [...exercises];
+                                                                                 if (newExercises[realIndex]?.sets?.[sIdx]) {
+@@ -219,29 +221,33 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
+                                                                 </div>
+                                                             </div>
+ 
+-                                                            <button
+-                                                                onClick={() => toggleSetComplete(realIndex, sIdx)}
+-                                                                className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
++                                                            {!ex.isCompleted && (
++                                                                <button
++                                                                    onClick={() => toggleSetComplete(realIndex, sIdx)}
++                                                                    className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
+                                                                         ? 'bg-teal-500 text-white shadow-md shadow-teal-200'
+                                                                         : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+-                                                                    }`}
+-                                                            >
+-                                                                {set.isCompleted ? (
+-                                                                    <>
+-                                                                        <CheckCircle size={18} /> הושלם
+-                                                                    </>
+-                                                                ) : (
+-                                                                    'סמן כבוצע'
+-                                                                )}
+-                                                            </button>
++                                                                        }`}
++                                                                >
++                                                                    {set.isCompleted ? (
++                                                                        <>
++                                                                            <CheckCircle size={18} /> הושלם
++                                                                        </>
++                                                                    ) : (
++                                                                        'סמן כבוצע'
++                                                                    )}
++                                                                </button>
++                                                            )}
+                                                         </div>
+                                                     ))}
+-                                                    <button
+-                                                        onClick={() => handleAddSet(realIndex)}
+-                                                        className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
+-                                                    >
+-                                                        <Plus size={16} /> הוסף סט
+-                                                    </button>
++                                                    {!ex.isCompleted && (
++                                                        <button
++                                                            onClick={() => handleAddSet(realIndex)}
++                                                            className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
++                                                        >
++                                                            <Plus size={16} /> הוסף סט
++                                                        </button>
++                                                    )}
+                                                 </div>
+                                             </div>
+                                         )}
+
+commit 2baec8c4fd6620120efaf766c6d56dda1cb00ed9
+Author: RepUp <erez1964@gmail.com>
+Date:   Wed Dec 24 14:39:10 2025 +0200
+
+    תיקונים: לוגיקת אימון פעיל, פח אשפה ועיצוב סטים
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index 5d49791..cdba5e7 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-exercises_template_v3.csv,1766579078653,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-index.html,1766579078858,46858e9d3dea199c4b3b245ba23c4ba99883bcf1a40c1c26010cf8f7effa4d51
+-manifest.json,1766579078654,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template.csv,1766579078653,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-exercises_template_v2.csv,1766579078653,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template_he.csv,1766579078653,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-vite.svg,1766579078654,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-assets/index-BRwVEXOZ.css,1766579078858,103145543667afbb81b43cd9467886521790727b46e0a189bbb6cf2a7d95ddac
+-assets/index-B2rcNLMk.js,1766579078858,a70bab8ecb0634b062341f61bb73a69fa6a56b7df51159c7e7adcd9ce105a875
++manifest.json,1766579461682,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++vite.svg,1766579461682,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++exercises_template_v3.csv,1766579461682,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++index.html,1766579461889,95d697f418ba51f8d3db1916ee3b763bc4a82c5ac19b15947ee8400121227461
++exercises_template_v2.csv,1766579461682,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template_he.csv,1766579461682,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++exercises_template.csv,1766579461682,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++assets/index-BRwVEXOZ.css,1766579461889,103145543667afbb81b43cd9467886521790727b46e0a189bbb6cf2a7d95ddac
++assets/index-9Z2H5cb-.js,1766579461889,d42922e2fcd6a6442c17e4b6ace8561f1e9e8912e85179fb6e5f38fbc79f1a0d
+diff --git a/src/App.jsx b/src/App.jsx
+index 98104e3..05a71db 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -114,11 +114,17 @@ function App() {
+     setTempWorkoutData(null);
+   };
+ 
++  // New handler for WorkoutSession finish
+   // New handler for WorkoutSession finish
+   const handleSessionFinish = async (resultData) => {
+-    console.log("Workout Session Finished:", resultData);
++    console.log("Workout Session Finished. Processing data:", resultData);
+     const { exercises, duration } = resultData;
+ 
++    if (!user || !user.id) {
++      alert("שגיאה: משתמש לא מחובר. לא ניתן לשמור את האימון.");
++      return;
++    }
++
+     try {
+       const logData = {
+         workout_id: activeAssignmentId || null,
+@@ -136,26 +142,38 @@ function App() {
+         date: new Date().toISOString()
+       };
+ 
++      console.log("Saving workout to storage...", logData);
++
+       if (activeLogId) {
+         await storageService.updateWorkoutLog(activeLogId, logData);
++        console.log("Workout log updated:", activeLogId);
+       } else {
+-        await storageService.saveWorkout(logData, user?.id);
++        await storageService.saveWorkout(logData, user.id);
++        console.log("New workout log saved for user:", user.id);
+       }
+ 
+       if (activeAssignmentId) {
+         try {
+           await trainerService.completeTrainingProgram(activeAssignmentId);
++          console.log("Assignment marked completed:", activeAssignmentId);
+         } catch (err) {
+           console.error("Failed to complete assignment:", err);
+         }
+       }
+ 
+       alert('האימון נשמר בהצלחה! כל הכבוד!');
++
++      // CRITICAL: Switch view AFTER save
++      console.log("Switching to dashboard...");
+       finishWorkout();
+ 
+     } catch (error) {
+       console.error("Failed to save workout:", error);
+-      alert("שגיאה בשמירת האימון");
++      alert("שגיאה בשמירת האימון: " + error.message);
++      // Optional: Ask user if they want to exit anyway?
++      if (window.confirm("השמירה נכשלה. האם לצאת בכל זאת? (הנתונים יאבדו)")) {
++        finishWorkout();
++      }
+     }
+   };
+ 
+diff --git a/src/components/WorkoutHistory.jsx b/src/components/WorkoutHistory.jsx
+index 7ae6286..b0fca83 100644
+--- a/src/components/WorkoutHistory.jsx
++++ b/src/components/WorkoutHistory.jsx
+@@ -16,20 +16,31 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
+         if (!user) return;
+         setLoading(true);
+         try {
+-            // Fetch logs AND assignments via the unified service if possible, or separately
+-            // Assuming traineeService has getTraineeDetails which returns both
+-            const details = await trainerService.getTraineeDetails(user.id);
++            console.log("Loading history for user:", user.id);
+ 
+-            // Filter assignments to show only "future" or "pending" ones?
+-            // For now, show all 'assigned' or 'pending' ones
+-            const pendingAssignments = details.assignments
+-                .filter(a => a.status === 'assigned' || a.status === 'pending')
+-                .sort((a, b) => new Date(a.date) - new Date(b.date)); // Earliest first
++            // 1. Fetch Logs directly from storageService (Reliable)
++            const workoutLogs = await storageService.getAllWorkoutLogs(user.id);
++            console.log("Fetched logs:", workoutLogs);
++            setLogs(workoutLogs);
++
++            // 2. Fetch Assignments via trainerService
++            try {
++                // We only need assignments here, but we can use getTraineeDetails or a new method.
++                // Using getTraineeDetails for now but ignoring its logs return
++                const details = await trainerService.getTraineeDetails(user.id);
++
++                const pendingAssignments = details.assignments
++                    .filter(a => a.status === 'assigned' || a.status === 'pending')
++                    .sort((a, b) => new Date(a.date) - new Date(b.date));
++
++                setAssignments(pendingAssignments);
++            } catch (err) {
++                console.warn("Failed to load assignments (User might not be a trainee):", err);
++                // Don't fail the whole page if just assignments fail
++            }
+ 
+-            setAssignments(pendingAssignments);
+-            setLogs(details.logs);
+         } catch (error) {
+-            console.error("Failed to load workout history/data", error);
++            console.error("Failed to load workout history:", error);
+         } finally {
+             setLoading(false);
+         }
+
+commit 8b692963fb663df7603c00d019ea11da80f20175
+Author: RepUp <erez1964@gmail.com>
+Date:   Wed Dec 24 14:28:33 2025 +0200
+
+    הצלחה: אייקון פח אשפה, הוספת תרגיל ועיצוב סטים תוקנו ועובדים
+
+diff --git a/.firebase/hosting.ZGlzdA.cache b/.firebase/hosting.ZGlzdA.cache
+index d01c8a3..5d49791 100644
+--- a/.firebase/hosting.ZGlzdA.cache
++++ b/.firebase/hosting.ZGlzdA.cache
+@@ -1,9 +1,9 @@
+-vite.svg,1766497628687,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
+-manifest.json,1766497628687,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
+-exercises_template_v3.csv,1766497628686,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
+-index.html,1766497628908,cc59979fa3baf64dc0cb155459de88889e82b3ff6e09ed299f8d27ffcd9a3b7a
+-exercises_template_he.csv,1766497628686,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
+-exercises_template_v2.csv,1766497628686,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
+-exercises_template.csv,1766497628685,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
+-assets/index-r7k6zEON.css,1766497628908,2a31d88f3c208774d1ceed8eccf81f1fbd01cc81f31d8d3712de9faf5b56dc2d
+-assets/index-DqS9VmYH.js,1766497628908,a73b1847b2abbe5b453aeaadb9d687cdbe5f1c9014ecc1069d1c7c9a3c35db3f
++exercises_template_v3.csv,1766579078653,4906c964b40a84f593e310c2f42cb2f230b73a5028b6ebfcd9580256bdfdaf99
++index.html,1766579078858,46858e9d3dea199c4b3b245ba23c4ba99883bcf1a40c1c26010cf8f7effa4d51
++manifest.json,1766579078654,3bb27282c15267f644244c7bed34dcb90599f6e52b8acc1ddb34bf7c4bb38f04
++exercises_template.csv,1766579078653,401831d3429c297af39b6f7777c5a3dcb7cbca9b9d55dc72b12b992ee5e51a43
++exercises_template_v2.csv,1766579078653,ad745cb17eb4c526babbbd9f6f9d5c7fe51e3f042a4b12518a7ef4ab22f595ed
++exercises_template_he.csv,1766579078653,d7cb503f06bb7dd2240e955a443f21eaae4d76d7bc07f42cf9b903a555938ada
++vite.svg,1766579078654,12b282beddfe94d624e7f1155761299a42ce1e3eac8053ebe3f38bd1fa04816c
++assets/index-BRwVEXOZ.css,1766579078858,103145543667afbb81b43cd9467886521790727b46e0a189bbb6cf2a7d95ddac
++assets/index-B2rcNLMk.js,1766579078858,a70bab8ecb0634b062341f61bb73a69fa6a56b7df51159c7e7adcd9ce105a875
+diff --git a/src/App.jsx b/src/App.jsx
+index 4cd6433..98104e3 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -159,9 +159,16 @@ function App() {
+     }
+   };
+ 
+-  const handleAddExercises = (currentData, name) => {
+-    setTempWorkoutData(currentData);
+-    if (name) setActiveWorkoutName(name);
++  const handleAddExercises = (currentExercises, currentDuration) => {
++    console.log("Handling Add Exercises. Duration:", currentDuration);
++    // Save current progress before switching view
++    setTempWorkoutData({
++      exercises: currentExercises,
++      duration: currentDuration
++    });
++    // Update active exercises state immediately so we don't lose progress if we just switch back
++    setActiveExercises(currentExercises);
++
+     setView('builder_add'); // Special view state for adding exercises
+   };
+ 
+@@ -297,6 +304,8 @@ function App() {
+             name: activeWorkoutName,
+             id: activeLogId
+           }}
++          initialDuration={tempWorkoutData?.duration || 0}
++          onAdd={handleAddExercises}
+           onFinish={handleSessionFinish}
+           onBack={() => {
+             if (window.confirm('האם אתה בטוח שברצונך לבטל? השינויים לא יישמרו.')) {
+diff --git a/src/components/WorkoutSession.jsx b/src/components/WorkoutSession.jsx
+index 0809600..cf5a51a 100644
+--- a/src/components/WorkoutSession.jsx
++++ b/src/components/WorkoutSession.jsx
+@@ -1,12 +1,12 @@
+ import React, { useState, useEffect } from 'react';
+-import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon } from 'lucide-react';
++import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon, Trash2 } from 'lucide-react';
+ import ImageGalleryModal from './ImageGalleryModal';
+ 
+ const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
+ 
+-export default function WorkoutSession({ workout, onBack, onFinish }) {
++export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0 }) {
+     const [exercises, setExercises] = useState(workout?.exercises || []);
+-    const [duration, setDuration] = useState(0);
++    const [duration, setDuration] = useState(initialDuration);
+     const [expandedEx, setExpandedEx] = useState({});
+     const [selectedImages, setSelectedImages] = useState(null);
+ 
+@@ -50,6 +50,26 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
+         setExpandedEx(prev => ({ ...prev, [id]: !prev[id] }));
+     };
+ 
++    const handleRemoveExercise = (exerciseId) => {
++        if (!window.confirm('להסיר את התרגיל מהאימון?')) return;
++        const newExercises = exercises.filter(e => e.id !== exerciseId);
++        setExercises(newExercises);
++    };
++
++    const handleAddSet = (exIndex) => {
++        const newExercises = [...exercises];
++        if (!newExercises[exIndex].sets) newExercises[exIndex].sets = [];
++
++        // Add new set with previous set's weight/reps if available, or empty
++        const lastSet = newExercises[exIndex].sets[newExercises[exIndex].sets.length - 1];
++        newExercises[exIndex].sets.push({
++            weight: lastSet?.weight || '',
++            reps: lastSet?.reps || '',
++            isCompleted: false
++        });
++        setExercises(newExercises);
++    };
++
+     const handleFinish = () => {
+         const safeExercises = exercises || [];
+         const completedCount = safeExercises.filter(e => e.isCompleted).length;
+@@ -135,28 +155,93 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
+                                                 </div>
+                                             </div>
+ 
+-                                            {/* Arrow Icon */}
+-                                            <div className="text-gray-400 pl-1 shrink-0">
+-                                                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
++                                            {/* Arrow & Trash Icons */}
++                                            <div className="flex items-center gap-3 shrink-0 pl-1">
++                                                <button
++                                                    onClick={(e) => {
++                                                        e.stopPropagation();
++                                                        handleRemoveExercise(ex.id);
++                                                    }}
++                                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
++                                                >
++                                                    <Trash2 size={18} />
++                                                </button>
++                                                <div className="text-gray-400">
++                                                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
++                                                </div>
+                                             </div>
+                                         </div>
+ 
+                                         {/* EXPANDED SETS */}
+                                         {isExpanded && (
+                                             <div className="border-t border-gray-100 p-3 bg-gray-50/50">
+-                                                <div className="space-y-2">
++                                                <div className="space-y-3">
+                                                     {ex.sets?.map((set, sIdx) => (
+-                                                        <div key={sIdx} className="flex items-center gap-2">
+-                                                            <div className="w-5 text-xs font-bold text-gray-400">#{sIdx + 1}</div>
+-                                                            <input type="number" placeholder="קג" defaultValue={set.weight} className="w-16 p-2 border rounded-lg text-center bg-white shadow-sm text-sm" />
+-                                                            <input type="number" placeholder="חזרות" defaultValue={set.reps} className="w-16 p-2 border rounded-lg text-center bg-white shadow-sm text-sm" />
++                                                        <div key={sIdx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
++                                                            <div className="flex items-center gap-3 mb-3">
++                                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
++                                                                    {sIdx + 1}
++                                                                </div>
++
++                                                                <div className="flex-1 grid grid-cols-2 gap-2">
++                                                                    <div className="relative">
++                                                                        <input
++                                                                            type="number"
++                                                                            placeholder="0"
++                                                                            defaultValue={set.weight}
++                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
++                                                                            onChange={(e) => {
++                                                                                const newExercises = [...exercises];
++                                                                                if (newExercises[realIndex]?.sets?.[sIdx]) {
++                                                                                    newExercises[realIndex].sets[sIdx].weight = e.target.value;
++                                                                                    setExercises(newExercises);
++                                                                                }
++                                                                            }}
++                                                                        />
++                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">ק״ג</span>
++                                                                    </div>
++                                                                    <div className="relative">
++                                                                        <input
++                                                                            type="number"
++                                                                            placeholder="0"
++                                                                            defaultValue={set.reps}
++                                                                            className="w-full pl-2 pr-8 py-2 border rounded-lg text-center font-medium focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
++                                                                            onChange={(e) => {
++                                                                                const newExercises = [...exercises];
++                                                                                if (newExercises[realIndex]?.sets?.[sIdx]) {
++                                                                                    newExercises[realIndex].sets[sIdx].reps = e.target.value;
++                                                                                    setExercises(newExercises);
++                                                                                }
++                                                                            }}
++                                                                        />
++                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">חזרות</span>
++                                                                    </div>
++                                                                </div>
++                                                            </div>
+ 
+-                                                            <button onClick={() => toggleSetComplete(realIndex, sIdx)} className={`flex-1 p-2 rounded-lg flex items-center justify-center font-medium transition-colors shadow-sm text-sm ${set.isCompleted ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>
+-                                                                {set.isCompleted ? '✓' : 'סיים'}
++                                                            <button
++                                                                onClick={() => toggleSetComplete(realIndex, sIdx)}
++                                                                className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${set.isCompleted
++                                                                        ? 'bg-teal-500 text-white shadow-md shadow-teal-200'
++                                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
++                                                                    }`}
++                                                            >
++                                                                {set.isCompleted ? (
++                                                                    <>
++                                                                        <CheckCircle size={18} /> הושלם
++                                                                    </>
++                                                                ) : (
++                                                                    'סמן כבוצע'
++                                                                )}
+                                                             </button>
+                                                         </div>
+                                                     ))}
+-                                                    <button className="w-full py-2 text-teal-600 text-sm font-bold border border-teal-200 rounded-lg bg-white mt-2 hover:bg-teal-50 transition-colors">+ הוסף סט</button>
++                                                    <button
++                                                        onClick={() => handleAddSet(realIndex)}
++                                                        className="w-full py-3 text-teal-600 text-sm font-bold border-2 border-dashed border-teal-100 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all flex items-center justify-center gap-2"
++                                                    >
++                                                        <Plus size={16} /> הוסף סט
++                                                    </button>
+                                                 </div>
+                                             </div>
+                                         )}
+@@ -171,7 +256,10 @@ export default function WorkoutSession({ workout, onBack, onFinish }) {
+             {/* FOOTER ACTIONS */}
+             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-20">
+                 <div className="max-w-4xl mx-auto flex gap-3">
+-                    <button className="p-3 rounded-xl border-2 border-gray-100 text-gray-500 font-bold flex items-center justify-center hover:bg-gray-50 transition-colors" onClick={() => alert('בקרוב: הוספת תרגיל תוך כדי אימון')}>
++                    <button
++                        className="p-3 rounded-xl border-2 border-teal-100 text-teal-600 font-bold flex items-center justify-center hover:bg-teal-50 transition-colors bg-white shadow-sm"
++                        onClick={() => onAdd(exercises, duration)}
++                    >
+                         <Plus size={20} />
+                     </button>
+                     <button onClick={handleFinish} className="flex-1 p-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transform active:scale-95 transition-all">
+diff --git a/src/services/storageService.js b/src/services/storageService.js
+index 50e388b..b651aed 100644
+--- a/src/services/storageService.js
++++ b/src/services/storageService.js
+@@ -272,6 +272,7 @@ export const storageService = {
+     // Workout Logs
+     saveWorkout: async (workoutData, userId) => {
+         try {
++            console.log("Attempting to save workout for user:", userId);
+             const dataToSave = {
+                 ...workoutData,
+                 userId,
+@@ -280,7 +281,7 @@ export const storageService = {
+             };
+             console.log("storageService.saveWorkout payload:", JSON.stringify(dataToSave, null, 2));
+             const docRef = await addDoc(collection(db, WORKOUT_LOGS_COLLECTION), dataToSave);
+-            console.log("Workout saved with ID: ", docRef.id);
++            console.log("Workout saved successfully with ID: ", docRef.id);
+             return { id: docRef.id, ...dataToSave };
+         } catch (error) {
+             console.error("Error saving workout log:", error);
