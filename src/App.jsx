@@ -270,8 +270,12 @@ function App() {
     const exercisesToRepeat = log.exercises.map(le => ({
       id: le.exercise_id,
       name: le.name,
-      mainMuscle: le.mainMuscle || le.muscle
+      mainMuscle: le.mainMuscle || le.muscle,
+      // CRITICAL: Preserve sets for repeat (defensive copy)
+      sets: le.sets ? [...le.sets.map(s => ({ ...s, isCompleted: false }))] : []
     }));
+
+    console.log("Repeat Workout Verification: Sets passed to startWorkout", exercisesToRepeat[0]?.sets);
 
     // Start NEW workout with these exercises
     // This will create a new draft log automatically
