@@ -9,14 +9,20 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
         lastWorkoutDate: '-',
         lastWorkoutName: ''
     });
+    const [comparisonUrl, setComparisonUrl] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Stats
                 const logs = await storageService.getAllWorkoutLogs(user.id);
                 calculateStats(logs);
+
+                // 2. Fetch System Config (for Comparison URL)
+                const config = await storageService.getSystemConfig();
+                if (config?.comparisonUrl) {
+                    setComparisonUrl(config.comparisonUrl);
+                }
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
             } finally {
@@ -128,6 +134,16 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
                 >
                     בנה אימון חופשי +
                 </button>
+                {comparisonUrl && (
+                    <a
+                        href={comparisonUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-sky-500 hover:bg-sky-600 text-white border-sky-600 flex items-center justify-center gap-2"
+                    >
+                        נתוני השוואת מתאמנים
+                    </a>
+                )}
                 <button
                     onClick={onNavigateToHistory}
                     className="neu-btn primary text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all"

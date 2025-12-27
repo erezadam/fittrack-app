@@ -151,6 +151,7 @@ export default function AdminPage({ user, onBack }) {
 
     // System Config State
     const [isDevMode, setIsDevMode] = useState(false);
+    const [comparisonUrl, setComparisonUrl] = useState('');
 
     useEffect(() => {
         loadData();
@@ -161,6 +162,7 @@ export default function AdminPage({ user, onBack }) {
         try {
             const config = await storageService.getSystemConfig();
             setIsDevMode(config?.devMode || false);
+            setComparisonUrl(config?.comparisonUrl || '');
         } catch (error) {
             console.error("Failed to load system config:", error);
         }
@@ -853,6 +855,36 @@ export default function AdminPage({ user, onBack }) {
                                 {isDevMode ? 'בטל מצב פיתוח (Auto Login)' : 'הפעל מצב פיתוח (Auto Login)'}
                             </button>
                             <p className="text-xs text-gray-500">מאפשר כניסה אוטומטית ללא מסך לוג-אין (גלובלי).</p>
+                        </div>
+
+                        <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">
+                            <label className="block text-sm font-bold text-teal-800 mb-2">לינק להשוואת מתאמנים</label>
+                            <div className="flex gap-2">
+                                <input
+                                    className="neu-input flex-1 text-sm bg-white"
+                                    placeholder="הכנס לינק (https://...)"
+                                    value={comparisonUrl}
+                                    onChange={(e) => setComparisonUrl(e.target.value)}
+                                />
+                                <button
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            await storageService.saveSystemConfig({ comparisonUrl });
+                                            alert('הלינק נשמר בהצלחה!');
+                                        } catch (error) {
+                                            console.error("Failed to save url:", error);
+                                            alert("שגיאה בשמירה");
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    className="neu-btn primary text-sm"
+                                >
+                                    שמור
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">כפתור יופיע במסך הבית של המתאמן אם קיים לינק.</p>
                         </div>
                     </div>
                 </AdminSection>

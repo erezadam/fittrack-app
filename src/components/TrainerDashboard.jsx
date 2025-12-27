@@ -8,6 +8,7 @@ export default function TrainerDashboard({ user, onBack }) {
     const [currentView, setCurrentView] = useState('hub'); // 'hub', 'reports', 'register', 'planner'
     const [trainees, setTrainees] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [comparisonUrl, setComparisonUrl] = useState(null);
 
     // Invitation State
     const [inviteEmail, setInviteEmail] = useState('');
@@ -33,6 +34,10 @@ export default function TrainerDashboard({ user, onBack }) {
         if (coachId) {
             loadTrainees(coachId);
         }
+        // Fetch Config
+        storageService.getSystemConfig().then(config => {
+            if (config?.comparisonUrl) setComparisonUrl(config.comparisonUrl);
+        });
     }, [user]);
 
     const loadTrainees = async (coachId) => {
@@ -209,6 +214,18 @@ export default function TrainerDashboard({ user, onBack }) {
                 <h3 className="text-xl font-bold text-gray-800">בניית תוכנית אימונים</h3>
                 <p className="text-gray-500 text-center text-sm">צור וערוך תוכניות אימון</p>
             </div>
+
+            {/* Comparison Link */}
+            {comparisonUrl && (
+                <a
+                    href={comparisonUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="md:col-span-3 neu-card p-4 flex items-center justify-center gap-2 hover:bg-sky-50 transition-colors cursor-pointer text-sky-600 font-bold border-sky-100"
+                >
+                    🌐 נתוני השוואת מתאמנים
+                </a>
+            )}
         </div>
     );
 
@@ -386,14 +403,12 @@ export default function TrainerDashboard({ user, onBack }) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-hidden transition-all duration-300">
+            <div className="flex-1 overflow-y-auto transition-all duration-300 no-scrollbar">
                 {selectedTraineeId ? (
                     <WorkoutBuilder
                         user={user}
                         mode="trainer"
                         onSave={handleAssignWorkout}
-                        traineeName={trainees.find(t => t.id === selectedTraineeId)?.name || ''}
-                        traineeId={selectedTraineeId}
                         workoutDate={workoutDate}
                         onDateChange={setWorkoutDate}
                     />
