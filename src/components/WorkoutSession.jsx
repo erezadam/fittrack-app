@@ -2,24 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, Circle, ChevronDown, ChevronUp, Plus, Save, ArrowRight, Image as ImageIcon, Trash2 } from 'lucide-react';
 import ImageGalleryModal from './ImageGalleryModal';
 import { storageService } from '../services/storageService';
+import { prepareSessionExercises } from '../utils/workoutUtils';
 
 const HEBREW_MUSCLE_NAMES = { 'Chest': 'חזה', 'Back': 'גב', 'Legs': 'רגליים', 'Shoulders': 'כתפיים', 'Arms': 'זרועות', 'Core': 'בטן', 'Glutes': 'ישבן', 'Cardio': 'אירובי', 'Full Body': 'כל הגוף', 'Abs': 'בטן' };
 
 export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initialDuration = 0, userId }) {
+    // Initialize with provided workout data, but "loading" state might be needed if we wait for promise
+    // OR we initialize with what we have and then update.
+    // Let's initialize with raw data ensuring sets exist (quick fix), then useEffect runs the full transform.
     const [exercises, setExercises] = useState(() => {
-        const initial = workout?.exercises || [];
-        // Ensure every exercise has at least one set to start
-        return initial.map(ex => ({
+        return (workout?.exercises || []).map(ex => ({
             ...ex,
-            sets: ex.sets && ex.sets.length > 0
-                ? ex.sets
-                : [{ weight: '', reps: '', isCompleted: false }]
+            sets: ex.sets && ex.sets.length > 0 ? ex.sets : [{ weight: '', reps: '', isCompleted: false }]
         }));
     });
+
+    // Track if we are busy loading external data (stats)
+    const [isPreparing, setIsPreparing] = useState(true);
+
     const [duration, setDuration] = useState(initialDuration);
     const [expandedEx, setExpandedEx] = useState({});
     const [selectedImages, setSelectedImages] = useState(null);
-    const [lastStats, setLastStats] = useState({});
+
+    // Previously used "lastStats" map is removed in favor of direct property on exercise
+    // const [lastStats, setLastStats] = useState({});
 
     // New State for Summary/Calories
     const [calories, setCalories] = useState('');
@@ -30,24 +36,47 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch Last Stats
+    // ONE Unified Effect to prepare exercises
     useEffect(() => {
-        const loadStats = async () => {
-            if (!userId) return;
-            const statsMap = {};
-            // Use Promise.all for parallel fetching if needed, or sequential is fine for small lists
-            for (const ex of exercises) {
-                const stats = await storageService.fetchLastExerciseStats(userId, ex.id);
-                if (stats) {
-                    statsMap[ex.id] = stats;
-                }
+        const loadAndPrepare = async () => {
+            // If we already have exercises with lastStats, we might skip, but let's ensure consistency
+            // especially if simple "restart" or "resume" passed raw data without stats.
+            const rawExercises = workout?.exercises || [];
+            if (rawExercises.length === 0) {
+                setIsPreparing(false);
+                return;
             }
-            setLastStats(statsMap);
+
+            setIsPreparing(true);
+            try {
+                const processed = await prepareSessionExercises(rawExercises, userId);
+
+                // If we have existing state (e.g. user started typing before load finished?), 
+                // strict replacement might lose data. 
+                // However, this usually runs on mount. 
+                // To be safe against double-mounts or updates, we should perhaps only update if different?
+                // For now, simple set is fine as this is meant to be initialization.
+
+                // BUT: If the user adds exercises (onAdd), this effect reruns if 'workout' prop changes?
+                // 'workout' object usually stays same ref from App, unless parent updates it.
+                // Let's assume onAdd updates the parent state, passing new workout prop.
+
+                setExercises(processed);
+            } catch (err) {
+                console.error("Failed to prepare session exercises:", err);
+            } finally {
+                setIsPreparing(false);
+            }
         };
-        loadStats();
-    }, [userId, exercises.length]);
+
+        loadAndPrepare();
+    }, [workout, userId]);
 
     // Fallback: Fetch missing images
+    // Note: prepareSessionExercises handles normalization, but not fetching from DB if missing entirely.
+    // The existing logic fetched from DB if local had no images. We can keep it or move it to utility?
+    // Let's keep existing "Fetch Missing" logic separate for safety, or integrate it later.
+    // The previous code had it as a separate effect.
     useEffect(() => {
         const fetchMissingImages = async () => {
             const missingImages = exercises.some(ex => !ex.imageUrls || ex.imageUrls.length === 0);
@@ -165,9 +194,10 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
         });
     };
 
-    // Grouping Logic
+    // Grouping Logic - Simplified thanks to prepareSessionExercises
     const groupedExercises = (exercises || []).reduce((acc, ex, index) => {
-        const muscleKey = ex.muscle_group_id || ex.mainMuscle || 'Other';
+        // prepareSessionExercises guarantees 'mainMuscle' is populated
+        const muscleKey = ex.mainMuscle || 'Other';
         if (!acc[muscleKey]) acc[muscleKey] = [];
         acc[muscleKey].push({ ...ex, originalIndex: index });
         return acc;
@@ -198,6 +228,10 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
 
             {/* EXERCISE LIST */}
             <div className="max-w-4xl mx-auto p-3 space-y-6 mt-2">
+                {isPreparing && exercises.length === 0 && (
+                    <div className="text-center py-10 opacity-50">טוען תרגילים...</div>
+                )}
+
                 {Object.entries(groupedExercises).map(([muscle, groupExs]) => (
                     <div key={muscle} className="animate-fade-in">
                         <h3 className="text-lg font-bold text-teal-700 mb-2 border-b border-teal-100 pb-1 mx-1 flex items-center gap-2">
@@ -237,13 +271,14 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                     </div>
                                                     <div className="text-xs text-gray-500 truncate mt-0.5">
                                                         {ex.sets?.length || 0} סטים • {ex.equipment || 'ללא'}
-                                                        {lastStats[ex.id] && (
+                                                        {ex.lastStats && (
                                                             <span className="text-teal-600 font-bold mr-2">
-                                                                | אימון אחרון: {lastStats[ex.id]}
+                                                                | אימון אחרון: {ex.lastStats}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
+
                                             </div>
 
                                             {/* Arrow & Trash Icons */}
