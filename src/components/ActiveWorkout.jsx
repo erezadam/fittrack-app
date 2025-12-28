@@ -225,18 +225,18 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
     if (showSummary && summaryData) {
         return (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onFinish}>
-                <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="bg-brand-card rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl" onClick={e => e.stopPropagation()}>
                     <div className="text-6xl mb-4">🎉</div>
-                    <h2 className="text-3xl font-extrabold text-gray-800 mb-2">כל הכבוד!</h2>
+                    <h2 className="text-3xl font-extrabold text-brand-text mb-2">כל הכבוד!</h2>
                     <p className="text-gray-500 mb-8">סיימת את האימון בהצלחה</p>
                     <div className="space-y-6 mb-8">
                         <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                             <span className="text-gray-500">תרגילים</span>
-                            <span className="text-xl font-bold text-gray-800">{summaryData.exercisesCount}</span>
+                            <span className="text-xl font-bold text-brand-text">{summaryData.exercisesCount}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                             <span className="text-gray-500">זמן</span>
-                            <span className="text-xl font-bold text-gray-800">{summaryData.duration} דק'</span>
+                            <span className="text-xl font-bold text-brand-text">{summaryData.duration} דק'</span>
                         </div>
                     </div>
                     <button onClick={onFinish} className="neu-btn primary w-full py-4 text-lg shadow-lg">סיום ויציאה</button>
@@ -251,7 +251,7 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-800 border-r-4 border-teal-500 pr-3">{workoutName || 'אימון פעיל'}</h2>
+                <h2 className="text-2xl font-bold text-brand-text border-r-4 border-teal-500 pr-3">{workoutName || 'אימון פעיל'}</h2>
                 <div className="flex gap-2">
                     <button onClick={() => onAddExercises(workoutData, workoutName)} className="neu-btn text-sm px-4 bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100">+ הוסף תרגילים</button>
                     <button onClick={handleCancel} className="neu-btn text-red-500 hover:text-red-600 text-sm px-4">ביטול</button>
@@ -278,7 +278,7 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
                                         {isCompleted ? '✓' : idx + 1}
                                     </div>
                                     <div>
-                                        <h3 className={`font-bold text-lg ${isCompleted ? 'text-blue-800' : 'text-gray-800'}`}>{ex.name}</h3>
+                                        <h3 className={`font-bold text-lg ${isCompleted ? 'text-blue-800' : 'text-brand-text'}`}>{ex.name}</h3>
                                         {!isExpanded && (
                                             <p className={`text-sm ${isCompleted ? 'text-blue-600' : 'text-gray-500'}`}>
                                                 {currentSets.length} סטים • {isCompleted ? 'בוצע' : 'לחץ לפירוט'}
@@ -332,7 +332,7 @@ export default function ActiveWorkout({ user, exercises = [], workoutName, onFin
             </div>
 
             <div className="neu-card p-6 mb-32">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">סיכום אימון (אופציונלי)</h3>
+                <h3 className="text-lg font-bold text-brand-text mb-4 border-b border-gray-100 pb-2">סיכום אימון (אופציונלי)</h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">קלוריות</label>

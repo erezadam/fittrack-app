@@ -126,9 +126,9 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
         }));
     };
 
-    const handleRemoveExercise = (exerciseId) => {
+    const handleRemoveExercise = (index) => {
         if (!window.confirm('להסיר את התרגיל מהאימון?')) return;
-        const newExercises = exercises.filter(e => e.id !== exerciseId);
+        const newExercises = exercises.filter((_, i) => i !== index);
         setExercises(newExercises);
     };
 
@@ -183,7 +183,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
     const completedCount = (exercises || []).filter(e => e.isCompleted).length;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="min-h-screen bg-brand-bg pb-32">
             {/* HEADER */}
             <div className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-10">
                 <div className="flex justify-between items-start mb-3">
@@ -218,7 +218,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                 const isExpanded = expandedEx[ex.id];
 
                                 return (
-                                    <div key={ex.id} className={`bg-white rounded-xl shadow-sm border transition-all overflow-hidden ${ex.isCompleted ? 'border-teal-200 bg-teal-50/30' : 'border-gray-100'}`}>
+                                    <div key={ex.id} className={`bg-brand-card rounded-xl shadow-sm border transition-all overflow-hidden ${ex.isCompleted ? 'border-teal-200 bg-teal-50/30' : 'border-gray-100'}`}>
                                         <div className="p-3 flex items-center justify-between cursor-pointer gap-2" onClick={() => toggleExpand(ex.id)}>
 
                                             {/* Left Side: Checkbox + Image + Text */}
@@ -240,7 +240,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
 
                                                 {/* TEXT CONTENT (Truncated correctly) */}
                                                 <div className="flex-1 min-w-0">
-                                                    <div className={`font-bold text-base leading-tight truncate ${ex.isCompleted ? 'text-teal-700 line-through decoration-teal-300' : 'text-gray-800'}`}>
+                                                    <div className={`font-bold text-base leading-tight truncate ${ex.isCompleted ? 'text-teal-700 line-through decoration-teal-300' : 'text-brand-text'}`}>
                                                         {ex.name}
                                                     </div>
                                                     <div className="text-xs text-gray-500 truncate mt-0.5">
@@ -263,7 +263,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleRemoveExercise(ex.id);
+                                                        handleRemoveExercise(realIndex);
                                                     }}
                                                     className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                                 >
@@ -280,7 +280,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                             <div className="border-t border-gray-100 p-3 bg-gray-50/50">
                                                 <div className="space-y-3">
                                                     {ex.sets?.map((set, sIdx) => (
-                                                        <div key={sIdx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                                        <div key={sIdx} className="bg-brand-card p-3 rounded-xl border border-gray-100 shadow-sm">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
                                                                     {sIdx + 1}
@@ -363,10 +363,10 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
             </div>
 
             {/* FOOTER ACTIONS */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-20">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-brand-card border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-20">
                 <div className="max-w-4xl mx-auto flex gap-3">
                     <button
-                        className="p-3 rounded-xl border-2 border-teal-100 text-teal-600 font-bold flex items-center justify-center hover:bg-teal-50 transition-colors bg-white shadow-sm"
+                        className="p-3 rounded-xl border-2 border-teal-100 text-teal-600 font-bold flex items-center justify-center hover:bg-teal-50 transition-colors bg-brand-card shadow-sm"
                         onClick={() => onAdd(exercises, duration)}
                     >
                         <Plus size={20} />
@@ -382,19 +382,19 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
             {/* SUMMARY MODAL */}
             {showSummary && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-fade-in relative">
+                    <div className="bg-brand-card rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-fade-in relative">
                         <div className="text-6xl mb-4">🎉</div>
-                        <h2 className="text-3xl font-extrabold text-gray-800 mb-2">כל הכבוד!</h2>
+                        <h2 className="text-3xl font-extrabold text-brand-text mb-2">כל הכבוד!</h2>
                         <p className="text-gray-500 mb-8">האימון הושלם</p>
 
                         <div className="space-y-6 mb-8">
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                                 <span className="text-gray-500">תרגילים שבוצעו</span>
-                                <span className="text-xl font-bold text-gray-800">{completedCount} / {exercises.length}</span>
+                                <span className="text-xl font-bold text-brand-text">{completedCount} / {exercises.length}</span>
                             </div>
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                                 <span className="text-gray-500">זמן אימון</span>
-                                <span className="text-xl font-bold text-gray-800">{formatTime(duration)}</span>
+                                <span className="text-xl font-bold text-brand-text">{formatTime(duration)}</span>
                             </div>
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                                 <span className="text-gray-500">קלוריות (משוער)</span>
@@ -404,7 +404,7 @@ export default function WorkoutSession({ workout, onBack, onFinish, onAdd, initi
                                         placeholder="0"
                                         value={calories}
                                         onChange={(e) => setCalories(e.target.value)}
-                                        className="w-full text-right text-xl font-bold text-gray-800 border-none outline-none focus:ring-0 p-0 bg-transparent placeholder-gray-300"
+                                        className="w-full text-right text-xl font-bold text-brand-text border-none outline-none focus:ring-0 p-0 bg-transparent placeholder-gray-300"
                                     />
                                 </div>
                             </div>

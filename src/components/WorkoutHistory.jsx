@@ -116,7 +116,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                     <div className="absolute top-0 right-0 w-1 h-full bg-teal-500"></div>
                                     <div className="flex justify-between items-center mb-2">
                                         <div>
-                                            <div className="font-bold text-lg text-white">{assignment.name}</div>
+                                            <div className="text-brand-text font-bold text-lg text-center leading-none">{assignment.name}</div>
                                             <div className="text-xs text-teal-300">
                                                 {formatDate(assignment.date || assignment.startDate)}
                                             </div>
@@ -151,7 +151,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                     {logs.length === 0 ? (
                         <div className="text-center py-12 bg-gray-800/20 rounded-xl border border-dashed border-gray-700">
                             <div className="text-4xl mb-4 opacity-30">🏋️‍♂️</div>
-                            <h3 className="text-lg font-medium text-gray-400">עדיין לא בוצעו אימונים</h3>
+                            <h1 className="text-2xl font-bold text-brand-text">היסטוריית אימונים</h1>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -300,7 +300,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                 {log.notes && (
                                                     <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                                                         <span className="text-xs font-bold text-yellow-500 block mb-1">הערות:</span>
-                                                        <p className="text-sm text-gray-300">{log.notes}</p>
+                                                        <h3 className="font-bold text-lg text-brand-text">{log.workoutName || 'אימון ללא שם'}</h3>
                                                     </div>
                                                 )}
                                             </div>

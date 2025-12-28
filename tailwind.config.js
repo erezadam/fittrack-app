@@ -10,8 +10,13 @@ export default {
                 sans: ['Heebo', 'Inter', 'system-ui', 'sans-serif'],
             },
             colors: {
-                // We can define custom colors here if needed, but Tailwind's default palette is usually enough.
-                // We'll use slate-100 for bg, cyan-500/teal-500 for gradients.
+                brand: {
+                    bg: 'var(--bg-main)',
+                    card: 'var(--bg-card)',
+                    text: 'var(--text-primary)',
+                    muted: 'var(--text-secondary)',
+                    accent: 'var(--primary-accent)',
+                }
             }
         },
     },

@@ -103,7 +103,7 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
                     key={dateKey}
                     onClick={() => handleDateClick(day)}
                     className={`h-24 border border-gray-100 p-1 relative cursor-pointer transition-all hover:bg-gray-50 flex flex-col justify-between
-                        ${isSelected ? 'bg-teal-50 ring-2 ring-inset ring-teal-400' : 'bg-white'}
+                        ${isSelected ? 'bg-teal-50 ring-2 ring-inset ring-teal-400' : 'bg-brand-card'}
                     `}
                 >
                     <div className="flex justify-between items-start">
@@ -147,10 +147,10 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
     return (
         <div className="neu-card overflow-hidden">
             {/* Header */}
-            <div className="p-4 bg-white border-b border-gray-100 flex justify-between items-center">
+            <div className="p-4 bg-brand-card border-b border-gray-100 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <Calendar className="text-teal-600" size={20} />
-                    <h3 className="font-bold text-lg text-gray-800">
+                    <h3 className="font-bold text-lg text-brand-text">
                         {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                     </h3>
                 </div>
@@ -175,7 +175,7 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
             </div>
 
             {/* Grid Body */}
-            <div className="grid grid-cols-7 bg-white">
+            <div className="grid grid-cols-7 bg-brand-card">
                 {renderCalendarGrid()}
             </div>
 

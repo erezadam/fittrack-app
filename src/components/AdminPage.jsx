@@ -15,7 +15,7 @@ const AdminSection = ({ id, title, icon, color, children, isOpen, onToggle }) =>
             className="flex justify-between items-center cursor-pointer py-2"
             onClick={() => onToggle(id)}
         >
-            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 select-none">
+            <h3 className="text-xl font-bold text-brand-text flex items-center gap-2 select-none">
                 <span className={`text-${color}-500`}>{icon}</span> {title}
             </h3>
             <button className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -34,7 +34,7 @@ export default function AdminPage({ user, onBack }) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
                 <div className="text-6xl mb-4">🚫</div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">אין לך הרשאה לצפות בדף זה</h2>
+                <h2 className="text-2xl font-bold text-brand-text mb-2">אין לך הרשאה לצפות בדף זה</h2>
                 <p className="text-gray-500 mb-6">דף זה מיועד למנהלי מערכת בלבד.</p>
                 <button onClick={onBack} className="neu-btn primary">
                     חזור לדף הבית
@@ -639,7 +639,7 @@ export default function AdminPage({ user, onBack }) {
                 <button type="button" onClick={onBack} className="neu-btn text-sm">
                     ← חזרה
                 </button>
-                <h2 className="text-2xl font-bold text-gray-800">לוח בקרה למנהל</h2>
+                <h2 className="text-2xl font-bold text-brand-text">לוח בקרה למנהל</h2>
             </div>
 
             {/* User Management Card (Collapsible) */}
@@ -699,7 +699,7 @@ export default function AdminPage({ user, onBack }) {
                         <tbody className="divide-y divide-gray-200">
                             {filteredUsers.map(u => (
                                 <tr key={u.id} className="hover:bg-white transition-colors">
-                                    <td className="p-4 font-medium text-gray-800">
+                                    <td className="p-4 font-medium text-brand-text">
                                         {u.firstName} {u.lastName}
                                         {u.email && <div className="text-xs text-gray-400 font-normal">{u.email}</div>}
                                     </td>
@@ -892,7 +892,7 @@ export default function AdminPage({ user, onBack }) {
 
             {/* Legacy Management Section (Collapsible or below) */}
             <div className="neu-card">
-                <h3 className="text-xl font-bold text-gray-800 mb-6">ניהול שוטף</h3>
+                <h3 className="text-xl font-bold text-brand-text mb-6">דוחות ומעקב</h3>
 
                 {/* Tabs */}
                 <div className="flex gap-4 mb-6">
@@ -1111,7 +1111,7 @@ export default function AdminPage({ user, onBack }) {
                         {/* List with Filters */}
                         <div className="neu-card">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-gray-800">רשימת תרגילים ({filteredExercises.length})</h3>
+                                <h3 className="text-xl font-bold text-brand-text">בניית תוכנית אימונים ({filteredExercises.length})</h3>
                             </div>
 
                             {/* Filters */}

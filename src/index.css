@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./theme/variables.css";
 
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap');
 
@@ -8,14 +9,17 @@
 
 @layer base {
   body {
-    @apply bg-slate-100 text-gray-700 font-sans antialiased;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    @apply font-sans antialiased;
     direction: rtl;
   }
 }
 
 @layer components {
   .neu-card {
-    @apply bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300;
+    background-color: var(--bg-card);
+    @apply rounded-2xl shadow-lg border border-gray-100 transition-all duration-300;
   }
 
   .neu-btn {

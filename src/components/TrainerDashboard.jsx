@@ -187,7 +187,7 @@ export default function TrainerDashboard({ user, onBack }) {
                 <div className="w-16 h-16 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center">
                     <BarChart2 size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">דוחות ומעקב</h3>
+                <h3 className="text-xl font-bold text-brand-text">דוחות ומעקב</h3>
                 <p className="text-gray-500 text-center text-sm">צפה ברשימת המתאמנים והתקדמותם</p>
             </div>
 
@@ -199,7 +199,7 @@ export default function TrainerDashboard({ user, onBack }) {
                 <div className="w-16 h-16 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">
                     <UserPlus size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">הקמת מתאמן חדש</h3>
+                <h3 className="text-xl font-bold text-brand-text">הקמת מתאמן חדש</h3>
                 <p className="text-gray-500 text-center text-sm">הזמן מתאמן חדש לאפליקציה</p>
             </div>
 
@@ -211,7 +211,7 @@ export default function TrainerDashboard({ user, onBack }) {
                 <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
                     <Calendar size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">בניית תוכנית אימונים</h3>
+                <h3 className="text-xl font-bold text-brand-text">בניית תוכנית אימונים</h3>
                 <p className="text-gray-500 text-center text-sm">צור וערוך תוכניות אימון</p>
             </div>
 
@@ -231,7 +231,7 @@ export default function TrainerDashboard({ user, onBack }) {
 
     const renderReports = () => (
         <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-700 mb-4">מתאמנים פעילים</h2>
+            <h2 className="text-2xl font-bold text-brand-text mb-4">מתאמנים פעילים</h2>
             {loading ? (
                 <div className="text-center text-gray-500 py-8">טוען מתאמנים...</div>
             ) : trainees.length === 0 ? (
@@ -251,7 +251,7 @@ export default function TrainerDashboard({ user, onBack }) {
                                 {trainee.name ? trainee.name[0].toUpperCase() : '?'}
                             </div>
                             <div>
-                                <div className="font-bold text-gray-800">
+                                <div className="font-bold text-brand-text">
                                     {trainee.name || 'ממתין להרשמה'}
                                 </div>
                                 <div className="text-xs text-gray-500">
@@ -270,7 +270,7 @@ export default function TrainerDashboard({ user, onBack }) {
 
     const renderRegisterForm = () => (
         <div className="max-w-2xl mx-auto neu-card p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2 justify-center">
+            <h2 className="text-2xl font-bold text-brand-text mb-6 flex items-center gap-2 justify-center">
                 <UserPlus className="text-teal-500" />
                 רשימת מתאמן חדש
             </h2>
@@ -303,7 +303,7 @@ export default function TrainerDashboard({ user, onBack }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">שם פרטי</label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">שם פרטי</label>
                         <input
                             type="text"
                             value={firstName}
@@ -313,7 +313,7 @@ export default function TrainerDashboard({ user, onBack }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">שם משפחה</label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">שם משפחה</label>
                         <input
                             type="text"
                             value={lastName}
@@ -324,7 +324,7 @@ export default function TrainerDashboard({ user, onBack }) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">טלפון</label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">טלפון</label>
                         <input
                             type="tel"
                             value={phone}
@@ -334,7 +334,7 @@ export default function TrainerDashboard({ user, onBack }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">גיל</label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">גיל</label>
                         <input
                             type="number"
                             value={age}
@@ -347,7 +347,7 @@ export default function TrainerDashboard({ user, onBack }) {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">אימייל</label>
+                    <label className="block text-sm font-medium text-brand-text mb-1">אימייל</label>
                     <input
                         type="email"
                         value={inviteEmail}
@@ -358,7 +358,7 @@ export default function TrainerDashboard({ user, onBack }) {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">הערות</label>
+                    <label className="block text-sm font-medium text-brand-text mb-1">הערות</label>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
@@ -383,9 +383,9 @@ export default function TrainerDashboard({ user, onBack }) {
 
     const renderPlanner = () => (
         <div className="flex flex-col h-full animate-fade-in gap-4">
-            <div className="bg-white p-4 rounded-xl border border-gray-100 flex flex-wrap gap-4 items-end shadow-sm z-10">
+            <div className="bg-brand-card p-4 rounded-xl border border-gray-100 flex flex-wrap gap-4 items-end shadow-sm z-10">
                 <div className="flex-1 min-w-[200px]">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">בחר מתאמן</label>
+                    <label className="block text-sm font-bold text-brand-text mb-1">בחר מתאמן</label>
                     <select
                         value={selectedTraineeId}
                         onChange={(e) => {

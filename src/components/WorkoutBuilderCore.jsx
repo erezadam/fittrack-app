@@ -190,8 +190,8 @@ export default function WorkoutBuilderCore({
                 {showAICoach && <AIWorkoutModal onClose={() => setShowAICoach(false)} onStartWorkout={onStartWorkout} />}
 
                 <div className='space-y-6'>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
-                        <label className="block text-sm font-bold text-gray-700 mb-2">כינוי לאימון</label>
+                    <div className="bg-brand-card p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                        <label className="block text-sm font-bold text-brand-text mb-2">כינוי לאימון</label>
                         <input
                             type="text"
                             value={workoutName}
@@ -200,7 +200,7 @@ export default function WorkoutBuilderCore({
                             className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
                         />
 
-                        <label className="block text-sm font-bold text-gray-700 mt-4 mb-2">תאריך אימון (אופציונלי)</label>
+                        <label className="block text-sm font-bold text-brand-text mt-4 mb-2">תאריך אימון (אופציונלי)</label>
                         <input
                             type="date"
                             value={workoutDate}
@@ -224,7 +224,7 @@ export default function WorkoutBuilderCore({
                                         <IconComp size={48} className="text-teal-600 mb-2" strokeWidth={1} />
                                     )}
 
-                                    <span className='font-bold text-lg text-gray-700'>{HEBREW_MUSCLE_NAMES[m] || m}</span>
+                                    <span className='font-bold text-lg text-brand-text'>{HEBREW_MUSCLE_NAMES[m] || m}</span>
                                     {selectedMuscles.includes(m) && <span className="text-teal-600 text-sm">✓ נבחר</span>}
                                 </div>
                             );
@@ -241,7 +241,7 @@ export default function WorkoutBuilderCore({
     // --- SELECTION VIEW ---
     return (
         <div className='container mx-auto px-4 py-8 max-w-4xl pb-32'>
-            <div className='flex justify-between items-center mb-6 sticky top-0 bg-white z-10 py-4 border-b'>
+            <div className='flex justify-between items-center mb-6 sticky top-0 bg-brand-card z-10 py-4 border-b'>
                 <button onClick={() => setStep('dashboard')} className='neu-btn text-sm'>→ שנה בחירת שרירים</button>
                 <h2 className='text-xl font-bold'>בחירת תרגילים</h2>
             </div>
@@ -274,7 +274,7 @@ export default function WorkoutBuilderCore({
                                     <div className="flex flex-wrap gap-2">
                                         {availableSubs.map(sm => (
                                             <button key={sm} onClick={() => toggleSubMuscle(sm)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedSubMuscles.includes(sm) ? 'bg-teal-500 text-white border-teal-500' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedSubMuscles.includes(sm) ? 'bg-teal-500 text-white border-teal-500' : 'bg-brand-card text-brand-muted border-gray-200 hover:border-gray-300'}`}>
                                                 {sm}
                                             </button>
                                         ))}
@@ -283,7 +283,7 @@ export default function WorkoutBuilderCore({
                                 <div className="flex flex-wrap gap-2">
                                     {WORKOUT_TYPES.map(eq => (
                                         <button key={eq} onClick={() => toggleEquipment(eq)}
-                                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedEquipment.includes(eq) ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedEquipment.includes(eq) ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-brand-card text-brand-muted border-gray-200 hover:border-gray-300'}`}>
                                             {eq}
                                         </button>
                                     ))}
@@ -295,7 +295,7 @@ export default function WorkoutBuilderCore({
                                     const isSelected = !!selectedExercises.find(e => e.id === ex.id);
                                     return (
                                         <div key={ex.id} onClick={() => toggleExercise(ex)}
-                                            className={`neu-card p-3 cursor-pointer flex justify-between items-center transition-all ${isSelected ? 'ring-2 ring-cyan-400 bg-cyan-50' : 'hover:bg-white shadow-sm'}`}>
+                                            className={`neu-card p-3 cursor-pointer flex justify-between items-center transition-all ${isSelected ? 'ring-2 ring-cyan-400 bg-cyan-50' : 'hover:bg-brand-card shadow-sm'}`}>
                                             <div className='flex items-center gap-4'>
                                                 <div onClick={(e) => { e.stopPropagation(); setSelectedImages({ images: ex.imageUrls || [], title: ex.name }); }} className="relative w-16 h-16 flex-shrink-0 group cursor-zoom-in">
                                                     {ex.imageUrls?.[0] ? (
@@ -306,7 +306,7 @@ export default function WorkoutBuilderCore({
                                                     {ex.imageUrls?.length > 0 && <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-white text-xs font-bold">הגדל</span></div>}
                                                 </div>
                                                 <div>
-                                                    <div className='font-bold text-gray-800 text-base leading-tight'>{ex.name}</div>
+                                                    <div className='font-bold text-brand-text text-base leading-tight'>{ex.name}</div>
                                                     <div className="text-xs text-gray-500 mt-1">{ex.subMuscle} • {ex.equipment}</div>
                                                 </div>
                                             </div>
@@ -323,7 +323,7 @@ export default function WorkoutBuilderCore({
                 })}
             </div>
 
-            <div className='fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50'>
+            <div className='fixed bottom-0 left-0 right-0 p-4 bg-brand-card border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50'>
                 <div className='max-w-4xl mx-auto flex gap-3 items-center'>
                     <div className='text-sm text-gray-500 font-bold whitespace-nowrap hidden md:block'>נבחרו: {selectedExercises.length}</div>
 

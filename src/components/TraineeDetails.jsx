@@ -48,7 +48,7 @@ export default function TraineeDetails({ trainee, onBack }) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-xl shadow-sm overflow-hidden animate-fade-in">
+        <div className="flex flex-col h-full bg-brand-card rounded-xl shadow-sm overflow-hidden animate-fade-in">
             {/* Header */}
             <div className="bg-gradient-to-r from-cyan-500 to-teal-600 p-6 text-white text-right">
                 <button
@@ -80,7 +80,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                     </div>
                 )}
 
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-brand-text mb-4 flex items-center gap-2">
                     <Activity className="text-teal-500" />
                     היסטוריית פעילות
                 </h3>
@@ -88,7 +88,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                 {loading ? (
                     <div className="text-center py-12 text-gray-400">טוען היסטוריה...</div>
                 ) : history.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-100">
+                    <div className="text-center py-12 text-gray-400 bg-brand-card rounded-xl border border-gray-100">
                         אין פעילות מתועדת למתאמן זה.
                     </div>
                 ) : (
@@ -104,7 +104,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                                     onClick={() => toggleSession(item.id)}
                                     className={`relative p-4 rounded-xl border transition-all cursor-pointer ${isAssignment
                                         ? 'bg-amber-50 border-amber-200 hover:border-amber-300'
-                                        : 'bg-white border-gray-200 hover:border-teal-200'
+                                        : 'bg-brand-card border-gray-200 hover:border-teal-200'
                                         }`}
                                 >
                                     {/* Status Badge */}
@@ -134,7 +134,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                                         </div>
 
                                         <div className="flex-1">
-                                            <div className="font-bold text-lg text-gray-800">
+                                            <div className="font-bold text-lg text-brand-text">
                                                 {item.name || item.workoutName || 'אימון ללא שם'}
                                             </div>
                                             <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
@@ -146,7 +146,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                                             {expandedSessionId !== item.id && item.exercises && item.exercises.length > 0 && (
                                                 <div className="mt-3 flex flex-wrap gap-2">
                                                     {item.exercises.slice(0, 5).map((ex, i) => (
-                                                        <span key={i} className={`text-xs px-2 py-1 rounded-md border ${isAssignment ? 'bg-white border-amber-100 text-amber-900' : 'bg-gray-50 border-gray-100 text-gray-600'
+                                                        <span key={i} className={`text-xs px-2 py-1 rounded-md border ${isAssignment ? 'bg-brand-card border-amber-100 text-amber-900' : 'bg-gray-50 border-gray-100 text-gray-600'
                                                             }`}>
                                                             {ex.name}
                                                         </span>
@@ -175,11 +175,11 @@ export default function TraineeDetails({ trainee, onBack }) {
                                                                 )}
 
                                                                 <div className="flex-1">
-                                                                    <div className="font-bold text-gray-800 mb-2">{ex.name}</div>
+                                                                    <div className="font-bold text-brand-text mb-2">{ex.name}</div>
 
                                                                     {/* Sets Table */}
                                                                     <div className="w-full overflow-hidden text-sm border rounded-lg border-gray-100">
-                                                                        <table className="w-full text-center bg-white">
+                                                                        <table className="w-full text-center bg-brand-card">
                                                                             <thead className="bg-gray-50 text-gray-500 font-medium">
                                                                                 <tr>
                                                                                     <th className="py-1 px-2 border-l border-gray-100">סט</th>

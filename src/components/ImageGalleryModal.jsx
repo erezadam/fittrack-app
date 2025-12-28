@@ -15,11 +15,11 @@ export default function ImageGalleryModal({ isOpen, onClose, images = [], title 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden relative flex flex-col max-h-[90vh]">
+            <div className="bg-brand-card rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden relative flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10">
-                    <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-brand-card z-10">
+                    <h3 className="font-bold text-brand-text text-lg">{title}</h3>
                     <button
                         onClick={onClose}
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"

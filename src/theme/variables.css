@@ -1,0 +1,9 @@
+:root {
+    --bg-main: #f1f5f9;       /* slate-100 */
+    --bg-card: #ffffff;       /* white */
+    --text-primary: #1f2937;  /* gray-800 */
+    --text-secondary: #4b5563;/* gray-600 */
+    --primary-accent: #06b6d4; /* cyan-500 */
+    --primary-gradient-start: #06b6d4; /* cyan-500 */
+    --primary-gradient-end: #14b8a6;   /* teal-500 */
+}

@@ -57,8 +57,8 @@ export default function LoginScreen({ onLogin }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+        <div className="min-h-screen bg-brand-bg flex items-center justify-center p-4">
+            <div className="bg-brand-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-teal-500 to-cyan-600 p-8 text-white text-center relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-sm"></div>
@@ -71,12 +71,12 @@ export default function LoginScreen({ onLogin }) {
 
                 {/* Form */}
                 <div className="p-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">ברוכים הבאים ל-RepUp</h2>
+                    <h2 className="text-xl font-bold text-brand-text mb-6 text-center">ברוכים הבאים ל-RepUp</h2>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">שם פרטי</label>
+                                <label className="block text-sm font-bold text-brand-text mb-1">שם פרטי</label>
                                 <input
                                     type="text"
                                     value={firstName}
@@ -86,7 +86,7 @@ export default function LoginScreen({ onLogin }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">שם משפחה</label>
+                                <label className="block text-sm font-bold text-brand-text mb-1">שם משפחה</label>
                                 <input
                                     type="text"
                                     value={lastName}
@@ -98,7 +98,7 @@ export default function LoginScreen({ onLogin }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">טלפון נייד</label>
+                            <label className="block text-sm font-bold text-brand-text mb-1">טלפון נייד</label>
                             <input
                                 type="tel"
                                 value={phone}
@@ -110,7 +110,7 @@ export default function LoginScreen({ onLogin }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">
+                            <label className="block text-sm font-bold text-brand-text mb-1">
                                 אימייל <span className="text-teal-500 text-xs font-normal">(מומלץ לסנכרון אימונים)</span>
                             </label>
                             <input

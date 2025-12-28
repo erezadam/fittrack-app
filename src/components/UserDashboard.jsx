@@ -92,7 +92,7 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
             {/* Header */}
             <div className="mb-1 md:mb-8 flex justify-between items-start">
                 <div>
-                    <h1 className="text-xl md:text-3xl font-bold text-gray-800 leading-tight">
+                    <h1 className="text-xl md:text-3xl font-bold text-brand-text leading-tight">
                         ברוך הבא, <span className="text-teal-600">{user.firstName}</span>
                     </h1>
                     <p className="text-gray-400 mt-0.5 text-[10px] md:text-base hidden md:block">הנה סיכום הפעילות שלך</p>
@@ -108,16 +108,16 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
             {/* Stats Grid - Aggressive Mobile Optimization */}
             <div className="grid grid-cols-3 gap-1 md:gap-4 mb-3 md:mb-12 items-stretch">
                 <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
-                    <div className="text-gray-500 text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים החודש</div>
+                    <div className="text-brand-muted text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים החודש</div>
                     <div className="text-lg md:text-4xl font-extrabold text-teal-600 leading-none">{stats.monthCount}</div>
                 </div>
                 <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
-                    <div className="text-gray-500 text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים השבוע</div>
+                    <div className="text-brand-muted text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים השבוע</div>
                     <div className="text-lg md:text-4xl font-extrabold text-cyan-600 leading-none">{stats.weekCount}</div>
                 </div>
                 <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
-                    <div className="text-gray-500 text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימון אחרון</div>
-                    <div className="text-sm md:text-xl font-bold text-gray-800 leading-none">{stats.lastWorkoutDate}</div>
+                    <div className="text-brand-muted text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימון אחרון</div>
+                    <div className="text-sm md:text-xl font-bold text-brand-text leading-none">{stats.lastWorkoutDate}</div>
                     {stats.lastWorkoutName && (
                         <div className="hidden md:block text-xs md:text-sm text-teal-600 mt-0.5 md:mt-1 font-medium truncate w-full px-2 max-w-[200px] md:max-w-none">
                             {stats.lastWorkoutName}
