@@ -72,23 +72,23 @@ export default function TraineeDetails({ trainee, onBack }) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-6 bg-brand-bg">
                 {trainee.notes && (
-                    <div className="mb-8 bg-yellow-50 border border-yellow-100 p-4 rounded-lg text-sm text-gray-700">
-                        <strong className="block text-yellow-800 mb-1">הערות:</strong>
+                    <div className="mb-8 bg-brand-card border border-brand-accent/20 p-4 rounded-lg text-sm text-brand-muted">
+                        <strong className="block text-brand-accent mb-1">הערות:</strong>
                         {trainee.notes}
                     </div>
                 )}
 
                 <h3 className="text-xl font-bold text-brand-text mb-4 flex items-center gap-2">
-                    <Activity className="text-teal-500" />
+                    <Activity className="text-brand-accent" />
                     היסטוריית פעילות
                 </h3>
 
                 {loading ? (
-                    <div className="text-center py-12 text-gray-400">טוען היסטוריה...</div>
+                    <div className="text-center py-12 text-brand-muted">טוען היסטוריה...</div>
                 ) : history.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 bg-brand-card rounded-xl border border-gray-100">
+                    <div className="text-center py-12 text-brand-muted bg-brand-card rounded-xl border border-brand-accent/10">
                         אין פעילות מתועדת למתאמן זה.
                     </div>
                 ) : (
@@ -103,33 +103,33 @@ export default function TraineeDetails({ trainee, onBack }) {
                                     key={`${item.source}-${item.id}`}
                                     onClick={() => toggleSession(item.id)}
                                     className={`relative p-4 rounded-xl border transition-all cursor-pointer ${isAssignment
-                                        ? 'bg-amber-50 border-amber-200 hover:border-amber-300'
-                                        : 'bg-brand-card border-gray-200 hover:border-teal-200'
+                                        ? 'bg-brand-card border-brand-accent/30 hover:border-brand-accent/50'
+                                        : 'bg-brand-card border-brand-accent/10 hover:border-brand-accent/30'
                                         }`}
                                 >
                                     {/* Status Badge */}
                                     <div className="absolute top-4 left-4 flex gap-2">
                                         {expandedSessionId === item.id && (
-                                            <span className="text-xs text-gray-400 self-center">
+                                            <span className="text-xs text-brand-muted self-center">
                                                 {item.exercises?.length || 0} תרגילים
                                             </span>
                                         )}
                                         {isAssignment ? (
-                                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${isFuture ? 'bg-amber-100 text-amber-700 opacity-70' :
-                                                item.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                    'bg-gray-100 text-gray-600'
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${isFuture ? 'bg-brand-card text-brand-muted border border-brand-muted/30' :
+                                                item.status === 'completed' ? 'bg-brand-accent/20 text-brand-accent' :
+                                                    'bg-brand-card text-brand-muted border border-brand-accent/20'
                                                 }`}>
                                                 {isFuture ? 'מתוכנן' : item.status === 'completed' ? 'הושלם' : 'ממתין לביצוע'}
                                             </span>
                                         ) : (
-                                            <span className="px-2 py-1 rounded-md text-xs font-bold bg-teal-50 text-teal-700">
+                                            <span className="px-2 py-1 rounded-md text-xs font-bold bg-brand-accent/10 text-brand-accent">
                                                 בוצע עצמאית
                                             </span>
                                         )}
                                     </div>
 
                                     <div className="flex items-start gap-4">
-                                        <div className={`p-3 rounded-full ${isAssignment ? 'bg-amber-100 text-amber-600' : 'bg-teal-50 text-teal-600'}`}>
+                                        <div className={`p-3 rounded-full ${isAssignment ? 'bg-brand-accent/10 text-brand-accent' : 'bg-brand-card border border-brand-accent/20 text-brand-muted'}`}>
                                             {isAssignment ? <Calendar size={24} /> : <Dumbbell size={24} />}
                                         </div>
 
@@ -137,7 +137,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                                             <div className="font-bold text-lg text-brand-text">
                                                 {item.name || item.workoutName || 'אימון ללא שם'}
                                             </div>
-                                            <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                                            <div className="text-sm text-brand-muted flex items-center gap-2 mt-1">
                                                 <Clock size={14} />
                                                 {formatDate(item.date)}
                                             </div>
@@ -146,13 +146,13 @@ export default function TraineeDetails({ trainee, onBack }) {
                                             {expandedSessionId !== item.id && item.exercises && item.exercises.length > 0 && (
                                                 <div className="mt-3 flex flex-wrap gap-2">
                                                     {item.exercises.slice(0, 5).map((ex, i) => (
-                                                        <span key={i} className={`text-xs px-2 py-1 rounded-md border ${isAssignment ? 'bg-brand-card border-amber-100 text-amber-900' : 'bg-gray-50 border-gray-100 text-gray-600'
+                                                        <span key={i} className={`text-xs px-2 py-1 rounded-md border ${isAssignment ? 'bg-brand-card border-brand-accent/20 text-brand-muted' : 'bg-brand-card border-brand-accent/10 text-brand-muted'
                                                             }`}>
                                                             {ex.name}
                                                         </span>
                                                     ))}
                                                     {item.exercises.length > 5 && (
-                                                        <span className="text-xs text-gray-400 self-center">
+                                                        <span className="text-xs text-brand-muted self-center">
                                                             +{item.exercises.length - 5} נוספים
                                                         </span>
                                                     )}
@@ -161,7 +161,7 @@ export default function TraineeDetails({ trainee, onBack }) {
 
                                             {/* Expanded Details */}
                                             {expandedSessionId === item.id && (
-                                                <div className="mt-6 pt-4 border-t border-gray-200/50 animate-fade-in cursor-default" onClick={e => e.stopPropagation()}>
+                                                <div className="mt-6 pt-4 border-t border-brand-accent/10 animate-fade-in cursor-default" onClick={e => e.stopPropagation()}>
                                                     <div className="space-y-6">
                                                         {item.exercises && item.exercises.map((ex, i) => (
                                                             <div key={i} className="flex flex-col md:flex-row gap-4 bg-white/50 p-3 rounded-lg">
@@ -170,7 +170,7 @@ export default function TraineeDetails({ trainee, onBack }) {
                                                                     <img
                                                                         src={ex.imageUrls[0]}
                                                                         alt={ex.name}
-                                                                        className="w-16 h-16 rounded-lg object-cover bg-gray-100"
+                                                                        className="w-16 h-16 rounded-lg object-cover bg-brand-bg"
                                                                     />
                                                                 )}
 
@@ -178,28 +178,28 @@ export default function TraineeDetails({ trainee, onBack }) {
                                                                     <div className="font-bold text-brand-text mb-2">{ex.name}</div>
 
                                                                     {/* Sets Table */}
-                                                                    <div className="w-full overflow-hidden text-sm border rounded-lg border-gray-100">
+                                                                    <div className="w-full overflow-hidden text-sm border rounded-lg border-brand-accent/10">
                                                                         <table className="w-full text-center bg-brand-card">
-                                                                            <thead className="bg-gray-50 text-gray-500 font-medium">
+                                                                            <thead className="bg-brand-card/50 text-brand-muted font-medium">
                                                                                 <tr>
-                                                                                    <th className="py-1 px-2 border-l border-gray-100">סט</th>
-                                                                                    <th className="py-1 px-2 border-l border-gray-100">משקל (ק״ג)</th>
-                                                                                    <th className="py-1 px-2 border-l border-gray-100">חזרות</th>
+                                                                                    <th className="py-1 px-2 border-l border-brand-accent/10">סט</th>
+                                                                                    <th className="py-1 px-2 border-l border-brand-accent/10">משקל (ק״ג)</th>
+                                                                                    <th className="py-1 px-2 border-l border-brand-accent/10">חזרות</th>
                                                                                     <th className="py-1 px-2">זמן (שנ׳)</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody className="divide-y divide-gray-100">
                                                                                 {ex.sets && ex.sets.map((set, setIdx) => (
-                                                                                    <tr key={setIdx} className="hover:bg-gray-50/50">
-                                                                                        <td className="py-1 px-2 border-l border-gray-100 font-bold text-teal-600">{setIdx + 1}</td>
-                                                                                        <td className="py-1 px-2 border-l border-gray-100">{set.weight || '-'}</td>
-                                                                                        <td className="py-1 px-2 border-l border-gray-100">{set.reps || '-'}</td>
-                                                                                        <td className="py-1 px-2 text-gray-400">{set.time || '-'}</td>
+                                                                                    <tr key={setIdx} className="hover:bg-brand-accent/5">
+                                                                                        <td className="py-1 px-2 border-l border-brand-accent/10 font-bold text-brand-accent">{setIdx + 1}</td>
+                                                                                        <td className="py-1 px-2 border-l border-brand-accent/10">{set.weight || '-'}</td>
+                                                                                        <td className="py-1 px-2 border-l border-brand-accent/10">{set.reps || '-'}</td>
+                                                                                        <td className="py-1 px-2 text-brand-muted">{set.time || '-'}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 {(!ex.sets || ex.sets.length === 0) && (
                                                                                     <tr>
-                                                                                        <td colSpan="4" className="py-2 text-gray-400 italic text-xs">לא הוזנו נתונים</td>
+                                                                                        <td colSpan="4" className="py-2 text-brand-muted italic text-xs">לא הוזנו נתונים</td>
                                                                                     </tr>
                                                                                 )}
                                                                             </tbody>

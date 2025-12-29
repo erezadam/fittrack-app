@@ -80,23 +80,23 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen bg-gray-900">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+            <div className="flex justify-center items-center min-h-screen bg-brand-bg">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-4 pb-20">
+        <div className="min-h-screen bg-brand-bg text-white p-4 pb-20">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <button
                     onClick={onBack}
-                    className="p-2 rounded-full bg-gray-800/50 backdrop-blur-md border border-white/10 text-white hover:bg-gray-700/50 transition-all"
+                    className="p-2 rounded-full bg-brand-card/50 backdrop-blur-md border border-white/10 text-white hover:bg-brand-card transition-all"
                 >
                     ←
                 </button>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold text-brand-accent">
                     אימונים מתוכננים
                 </h1>
                 <div className="w-10"></div>
@@ -107,32 +107,32 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                 {/* UPCOMING WORKOUTS SECTION */}
                 {assignments.length > 0 && (
                     <div className="animate-fade-in">
-                        <h3 className="text-lg font-bold text-teal-400 mb-3 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-brand-accent mb-3 flex items-center gap-2">
                             <span>📅</span> אימונים מתוכננים
                         </h3>
                         <div className="space-y-3">
                             {assignments.map(assignment => (
-                                <div key={assignment.id} className="bg-gradient-to-br from-gray-800 to-gray-900 border border-teal-500/30 rounded-xl p-4 shadow-lg relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 w-1 h-full bg-teal-500"></div>
+                                <div key={assignment.id} className="bg-brand-card border border-brand-accent/30 rounded-xl p-4 shadow-lg relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-1 h-full bg-brand-accent"></div>
                                     <div className="flex justify-between items-center mb-2">
                                         <div>
                                             <div className="text-brand-text font-bold text-lg text-center leading-none">{assignment.name}</div>
-                                            <div className="text-xs text-teal-300">
+                                            <div className="text-xs text-brand-accent">
                                                 {formatDate(assignment.date || assignment.startDate)}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="bg-teal-500/20 px-2 py-0.5 rounded text-[10px] text-teal-200 border border-teal-500/30">
+                                            <span className="bg-brand-accent/20 px-2 py-0.5 rounded text-[10px] text-brand-accent border border-brand-accent/30">
                                                 מתוכנן
                                             </span>
-                                            <div className="bg-teal-500/10 px-2 py-1 rounded text-xs text-teal-300 border border-teal-500/20">
+                                            <div className="bg-brand-accent/10 px-2 py-1 rounded text-xs text-brand-accent border border-brand-accent/20">
                                                 {assignment.exercises?.length || 0} תרגילים
                                             </div>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleStartAssignment(assignment)}
-                                        className="w-full mt-2 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-teal-500/20"
+                                        className="w-full mt-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
                                     >
                                         <span>▶</span> התחל אימון זה
                                     </button>
@@ -144,12 +144,12 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
 
                 {/* PAST LOGS SECTION */}
                 <div>
-                    <h3 className="text-lg font-bold text-gray-400 mb-3 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-brand-muted mb-3 flex items-center gap-2">
                         <span>📜</span> היסטוריית ביצועים
                     </h3>
 
                     {logs.length === 0 ? (
-                        <div className="text-center py-12 bg-gray-800/20 rounded-xl border border-dashed border-gray-700">
+                        <div className="text-center py-12 bg-brand-card/20 rounded-xl border border-dashed border-gray-700">
                             <div className="text-4xl mb-4 opacity-30">🏋️‍♂️</div>
                             <h1 className="text-2xl font-bold text-brand-text">היסטוריית אימונים</h1>
                         </div>
@@ -164,10 +164,10 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                         className={`
                                             relative overflow-hidden rounded-2xl border 
                                             ${isInProgress
-                                                ? 'border-orange-500/50 bg-orange-900/20'
-                                                : 'border-white/10 bg-gray-800/40'}
+                                                ? 'border-brand-accent/50 bg-brand-accent/5'
+                                                : 'border-white/10 bg-brand-card'}
                                             backdrop-blur-xl shadow-lg transition-all duration-300
-                                            ${expandedLogId === log.id ? 'ring-1 ring-teal-500/50 bg-gray-800/60' : 'hover:bg-gray-800/60'}
+                                            ${expandedLogId === log.id ? 'ring-1 ring-brand-accent/50 bg-brand-card' : 'hover:bg-brand-card/80'}
                                         `}
                                     >
                                         {/* Card Header (Always Visible) */}
@@ -178,20 +178,20 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                         {log.workoutName || 'אימון'}
                                                     </div>
                                                     {isInProgress && (
-                                                        <span className="text-[10px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                                                        <span className="text-[10px] font-bold bg-brand-accent/20 text-brand-accent px-2 py-0.5 rounded-full animate-pulse">
                                                             בתהליך
                                                         </span>
                                                     )}
                                                     {log.status === 'partial' && (
-                                                        <span className="text-[10px] font-bold bg-yellow-500 text-white px-2 py-0.5 rounded-full">
+                                                        <span className="text-[10px] font-bold bg-brand-card text-brand-muted px-2 py-0.5 rounded-full border border-brand-accent/20">
                                                             חלקי
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-gray-300 mb-1">
+                                                <div className="text-sm text-brand-muted mb-1">
                                                     {formatDate(log.timestamp || log.date)}
                                                 </div>
-                                                <div className="text-xs text-gray-400">
+                                                <div className="text-xs text-brand-muted">
                                                     {getMainMuscles(log.exercises)}
                                                 </div>
                                             </div>
@@ -208,16 +208,16 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                             }
                                                         }
                                                     }}
-                                                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-full transition-colors"
+                                                    className="p-2 text-brand-muted hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
                                                     title="מחק אימון"
                                                 >
                                                     🗑️
                                                 </button>
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${isInProgress ? 'bg-orange-500/20 text-orange-300' : 'bg-teal-500/20 text-teal-300'}`}>
+                                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${isInProgress ? 'bg-brand-accent/20 text-brand-accent' : 'bg-brand-accent/20 text-brand-accent'}`}>
                                                         {log.exercises?.length || 0} תרגילים
                                                     </span>
-                                                    <span className={`text-gray-500 transform transition-transform ${expandedLogId === log.id ? 'rotate-180' : ''}`}>
+                                                    <span className={`text-brand-muted transform transition-transform ${expandedLogId === log.id ? 'rotate-180' : ''}`}>
                                                         ▼
                                                     </span>
                                                 </div>
@@ -230,11 +230,11 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                 {/* Stats Row */}
                                                 <div className="flex justify-around items-center py-3 border-b border-white/5 mb-2">
                                                     <div className="text-center">
-                                                        <span className="text-xs text-gray-500 block">זמן</span>
+                                                        <span className="text-xs text-brand-muted block">זמן</span>
                                                         <span className="font-bold text-white">{log.durationMinutes || 0} דק'</span>
                                                     </div>
                                                     <div className="text-center">
-                                                        <span className="text-xs text-gray-500 block">קלוריות</span>
+                                                        <span className="text-xs text-brand-muted block">קלוריות</span>
                                                         <span className="font-bold text-white">{log.calories || 0}</span>
                                                     </div>
                                                 </div>
@@ -250,7 +250,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                                     onResume({ ...log, exercises: exercisesToLoad });
                                                                 }
                                                             }}
-                                                            className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
+                                                            className="w-full py-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
                                                         >
                                                             <span>▶</span> המשך אימון
                                                         </button>
@@ -267,7 +267,7 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                                     }
                                                                 }
                                                             }}
-                                                            className="w-full py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
+                                                            className="w-full py-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-bold rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
                                                         >
                                                             <span>↺</span> חזור על אימון זה
                                                         </button>
@@ -275,19 +275,19 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                 )}
                                                 <div className="mt-3 space-y-3">
                                                     {log.exercises?.map((ex, idx) => (
-                                                        <div key={idx} className="bg-black/20 rounded-lg p-3">
+                                                        <div key={idx} className="bg-brand-bg rounded-lg p-3">
                                                             <div className="flex justify-between items-start mb-2">
-                                                                <span className="font-medium text-teal-100">{ex.name}</span>
-                                                                <span className="text-xs text-gray-500">{ex.muscle || ex.mainMuscle}</span>
+                                                                <span className="font-medium text-brand-accent">{ex.name}</span>
+                                                                <span className="text-xs text-brand-muted">{ex.muscle || ex.mainMuscle}</span>
                                                             </div>
-                                                            <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-400">
+                                                            <div className="grid grid-cols-3 gap-2 text-center text-xs text-brand-muted">
                                                                 <div>סטים</div>
                                                                 <div>חזרות</div>
                                                                 <div>משקל (ק"ג)</div>
                                                             </div>
                                                             <div className="space-y-1 mt-1">
                                                                 {ex.sets?.map((set, sIdx) => (
-                                                                    <div key={sIdx} className="grid grid-cols-3 gap-2 text-center text-sm text-gray-300">
+                                                                    <div key={sIdx} className="grid grid-cols-3 gap-2 text-center text-sm text-brand-muted">
                                                                         <div>{sIdx + 1}</div>
                                                                         <div>{set.reps}</div>
                                                                         <div>{set.weight}</div>
@@ -298,8 +298,8 @@ export default function WorkoutHistory({ user, onBack, onResume, onRepeat, onSta
                                                     ))}
                                                 </div>
                                                 {log.notes && (
-                                                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                                                        <span className="text-xs font-bold text-yellow-500 block mb-1">הערות:</span>
+                                                    <div className="mt-4 p-3 bg-brand-card border border-brand-accent/10 rounded-lg">
+                                                        <span className="text-xs font-bold text-brand-accent block mb-1">הערות:</span>
                                                         <h3 className="font-bold text-lg text-brand-text">{log.workoutName || 'אימון ללא שם'}</h3>
                                                     </div>
                                                 )}

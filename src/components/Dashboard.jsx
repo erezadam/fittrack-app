@@ -111,14 +111,14 @@ const Dashboard = ({ onCreateWorkout }) => {
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-teal-400 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-brand-accent flex items-center gap-2">
                         שלום, ארז! 👋
                     </h1>
-                    <p className="text-gray-400 text-sm">הנה הסטטיסטיקות שלך</p>
+                    <p className="text-brand-muted text-sm">הנה הסטטיסטיקות שלך</p>
                 </div>
                 <button
                     onClick={onCreateWorkout}
-                    className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+                    className="bg-brand-accent hover:bg-brand-accent/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
                 >
                     <Plus size={20} />
                     צור אימון
@@ -128,64 +128,64 @@ const Dashboard = ({ onCreateWorkout }) => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {/* Month Workouts */}
-                <div className="bg-slate-800/50 p-6 rounded-2xl shadow-sm border border-slate-700 flex flex-col items-center justify-center gap-2">
-                    <div className="bg-purple-500/20 p-3 rounded-xl text-purple-400">
+                <div className="bg-brand-card/50 p-6 rounded-2xl shadow-sm border border-brand-accent/10 flex flex-col items-center justify-center gap-2">
+                    <div className="bg-brand-accent/10 p-3 rounded-xl text-brand-accent">
                         <TrendingUp size={24} />
                     </div>
-                    <span className="text-3xl font-bold text-slate-100">{stats.monthWorkouts}</span>
-                    <span className="text-sm text-gray-400">אימונים החודש</span>
+                    <span className="text-3xl font-bold text-brand-text">{stats.monthWorkouts}</span>
+                    <span className="text-sm text-brand-muted">אימונים החודש</span>
                 </div>
 
                 {/* Week Workouts */}
-                <div className="bg-slate-800/50 p-6 rounded-2xl shadow-sm border border-slate-700 flex flex-col items-center justify-center gap-2">
-                    <div className="bg-teal-400/20 p-3 rounded-xl text-teal-400">
+                <div className="bg-brand-card/50 p-6 rounded-2xl shadow-sm border border-brand-accent/10 flex flex-col items-center justify-center gap-2">
+                    <div className="bg-brand-accent/10 p-3 rounded-xl text-brand-accent">
                         <Calendar size={24} />
                     </div>
-                    <span className="text-3xl font-bold text-slate-100">{stats.weekWorkouts}</span>
-                    <span className="text-sm text-gray-400">אימונים השבוע</span>
+                    <span className="text-3xl font-bold text-brand-text">{stats.weekWorkouts}</span>
+                    <span className="text-sm text-brand-muted">אימונים השבוע</span>
                 </div>
 
                 {/* Last Workout */}
-                <div className="bg-slate-800/50 p-6 rounded-2xl shadow-sm border border-slate-700 flex flex-col items-center justify-center gap-2">
-                    <div className="bg-green-500/20 p-3 rounded-xl text-green-400">
+                <div className="bg-brand-card/50 p-6 rounded-2xl shadow-sm border border-brand-accent/10 flex flex-col items-center justify-center gap-2">
+                    <div className="bg-brand-accent/10 p-3 rounded-xl text-brand-accent">
                         <Clock size={24} />
                     </div>
-                    <span className="text-xl font-bold text-slate-100 text-center">{stats.lastWorkout}</span>
-                    <span className="text-sm text-gray-400">אימון אחרון</span>
+                    <span className="text-xl font-bold text-brand-text text-center">{stats.lastWorkout}</span>
+                    <span className="text-sm text-brand-muted">אימון אחרון</span>
                 </div>
 
                 {/* Streak */}
-                <div className="bg-slate-800/50 p-6 rounded-2xl shadow-sm border border-slate-700 flex flex-col items-center justify-center gap-2">
-                    <div className="bg-orange-500/20 p-3 rounded-xl text-orange-400">
+                <div className="bg-brand-card/50 p-6 rounded-2xl shadow-sm border border-brand-accent/10 flex flex-col items-center justify-center gap-2">
+                    <div className="bg-brand-accent/10 p-3 rounded-xl text-brand-accent">
                         <Flame size={24} />
                     </div>
-                    <span className="text-3xl font-bold text-slate-100">{stats.streak}</span>
-                    <span className="text-sm text-gray-400">ימים ברצף</span>
+                    <span className="text-3xl font-bold text-brand-text">{stats.streak}</span>
+                    <span className="text-sm text-brand-muted">ימים ברצף</span>
                 </div>
             </div>
 
             {/* Top Exercises */}
-            <div className="bg-slate-800/50 rounded-2xl shadow-sm border border-slate-700 overflow-hidden">
-                <div className="p-4 border-b border-slate-700 flex items-center gap-2">
-                    <div className="bg-teal-400/20 p-2 rounded-lg text-teal-400">
+            <div className="bg-brand-card/50 rounded-2xl shadow-sm border border-brand-accent/10 overflow-hidden">
+                <div className="p-4 border-b border-brand-accent/10 flex items-center gap-2">
+                    <div className="bg-brand-accent/10 p-2 rounded-lg text-brand-accent">
                         <Trophy size={20} />
                     </div>
-                    <h2 className="font-bold text-slate-200">10 התרגילים המובילים שלך</h2>
+                    <h2 className="font-bold text-brand-text">10 התרגילים המובילים שלך</h2>
                 </div>
 
                 <div className="divide-y divide-slate-700">
                     {topExercises.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">עדיין אין נתונים. התחל להתאמן!</div>
+                        <div className="p-8 text-center text-brand-muted">עדיין אין נתונים. התחל להתאמן!</div>
                     ) : (
                         topExercises.map((ex, index) => (
-                            <div key={index} className="p-4 flex items-center justify-between hover:bg-slate-700/30 transition-colors">
+                            <div key={index} className="p-4 flex items-center justify-between hover:bg-brand-accent/5 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <span className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded-full text-sm font-bold text-gray-300">
+                                    <span className="w-8 h-8 flex items-center justify-center bg-brand-bg rounded-full text-sm font-bold text-brand-muted">
                                         {index + 1}
                                     </span>
-                                    <span className="font-medium text-slate-200">{ex.name}</span>
+                                    <span className="font-medium text-brand-text">{ex.name}</span>
                                 </div>
-                                <span className="text-sm text-gray-400">{ex.count} פעמים</span>
+                                <span className="text-sm text-brand-muted">{ex.count} פעמים</span>
                             </div>
                         ))
                     )}

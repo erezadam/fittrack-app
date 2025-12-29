@@ -190,14 +190,14 @@ export default function WorkoutBuilderCore({
                 {showAICoach && <AIWorkoutModal onClose={() => setShowAICoach(false)} onStartWorkout={onStartWorkout} />}
 
                 <div className='space-y-6'>
-                    <div className="bg-brand-card p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                    <div className="bg-brand-card p-6 rounded-2xl shadow-sm border border-brand-accent/10 mb-6">
                         <label className="block text-sm font-bold text-brand-text mb-2">כינוי לאימון</label>
                         <input
                             type="text"
                             value={workoutName}
                             onChange={(e) => handleNameChange(e.target.value)}
                             placeholder="לדוגמה: אימון חזה ויד אחורית"
-                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
+                            className="w-full p-3 !bg-[var(--bg-card)] border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none transition-all font-bold text-lg !text-[var(--text-primary)] !placeholder-brand-muted"
                         />
 
                         <label className="block text-sm font-bold text-brand-text mt-4 mb-2">תאריך אימון (אופציונלי)</label>
@@ -205,7 +205,7 @@ export default function WorkoutBuilderCore({
                             type="date"
                             value={workoutDate}
                             onChange={(e) => handleDateChange(e.target.value)}
-                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-bold text-lg"
+                            className="w-full p-3 !bg-[var(--bg-card)] border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-accent outline-none transition-all font-bold text-lg !text-[var(--text-primary)]"
                         />
                     </div>
                     <h3 className="text-xl font-bold mt-8">בחר שרירים</h3>
@@ -216,16 +216,16 @@ export default function WorkoutBuilderCore({
 
                             return (
                                 <div key={m} onClick={() => toggleMuscle(m)}
-                                    className={`neu-card p-6 cursor-pointer transition-all text-center flex flex-col items-center gap-2 ${selectedMuscles.includes(m) ? 'ring-2 ring-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}>
+                                    className={`neu-card p-6 cursor-pointer transition-all text-center flex flex-col items-center gap-2 ${selectedMuscles.includes(m) ? 'ring-2 ring-brand-accent bg-brand-accent/10' : 'hover:bg-brand-accent/5'}`}>
 
                                     {mapping.icon && ((typeof mapping.icon === 'string' && mapping.icon.startsWith('http')) || (typeof mapping.icon === 'string' && mapping.icon.startsWith('data:'))) ? (
                                         <img src={mapping.icon} alt={m} className="w-16 h-16 object-contain mb-2" />
                                     ) : (
-                                        <IconComp size={48} className="text-teal-600 mb-2" strokeWidth={1} />
+                                        <IconComp size={48} className="text-brand-accent mb-2" strokeWidth={1} />
                                     )}
 
                                     <span className='font-bold text-lg text-brand-text'>{HEBREW_MUSCLE_NAMES[m] || m}</span>
-                                    {selectedMuscles.includes(m) && <span className="text-teal-600 text-sm">✓ נבחר</span>}
+                                    {selectedMuscles.includes(m) && <span className="text-brand-accent text-sm">✓ נבחר</span>}
                                 </div>
                             );
                         })}
@@ -264,9 +264,9 @@ export default function WorkoutBuilderCore({
 
                     return (
                         <div key={m} className="animate-fade-in">
-                            <div className="flex items-center gap-4 mb-4 border-b pb-2 border-gray-100">
-                                <h2 className="text-2xl font-bold text-teal-600">{muscleLabel}</h2>
-                                <span className="text-sm text-gray-400">({displayedEx.length} תרגילים)</span>
+                            <div className="flex items-center gap-4 mb-4 border-b pb-2 border-brand-accent/10">
+                                <h2 className="text-2xl font-bold text-brand-accent">{muscleLabel}</h2>
+                                <span className="text-sm text-brand-muted">({displayedEx.length} תרגילים)</span>
                             </div>
 
                             <div className="mb-6 space-y-3">
@@ -274,7 +274,7 @@ export default function WorkoutBuilderCore({
                                     <div className="flex flex-wrap gap-2">
                                         {availableSubs.map(sm => (
                                             <button key={sm} onClick={() => toggleSubMuscle(sm)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedSubMuscles.includes(sm) ? 'bg-teal-500 text-white border-teal-500' : 'bg-brand-card text-brand-muted border-gray-200 hover:border-gray-300'}`}>
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedSubMuscles.includes(sm) ? 'bg-brand-accent text-white border-brand-accent' : 'bg-brand-card text-brand-muted border-brand-accent/20 hover:border-brand-accent/40'}`}>
                                                 {sm}
                                             </button>
                                         ))}
@@ -283,7 +283,7 @@ export default function WorkoutBuilderCore({
                                 <div className="flex flex-wrap gap-2">
                                     {WORKOUT_TYPES.map(eq => (
                                         <button key={eq} onClick={() => toggleEquipment(eq)}
-                                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedEquipment.includes(eq) ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-brand-card text-brand-muted border-gray-200 hover:border-gray-300'}`}>
+                                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedEquipment.includes(eq) ? 'bg-brand-card text-brand-accent border-brand-accent' : 'bg-brand-card text-brand-muted border-brand-accent/20 hover:border-brand-accent/40'}`}>
                                             {eq}
                                         </button>
                                     ))}
@@ -295,28 +295,28 @@ export default function WorkoutBuilderCore({
                                     const isSelected = !!selectedExercises.find(e => e.id === ex.id);
                                     return (
                                         <div key={ex.id} onClick={() => toggleExercise(ex)}
-                                            className={`neu-card p-3 cursor-pointer flex justify-between items-center transition-all ${isSelected ? 'ring-2 ring-cyan-400 bg-cyan-50' : 'hover:bg-brand-card shadow-sm'}`}>
+                                            className={`neu-card p-3 cursor-pointer flex justify-between items-center transition-all ${isSelected ? 'ring-2 ring-brand-accent bg-brand-accent/10' : 'hover:bg-brand-card shadow-sm'}`}>
                                             <div className='flex items-center gap-4'>
                                                 <div onClick={(e) => { e.stopPropagation(); setSelectedImages({ images: ex.imageUrls || [], title: ex.name }); }} className="relative w-16 h-16 flex-shrink-0 group cursor-zoom-in">
                                                     {ex.imageUrls?.[0] ? (
-                                                        <img src={ex.imageUrls[0]} className='w-full h-full rounded-lg object-cover bg-gray-100 border border-gray-200' alt='' />
+                                                        <img src={ex.imageUrls[0]} className='w-full h-full rounded-lg object-cover bg-brand-bg border border-brand-accent/10' alt='' />
                                                     ) : (
-                                                        <div className="w-full h-full rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center text-xl">💪</div>
+                                                        <div className="w-full h-full rounded-lg bg-brand-bg/50 border border-brand-accent/10 flex items-center justify-center text-xl">💪</div>
                                                     )}
                                                     {ex.imageUrls?.length > 0 && <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-white text-xs font-bold">הגדל</span></div>}
                                                 </div>
                                                 <div>
                                                     <div className='font-bold text-brand-text text-base leading-tight'>{ex.name}</div>
-                                                    <div className="text-xs text-gray-500 mt-1">{ex.subMuscle} • {ex.equipment}</div>
+                                                    <div className="text-xs text-brand-muted mt-1">{ex.subMuscle} • {ex.equipment}</div>
                                                 </div>
                                             </div>
-                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-gray-300'}`}>
+                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'bg-brand-accent border-brand-accent text-white' : 'border-brand-muted/30'}`}>
                                                 {isSelected && <Plus size={14} />}
                                             </div>
                                         </div>
                                     );
                                 })}
-                                {displayedEx.length === 0 && <div className="text-gray-400 italic text-sm p-4">לא נמצאו תרגילים בסינון זה</div>}
+                                {displayedEx.length === 0 && <div className="text-brand-muted italic text-sm p-4">לא נמצאו תרגילים בסינון זה</div>}
                             </div>
                         </div>
                     );
@@ -325,17 +325,17 @@ export default function WorkoutBuilderCore({
 
             <div className='fixed bottom-0 left-0 right-0 p-4 bg-brand-card border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50'>
                 <div className='max-w-4xl mx-auto flex gap-3 items-center'>
-                    <div className='text-sm text-gray-500 font-bold whitespace-nowrap hidden md:block'>נבחרו: {selectedExercises.length}</div>
+                    <div className='text-sm text-brand-muted font-bold whitespace-nowrap hidden md:block'>נבחרו: {selectedExercises.length}</div>
 
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="py-4 px-6 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transform active:scale-95 transition-all"
+                        className="py-4 px-6 bg-brand-card text-brand-accent border border-brand-accent hover:bg-brand-accent/10 rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transform active:scale-95 transition-all"
                     >
                         <Save size={20} /> <span className="hidden md:inline">{mode === 'trainer' ? 'סיים ושיבץ' : 'שמור'}</span>
                     </button>
 
-                    <button onClick={handleStart} className='flex-1 p-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-bold text-xl shadow-lg transform active:scale-95 transition-transform'>
+                    <button onClick={handleStart} className='flex-1 p-4 bg-brand-accent text-white rounded-xl font-bold text-xl shadow-lg transform active:scale-95 transition-transform'>
                         {mode === 'add' ? 'הוסף לאימון' : 'התחל אימון'}
                     </button>
                 </div>

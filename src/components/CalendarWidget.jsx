@@ -91,7 +91,7 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
         const totalSlots = [...blanks, ...days];
 
         return totalSlots.map((day, index) => {
-            if (!day) return <div key={`blank-${index}`} className="h-24 bg-gray-50/50 border border-gray-100/50"></div>;
+            if (!day) return <div key={`blank-${index}`} className="h-24 bg-brand-card/50 border border-brand-accent/10"></div>;
 
             const dateKey = formatDateKey(new Date(year, month, day));
             const dayEvents = events[dateKey] || [];
@@ -102,13 +102,13 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
                 <div
                     key={dateKey}
                     onClick={() => handleDateClick(day)}
-                    className={`h-24 border border-gray-100 p-1 relative cursor-pointer transition-all hover:bg-gray-50 flex flex-col justify-between
-                        ${isSelected ? 'bg-teal-50 ring-2 ring-inset ring-teal-400' : 'bg-brand-card'}
+                    className={`h-24 border border-brand-accent/10 p-1 relative cursor-pointer transition-all hover:bg-brand-accent/5 flex flex-col justify-between
+                        ${isSelected ? 'bg-brand-accent/10 ring-2 ring-inset ring-brand-accent' : 'bg-brand-card'}
                     `}
                 >
                     <div className="flex justify-between items-start">
                         <span className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full
-                            ${isToday ? 'bg-teal-600 text-white' : 'text-gray-700'}
+                            ${isToday ? 'bg-brand-accent text-white' : 'text-brand-muted'}
                         `}>
                             {day}
                         </span>
@@ -120,12 +120,13 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
                                 key={idx}
                                 className={`text-[10px] px-1 rounded truncate flex items-center gap-1
                                     ${evt.type === 'assignment'
-                                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                        : 'bg-green-100 text-green-700 border border-green-200'}
+                                        ? 'bg-brand-accent/20 text-brand-accent border border-brand-accent/30'
+                                        : 'bg-brand-accent/10 text-brand-muted border border-brand-accent/10'
+                                    }
                                 `}
                                 title={evt.name || (evt.type === 'assignment' ? 'אימון מתוכנן' : 'אימון בוצע')}
                             >
-                                <span className={`w-1.5 h-1.5 rounded-full ${evt.type === 'assignment' ? 'bg-blue-500' : 'bg-green-500'}`}></span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${evt.type === 'assignment' ? 'bg-brand-accent' : 'bg-brand-muted'}`}></span>
                                 {evt.name || (evt.type === 'assignment' ? 'אימון' : 'בוצע')}
                             </div>
                         ))}
@@ -141,36 +142,36 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
     ];
 
     if (!traineeId) {
-        return <div className="text-center text-gray-400 py-10 bg-gray-50 rounded-lg">נא לבחור מתאמן להצגת לוח שנה</div>;
+        return <div className="text-center text-brand-muted py-10 bg-brand-card rounded-lg">נא לבחור מתאמן להצגת לוח שנה</div>;
     }
 
     return (
         <div className="neu-card overflow-hidden">
             {/* Header */}
-            <div className="p-4 bg-brand-card border-b border-gray-100 flex justify-between items-center">
+            <div className="p-4 bg-brand-card border-b border-brand-accent/10 flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <Calendar className="text-teal-600" size={20} />
+                    <Calendar className="text-brand-accent" size={20} />
                     <h3 className="font-bold text-lg text-brand-text">
                         {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                     </h3>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
+                    <button onClick={handlePrevMonth} className="p-2 hover:bg-brand-accent/10 rounded-full text-brand-muted">
                         <ChevronRight size={20} />
                     </button>
-                    <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
+                    <button onClick={handleNextMonth} className="p-2 hover:bg-brand-accent/10 rounded-full text-brand-muted">
                         <ChevronLeft size={20} />
                     </button>
-                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-bold text-teal-600 hover:text-teal-700 px-3 py-1 bg-teal-50 rounded-full">
+                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-bold text-brand-accent hover:text-white px-3 py-1 bg-brand-accent/10 rounded-full">
                         היום
                     </button>
                 </div>
             </div>
 
             {/* Grid Header */}
-            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-100">
+            <div className="grid grid-cols-7 bg-brand-card border-b border-brand-accent/10">
                 {DAYS_OF_WEEK.map(d => (
-                    <div key={d} className="py-2 text-center text-xs font-bold text-gray-500">{d}</div>
+                    <div key={d} className="py-2 text-center text-xs font-bold text-brand-muted">{d}</div>
                 ))}
             </div>
 
@@ -180,17 +181,17 @@ export default function CalendarWidget({ traineeId, selectedDate, onSelectDate }
             </div>
 
             {/* Legend */}
-            <div className="p-3 bg-gray-50/50 flex gap-4 text-xs text-gray-500 border-t border-gray-100">
+            <div className="p-3 bg-brand-card/50 flex gap-4 text-xs text-brand-muted border-t border-brand-accent/10">
                 <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span className="w-2 h-2 rounded-full bg-brand-accent"></span>
                     <span>מתוכנן</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span className="w-2 h-2 rounded-full bg-brand-muted"></span>
                     <span>בוצע</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+                    <span className="w-2 h-2 rounded-full bg-brand-accent/50"></span>
                     <span>היום</span>
                 </div>
             </div>

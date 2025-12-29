@@ -18,7 +18,7 @@ const AdminSection = ({ id, title, icon, color, children, isOpen, onToggle }) =>
             <h3 className="text-xl font-bold text-brand-text flex items-center gap-2 select-none">
                 <span className={`text-${color}-500`}>{icon}</span> {title}
             </h3>
-            <button className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button className="text-brand-muted hover:text-brand-text transition-colors">
                 {isOpen ? <ChevronUp /> : <ChevronDown />}
             </button>
         </div>
@@ -35,7 +35,7 @@ export default function AdminPage({ user, onBack }) {
             <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
                 <div className="text-6xl mb-4">🚫</div>
                 <h2 className="text-2xl font-bold text-brand-text mb-2">אין לך הרשאה לצפות בדף זה</h2>
-                <p className="text-gray-500 mb-6">דף זה מיועד למנהלי מערכת בלבד.</p>
+                <p className="text-brand-muted mb-6">דף זה מיועד למנהלי מערכת בלבד.</p>
                 <button onClick={onBack} className="neu-btn primary">
                     חזור לדף הבית
                 </button>
@@ -619,7 +619,7 @@ export default function AdminPage({ user, onBack }) {
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
             </div>
         );
     }
@@ -628,8 +628,7 @@ export default function AdminPage({ user, onBack }) {
         <div className="container mx-auto px-4 py-8 max-w-6xl">
             {/* Toast Notification */}
             {toast.visible && (
-                <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-50 transition-all ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                    }`}>
+                <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-50 transition-all ${toast.type === 'success' ? 'bg-brand-accent text-white' : 'bg-brand-card border border-red-500 text-red-500'}`}>
                     {toast.message}
                 </div>
             )}
@@ -654,7 +653,7 @@ export default function AdminPage({ user, onBack }) {
                 {/* Search Filters */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">חיפוש לפי שם פרטי</label>
+                        <label className="block text-xs font-bold text-brand-muted mb-1">חיפוש לפי שם פרטי</label>
                         <input
                             type="text"
                             className="neu-input w-full"
@@ -664,7 +663,7 @@ export default function AdminPage({ user, onBack }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">חיפוש לפי שם משפחה</label>
+                        <label className="block text-xs font-bold text-brand-muted mb-1">חיפוש לפי שם משפחה</label>
                         <input
                             type="text"
                             className="neu-input w-full"
@@ -674,7 +673,7 @@ export default function AdminPage({ user, onBack }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">חיפוש לפי נייד</label>
+                        <label className="block text-xs font-bold text-brand-muted mb-1">חיפוש לפי נייד</label>
                         <input
                             type="text"
                             className="neu-input w-full"
@@ -687,9 +686,9 @@ export default function AdminPage({ user, onBack }) {
                 </div>
 
                 {/* Users Table */}
-                <div className="overflow-x-auto bg-gray-50 rounded-xl border border-gray-100 max-h-[400px] overflow-y-auto">
+                <div className="overflow-x-auto bg-brand-card rounded-xl border border-brand-accent/10 max-h-[400px] overflow-y-auto">
                     <table className="w-full text-right">
-                        <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
+                        <thead className="bg-brand-bg text-brand-muted sticky top-0 z-10">
                             <tr>
                                 <th className="p-4 font-bold">שם מלא</th>
                                 <th className="p-4 font-bold">טלפון</th>
@@ -701,12 +700,12 @@ export default function AdminPage({ user, onBack }) {
                                 <tr key={u.id} className="hover:bg-white transition-colors">
                                     <td className="p-4 font-medium text-brand-text">
                                         {u.firstName} {u.lastName}
-                                        {u.email && <div className="text-xs text-gray-400 font-normal">{u.email}</div>}
+                                        {u.email && <div className="text-xs text-brand-muted font-normal">{u.email}</div>}
                                     </td>
-                                    <td className="p-4 text-gray-600" dir="ltr">{u.phone}</td>
+                                    <td className="p-4 text-brand-text" dir="ltr">{u.phone}</td>
                                     <td className="p-4 flex items-center gap-2">
                                         <select
-                                            className={`neu-input py-1 px-2 text-sm ${u.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : (u.role === 'trainer' ? 'bg-teal-50 text-teal-700 border-teal-200' : '')}`}
+                                            className={`neu-input py-1 px-2 text-sm ${u.role === 'admin' ? 'bg-brand-accent/20 text-brand-accent border-brand-accent/30' : (u.role === 'trainer' ? 'bg-brand-card text-brand-muted border-brand-muted/30' : '')}`}
                                             value={u.role || 'trainee'}
                                             onChange={(e) => handleRoleChange(u.id, e.target.value)}
                                         >
@@ -716,7 +715,7 @@ export default function AdminPage({ user, onBack }) {
                                         </select>
                                         <button
                                             onClick={() => handleDeleteUser(u)}
-                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                            className="p-2 text-brand-muted hover:text-red-500 hover:bg-brand-bg rounded-full transition-colors"
                                             title="מחק משתמש"
                                         >
                                             <Trash2 size={18} />
@@ -726,7 +725,7 @@ export default function AdminPage({ user, onBack }) {
                             ))}
                             {filteredUsers.length === 0 && (
                                 <tr>
-                                    <td colSpan="3" className="p-8 text-center text-gray-400 italic">
+                                    <td colSpan="3" className="p-8 text-center text-brand-muted italic">
                                         לא נמצאו משתמשים התואמים לחיפוש.
                                     </td>
                                 </tr>
@@ -734,7 +733,7 @@ export default function AdminPage({ user, onBack }) {
                         </tbody>
                     </table>
                 </div>
-                <div className="text-xs text-gray-400 mt-2 px-2">
+                <div className="text-xs text-brand-muted mt-2 px-2">
                     מוצגים {filteredUsers.length} משתמשים (מתוך {users.length})
                 </div>
             </AdminSection>
@@ -752,19 +751,19 @@ export default function AdminPage({ user, onBack }) {
                     onToggle={toggleSection}
                 >
                     <div className="space-y-4">
-                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <label className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 cursor-pointer block text-center">
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
+                            <label className="w-full neu-btn bg-brand-bg text-brand-text border-brand-accent/20 hover:bg-brand-accent/10 mb-1 cursor-pointer block text-center">
                                 טען קובץ CSV
                                 <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
                             </label>
-                            <p className="text-xs text-gray-500">ייבוא תרגילים מקובץ חיצוני לפי התבנית.</p>
+                            <p className="text-xs text-brand-muted">ייבוא תרגילים מקובץ חיצוני לפי התבנית.</p>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <button onClick={seedMissingExercises} className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1">
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
+                            <button onClick={seedMissingExercises} className="w-full neu-btn bg-brand-bg text-brand-text border-brand-accent/20 hover:bg-brand-accent/10 mb-1">
                                 טען תרגילים חסרים
                             </button>
-                            <p className="text-xs text-gray-500">משלים תרגילים בסיסיים אם הם חסרים במערכת.</p>
+                            <p className="text-xs text-brand-muted">משלים תרגילים בסיסיים אם הם חסרים במערכת.</p>
                         </div>
                     </div>
                 </AdminSection>
@@ -779,21 +778,21 @@ export default function AdminPage({ user, onBack }) {
                     onToggle={toggleSection}
                 >
                     <div className="space-y-4">
-                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
                             <button onClick={handleSyncFilters} className="neu-btn text-sm bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
                                 🔄 סנכרן מסננים
                             </button>
-                            <button onClick={handleExportCSV} className="w-full neu-btn bg-white text-blue-700 border-blue-200 hover:bg-blue-100 mb-1 mt-1">
+                            <button onClick={handleExportCSV} className="w-full neu-btn bg-brand-bg text-brand-accent border-brand-accent/20 hover:bg-brand-accent/10 mb-1 mt-1">
                                 הורד דוח תרגילים (CSV)
                             </button>
-                            <p className="text-xs text-gray-500">מוריד קובץ אקסל המכיל את כל התרגילים במערכת, כולל בדיקה האם יש להם תמונה.</p>
+                            <p className="text-xs text-brand-muted">מוריד קובץ אקסל המכיל את כל התרגילים במערכת, כולל בדיקה האם יש להם תמונה.</p>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <a href="/exercises_template_v3.csv" download className="w-full neu-btn bg-white text-gray-700 border-gray-200 hover:bg-gray-100 mb-1 block text-center">
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
+                            <a href="/exercises_template_v3.csv" download className="w-full neu-btn bg-brand-bg text-brand-text border-brand-accent/20 hover:bg-brand-accent/10 mb-1 block text-center">
                                 הורד תבנית CSV
                             </a>
-                            <p className="text-xs text-gray-500">תבנית ריקה לייבוא תרגילים חדשים.</p>
+                            <p className="text-xs text-brand-muted">תבנית ריקה לייבוא תרגילים חדשים.</p>
                         </div>
                     </div>
                 </AdminSection>
@@ -808,15 +807,15 @@ export default function AdminPage({ user, onBack }) {
                     onToggle={toggleSection}
                 >
                     <div className="space-y-4">
-                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
-                            <button onClick={handleRestoreDefaults} className="w-full neu-btn bg-white text-orange-700 border-orange-200 hover:bg-orange-100 mb-1">
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
+                            <button onClick={handleRestoreDefaults} className="w-full neu-btn bg-brand-bg text-brand-text border-brand-accent/20 hover:bg-brand-accent/10 mb-1">
                                 שחזר שרירי ברירת מחדל
                             </button>
-                            <p className="text-xs text-gray-500">מאפס את הגדרות השרירים (אייקונים ושמות) לברירת המחדל. לא מוחק תרגילים.</p>
-                            <p className="text-xs text-gray-500">מריץ סקריפט לתיקון שמות שרירים מאנגלית לעברית. להפעיל רק אם תרגילים נעלמו.</p>
+                            <p className="text-xs text-brand-muted">מאפס את הגדרות השרירים (אייקונים ושמות) לברירת המחדל. לא מוחק תרגילים.</p>
+                            <p className="text-xs text-brand-muted">מריץ סקריפט לתיקון שמות שרירים מאנגלית לעברית. להפעיל רק אם תרגילים נעלמו.</p>
                         </div>
 
-                        <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                        <div className="p-3 bg-brand-card rounded-lg border border-red-500/20">
                             <button
                                 onClick={async () => {
                                     if (window.confirm('האם אתה בטוח? פעולה זו תמחק את כל התרגילים!')) {
@@ -827,14 +826,14 @@ export default function AdminPage({ user, onBack }) {
                                         alert('נמחק בהצלחה');
                                     }
                                 }}
-                                className="w-full neu-btn bg-white text-red-700 border-red-200 hover:bg-red-100 mb-1"
+                                className="w-full neu-btn bg-brand-bg text-red-500 border-red-500/30 hover:bg-red-500/10 mb-1"
                             >
                                 מחק כל התרגילים
                             </button>
-                            <p className="text-xs text-gray-500">פעולה בלתי הפיכה. מוחק את כל התרגילים ממסד הנתונים.</p>
+                            <p className="text-xs text-brand-muted">פעולה בלתי הפיכה. מוחק את כל התרגילים ממסד הנתונים.</p>
                         </div>
 
-                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
                             <button
                                 onClick={async () => {
                                     const newMode = !isDevMode;
@@ -850,15 +849,15 @@ export default function AdminPage({ user, onBack }) {
                                         setLoading(false);
                                     }
                                 }}
-                                className="w-full neu-btn bg-white text-purple-700 border-purple-200 hover:bg-purple-100 mb-1"
+                                className="w-full neu-btn bg-brand-bg text-brand-text border-brand-accent/20 hover:bg-brand-accent/10 mb-1"
                             >
                                 {isDevMode ? 'בטל מצב פיתוח (Auto Login)' : 'הפעל מצב פיתוח (Auto Login)'}
                             </button>
-                            <p className="text-xs text-gray-500">מאפשר כניסה אוטומטית ללא מסך לוג-אין (גלובלי).</p>
+                            <p className="text-xs text-brand-muted">מאפשר כניסה אוטומטית ללא מסך לוג-אין (גלובלי).</p>
                         </div>
 
-                        <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">
-                            <label className="block text-sm font-bold text-teal-800 mb-2">לינק להשוואת מתאמנים</label>
+                        <div className="p-3 bg-brand-card rounded-lg border border-brand-accent/10">
+                            <label className="block text-sm font-bold text-brand-text mb-2">לינק להשוואת מתאמנים</label>
                             <div className="flex gap-2">
                                 <input
                                     className="neu-input flex-1 text-sm bg-white"
@@ -884,7 +883,7 @@ export default function AdminPage({ user, onBack }) {
                                     שמור
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">כפתור יופיע במסך הבית של המתאמן אם קיים לינק.</p>
+                            <p className="text-xs text-brand-muted mt-1">כפתור יופיע במסך הבית של המתאמן אם קיים לינק.</p>
                         </div>
                     </div>
                 </AdminSection>
@@ -920,7 +919,7 @@ export default function AdminPage({ user, onBack }) {
                     <div className="space-y-8 animate-fade-in">
                         {/* Add/Edit Form */}
                         <div className="neu-card">
-                            <h3 className="text-xl font-bold mb-4 text-gray-800">
+                            <h3 className="text-xl font-bold mb-4 text-brand-text">
                                 {editingExercise ? 'עריכת תרגיל' : 'הוספת תרגיל חדש'}
                             </h3>
                             <div className="space-y-4">
@@ -993,10 +992,10 @@ export default function AdminPage({ user, onBack }) {
                                 />
 
                                 {/* Image Upload Section */}
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">תמונות (אופציונלי):</label>
+                                <div className="bg-brand-card p-4 rounded-xl border border-brand-accent/10">
+                                    <label className="block text-sm font-bold text-brand-text mb-2">תמונות (אופציונלי):</label>
                                     <div className="flex flex-wrap gap-4 items-center">
-                                        <label className="neu-btn text-xs cursor-pointer bg-white border border-gray-200 hover:bg-gray-50">
+                                        <label className="neu-btn text-xs cursor-pointer bg-brand-bg border border-brand-accent/20 hover:bg-brand-accent/10">
                                             📷 העלה קבצים
                                             <input
                                                 type="file"
@@ -1073,7 +1072,7 @@ export default function AdminPage({ user, onBack }) {
                                     {exForm.imageUrls && exForm.imageUrls.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-3">
                                             {exForm.imageUrls.map((url, idx) => (
-                                                <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                                                <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-brand-accent/20">
                                                     <img src={url} alt="preview" className="w-full h-full object-cover" />
                                                     <button
                                                         type="button"
@@ -1141,16 +1140,16 @@ export default function AdminPage({ user, onBack }) {
 
                             <div className="max-h-[500px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                                 {filteredExercises.map(ex => (
-                                    <div key={ex.id} className="bg-white rounded-xl p-4 flex justify-between items-center border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <div key={ex.id} className="bg-brand-card rounded-xl p-4 flex justify-between items-center border border-brand-accent/10 shadow-sm hover:shadow-md transition-shadow">
                                         <div>
-                                            <div className="font-bold text-gray-800">{ex.name}</div>
-                                            <div className="text-xs text-gray-500 mt-1">
+                                            <div className="font-bold text-brand-text">{ex.name}</div>
+                                            <div className="text-xs text-brand-muted mt-1">
                                                 {muscles[ex.mainMuscle]?.label || ex.mainMuscle} • {ex.subMuscle} • {ex.equipment}
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button type="button" onClick={() => handleEditExercise(ex)} className="text-teal-600 hover:bg-teal-50 p-2 rounded-lg transition-colors text-sm font-medium">ערוך</button>
-                                            <button type="button" onClick={() => handleDeleteExercise(ex.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors text-sm font-medium">מחק</button>
+                                            <button type="button" onClick={() => handleEditExercise(ex)} className="text-brand-accent hover:bg-brand-accent/10 p-2 rounded-lg transition-colors text-sm font-medium">ערוך</button>
+                                            <button type="button" onClick={() => handleDeleteExercise(ex.id)} className="text-brand-muted hover:text-red-500 hover:bg-brand-bg p-2 rounded-lg transition-colors text-sm font-medium">מחק</button>
                                         </div>
                                     </div>
                                 ))}
@@ -1161,7 +1160,7 @@ export default function AdminPage({ user, onBack }) {
                     <div className="space-y-8 animate-fade-in">
                         {/* Muscle Form */}
                         <div className="neu-card">
-                            <h3 className="text-xl font-bold mb-4 text-gray-800">
+                            <h3 className="text-xl font-bold mb-4 text-brand-text">
                                 {editingMuscleKey ? 'עריכת שריר' : 'הוספת שריר חדש'}
                             </h3>
                             <div className="space-y-4">
@@ -1181,16 +1180,16 @@ export default function AdminPage({ user, onBack }) {
                                     />
                                 </div>
 
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">אייקון (קובץ תמונה או אימוג'י):</label>
-                                    <div className="flex flex-wrap gap-4 items-center">
+                                <div className="bg-brand-card p-4 rounded-xl border border-brand-accent/10">
+                                    <label className="block text-sm font-bold text-brand-text mb-2">אייקון (קובץ תמונה או אימוג'י):</label>
+                                    <div className="flex items-center gap-4">
                                         <input
                                             type="file"
-                                            accept="image/png, image/svg+xml, image/jpeg"
-                                            className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                                            onChange={e => setMuscleIconFile(e.target.files[0])}
+                                            accept="image/*"
+                                            onChange={(e) => setMuscleIconFile(e.target.files[0])}
+                                            className="text-sm text-brand-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-accent/10 file:text-brand-accent hover:file:bg-brand-accent/20"
                                         />
-                                        <span className="text-sm text-gray-400">או</span>
+                                        <span className="text-sm text-brand-muted">או</span>
                                         <input
                                             className="neu-input w-32"
                                             placeholder="אימוג'י"
@@ -1199,20 +1198,20 @@ export default function AdminPage({ user, onBack }) {
                                         />
                                     </div>
                                     {muscleForm.icon && (
-                                        <div className="mt-2 text-xs text-gray-500">
+                                        <div className="mt-2 text-xs text-brand-muted">
                                             נוכחי: {muscleForm.icon.startsWith('http') ? 'תמונה מותאמת' : muscleForm.icon}
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Sub Muscles Manager */}
-                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">תתי שרירים:</label>
-                                    <div className="flex flex-wrap gap-2 mb-3">
+                                <div className="bg-brand-card p-4 rounded-xl border border-brand-accent/10">
+                                    <label className="block text-sm font-bold text-brand-text mb-2">תתי שרירים:</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
                                         {muscleForm.subMuscles.map(sub => (
-                                            <span key={sub} className="bg-white px-3 py-1 rounded-full text-sm border border-gray-200 flex items-center gap-2 shadow-sm">
+                                            <span key={sub} className="bg-brand-bg px-3 py-1 rounded-full text-sm border border-brand-accent/10 flex items-center gap-2 shadow-sm text-brand-muted">
                                                 {sub}
-                                                <button type="button" onClick={() => handleRemoveSubMuscle(sub)} className="text-red-400 hover:text-red-600 font-bold">×</button>
+                                                <button type="button" onClick={() => handleRemoveSubMuscle(sub)} className="text-brand-muted hover:text-red-500 font-bold">×</button>
                                             </span>
                                         ))}
                                     </div>
@@ -1247,10 +1246,10 @@ export default function AdminPage({ user, onBack }) {
                         {/* Muscles List */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {Object.keys(muscles).map(key => (
-                                <div key={key} className="neu-card flex justify-between items-center">
+                                <div key={key} className="neu-card flex justify-between items-center bg-brand-card border border-brand-accent/10">
                                     <div className="flex items-center gap-4">
-                                        <div className="text-3xl w-12 h-12 flex items-center justify-center bg-gray-50 rounded-full">
-                                            {muscles[key].icon && muscles[key].icon.startsWith('http') ? (
+                                        <div className="text-3xl w-12 h-12 flex items-center justify-center bg-brand-bg rounded-full text-brand-text border border-brand-accent/10">
+                                            {muscles[key].icon && (muscles[key].icon.startsWith('http') || muscles[key].icon.startsWith('data:')) ? (
                                                 <img
                                                     src={muscles[key].icon}
                                                     alt={muscles[key].label}
@@ -1261,11 +1260,11 @@ export default function AdminPage({ user, onBack }) {
                                             )}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-gray-800">{muscles[key].label}</div>
-                                            <div className="text-xs text-gray-500">{key}</div>
+                                            <div className="font-bold text-brand-text">{muscles[key].label}</div>
+                                            <div className="text-xs text-brand-muted">{key}</div>
                                         </div>
                                     </div>
-                                    <button type="button" onClick={() => handleEditMuscle(key)} className="neu-btn text-xs px-3 py-2">ערוך</button>
+                                    <button type="button" onClick={() => handleEditMuscle(key)} className="neu-btn text-xs px-3 py-2 text-brand-accent border-brand-accent/20 hover:bg-brand-accent/10">ערוך</button>
                                 </div>
                             ))}
                         </div>

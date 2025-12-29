@@ -19,7 +19,9 @@
 @layer components {
   .neu-card {
     background-color: var(--bg-card);
-    @apply rounded-2xl shadow-lg border border-gray-100 transition-all duration-300;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), var(--card-border-glow);
+    @apply rounded-2xl transition-all duration-300;
   }
 
   .neu-btn {
@@ -39,7 +41,25 @@
   }
 
   .neu-input {
-    @apply w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all duration-300;
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    @apply w-full px-4 py-3 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all duration-300 placeholder-gray-500;
+  }
+
+  /* USER REQUESTED GLOBAL OVERRIDES */
+  input,
+  textarea,
+  select {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+
+  input::placeholder {
+    color: #9ca3af !important;
+    /* Visible Gray */
+    opacity: 1 !important;
   }
 
   .neu-checkbox {
@@ -96,4 +116,13 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.8);
+}
+
+
+
+/* Force Input Label Visibility */
+.input-label,
+span.text-gray-500 {
+  color: #9ca3af !important;
+  /* Force light gray visibility */
 }

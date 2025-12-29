@@ -96,20 +96,20 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
             <div className="bg-white w-full max-w-lg max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-teal-500 to-cyan-600 text-white relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-sm"></div>
+                {/* Header */}
+                <div className="p-6 border-b border-brand-accent/10 flex justify-between items-center bg-brand-card text-brand-text relative overflow-hidden">
                     <div className="flex items-center gap-3 relative z-10">
-                        <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                        <div className="bg-brand-bg p-2 rounded-xl border border-brand-accent/20">
                             <span className="text-2xl">⚡</span>
                         </div>
                         <div>
-                            <h2 className="font-bold text-xl tracking-wide">מאמן AI</h2>
-                            <p className="text-xs text-teal-50 font-medium">הגדרת אימון חכם</p>
+                            <h2 className="font-bold text-xl tracking-wide text-brand-text">מאמן AI</h2>
+                            <p className="text-xs text-brand-muted font-medium">הגדרת אימון חכם</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="relative z-10 text-white/80 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all"
+                        className="relative z-10 text-brand-muted hover:text-white hover:bg-brand-accent/10 rounded-full p-2 transition-all"
                     >
                         ✕
                     </button>
@@ -120,10 +120,10 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                     {/* Duration Slider */}
                     <div className="neu-card p-5">
                         <div className="flex justify-between items-center mb-4">
-                            <label className="font-bold text-gray-700 flex items-center gap-2">
+                            <label className="font-bold text-brand-text flex items-center gap-2">
                                 <span>⏱️</span> משך האימון
                             </label>
-                            <span className="bg-teal-50 text-teal-700 px-3 py-1 rounded-lg text-sm font-bold border border-teal-100 shadow-sm">
+                            <span className="bg-brand-accent/10 text-brand-accent px-3 py-1 rounded-lg text-sm font-bold border border-brand-accent/20 shadow-sm">
                                 {duration} דקות
                             </span>
                         </div>
@@ -134,9 +134,9 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                             step="5"
                             value={duration}
                             onChange={(e) => setDuration(Number(e.target.value))}
-                            className="w-full h-3 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-teal-500 hover:accent-teal-400 transition-all"
+                            className="w-full h-3 bg-brand-bg rounded-lg appearance-none cursor-pointer accent-brand-accent hover:accent-brand-accent/80 transition-all"
                         />
-                        <div className="flex justify-between text-xs text-gray-400 mt-2 font-medium">
+                        <div className="flex justify-between text-xs text-brand-muted mt-2 font-medium">
                             <span>30 דק'</span>
                             <span>120 דק'</span>
                         </div>
@@ -144,7 +144,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
 
                     {/* Goal Selection */}
                     <div className="space-y-3">
-                        <label className="font-bold text-gray-700 px-1">🎯 מטרת האימון</label>
+                        <label className="font-bold text-brand-text px-1">🎯 מטרת האימון</label>
                         <div className="relative">
                             <select
                                 value={goal}
@@ -156,7 +156,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                                 <option value="endurance">סיבולת (Endurance)</option>
                                 <option value="maintenance">תחזוקה (Maintenance)</option>
                             </select>
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-brand-muted">
                                 ▼
                             </div>
                         </div>
@@ -164,7 +164,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
 
                     {/* Equipment Selection */}
                     <div className="space-y-3">
-                        <label className="font-bold text-gray-700 px-1">🏋️ ציוד זמין</label>
+                        <label className="font-bold text-brand-text px-1">🏋️ ציוד זמין</label>
                         <div className="grid grid-cols-3 gap-3">
                             {[
                                 { id: 'weights', label: 'משקולות', icon: 'dumbbell' },
@@ -175,8 +175,8 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                                     key={type.id}
                                     onClick={() => setEquipment(type.id)}
                                     className={`p-3 rounded-xl text-sm transition-all duration-300 flex flex-col items-center gap-2 ${equipment === type.id
-                                        ? 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg transform scale-105'
-                                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 shadow-sm'
+                                        ? 'bg-brand-accent text-white shadow-lg transform scale-105'
+                                        : 'bg-brand-card text-brand-muted hover:bg-brand-bg shadow-sm'
                                         }`}
                                 >
                                     <span className="font-bold">{type.label}</span>
@@ -187,7 +187,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
 
                     {/* Muscle Selection */}
                     <div className="space-y-3">
-                        <label className="font-bold text-gray-700 px-1">💪 שרירים להתמקדות</label>
+                        <label className="font-bold text-brand-text px-1">💪 שרירים להתמקדות</label>
                         <div className="grid grid-cols-3 gap-3">
                             {muscleKeys.map(m => {
                                 const isSelected = selectedMuscles.includes(m);
@@ -197,8 +197,8 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                                         key={m}
                                         onClick={() => toggleMuscle(m)}
                                         className={`p-3 rounded-2xl text-sm transition-all duration-300 flex flex-col items-center gap-2 border-2 ${isSelected
-                                            ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-md transform -translate-y-1'
-                                            : 'border-transparent bg-white text-gray-500 hover:bg-gray-50 shadow-sm'
+                                            ? 'border-brand-accent bg-brand-accent/10 text-brand-accent shadow-md transform -translate-y-1'
+                                            : 'border-transparent bg-brand-card text-brand-muted hover:bg-brand-bg shadow-sm'
                                             }`}
                                     >
                                         <div className="text-2xl filter drop-shadow-sm">
@@ -224,8 +224,8 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                 {/* AI Message Area */}
                 {aiMessage && (
                     <div className={`mx-6 mb-2 p-4 rounded-xl text-sm font-medium flex items-start gap-3 ${aiMessage.type === 'error'
-                        ? 'bg-red-50 text-red-700 border border-red-100'
-                        : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        ? 'bg-brand-card text-red-500 border border-red-500/30'
+                        : 'bg-brand-card text-brand-accent border border-brand-accent/30'
                         }`}>
                         <span className="text-lg">{aiMessage.type === 'error' ? '⚠️' : '🤖'}</span>
                         <p>{aiMessage.text}</p>
@@ -233,7 +233,7 @@ export default function AIWorkoutModal({ onClose, onStartWorkout }) {
                 )}
 
                 {/* Footer Action */}
-                <div className="p-6 border-t border-gray-100 bg-gray-50/50 backdrop-blur-sm">
+                <div className="p-6 border-t border-brand-accent/10 bg-brand-card/95 backdrop-blur-sm">
                     <button
                         onClick={handleGenerate}
                         disabled={loading}

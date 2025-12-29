@@ -184,11 +184,11 @@ export default function TrainerDashboard({ user, onBack }) {
                 onClick={() => setCurrentView('reports')}
                 className="neu-card p-8 flex flex-col items-center justify-center gap-4 hover:scale-105 transition-transform cursor-pointer min-h-[200px]"
             >
-                <div className="w-16 h-16 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-brand-accent/20 text-brand-accent flex items-center justify-center">
                     <BarChart2 size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-brand-text">דוחות ומעקב</h3>
-                <p className="text-gray-500 text-center text-sm">צפה ברשימת המתאמנים והתקדמותם</p>
+                <p className="text-brand-muted text-center text-sm">צפה ברשימת המתאמנים והתקדמותם</p>
             </div>
 
             {/* Tile B: Register Trainee */}
@@ -196,11 +196,11 @@ export default function TrainerDashboard({ user, onBack }) {
                 onClick={() => setCurrentView('register')}
                 className="neu-card p-8 flex flex-col items-center justify-center gap-4 hover:scale-105 transition-transform cursor-pointer min-h-[200px]"
             >
-                <div className="w-16 h-16 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-brand-accent/10 text-brand-accent flex items-center justify-center">
                     <UserPlus size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-brand-text">הקמת מתאמן חדש</h3>
-                <p className="text-gray-500 text-center text-sm">הזמן מתאמן חדש לאפליקציה</p>
+                <p className="text-brand-muted text-center text-sm">הזמן מתאמן חדש לאפליקציה</p>
             </div>
 
             {/* Tile C: Workout Planner */}
@@ -208,11 +208,11 @@ export default function TrainerDashboard({ user, onBack }) {
                 onClick={() => setCurrentView('planner')}
                 className="neu-card p-8 flex flex-col items-center justify-center gap-4 hover:scale-105 transition-transform cursor-pointer min-h-[200px]"
             >
-                <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-brand-card border border-brand-accent/20 text-brand-accent flex items-center justify-center">
                     <Calendar size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-brand-text">בניית תוכנית אימונים</h3>
-                <p className="text-gray-500 text-center text-sm">צור וערוך תוכניות אימון</p>
+                <p className="text-brand-muted text-center text-sm">צור וערוך תוכניות אימון</p>
             </div>
 
             {/* Comparison Link */}
@@ -221,7 +221,7 @@ export default function TrainerDashboard({ user, onBack }) {
                     href={comparisonUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="md:col-span-3 neu-card p-4 flex items-center justify-center gap-2 hover:bg-sky-50 transition-colors cursor-pointer text-sky-600 font-bold border-sky-100"
+                    className="md:col-span-3 neu-card p-4 flex items-center justify-center gap-2 hover:bg-brand-accent/10 transition-colors cursor-pointer text-brand-accent font-bold border-brand-accent/20"
                 >
                     🌐 נתוני השוואת מתאמנים
                 </a>
@@ -233,9 +233,9 @@ export default function TrainerDashboard({ user, onBack }) {
         <div className="space-y-4">
             <h2 className="text-2xl font-bold text-brand-text mb-4">מתאמנים פעילים</h2>
             {loading ? (
-                <div className="text-center text-gray-500 py-8">טוען מתאמנים...</div>
+                <div className="text-center text-brand-muted py-8">טוען מתאמנים...</div>
             ) : trainees.length === 0 ? (
-                <div className="text-center text-gray-400 py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <div className="text-center text-brand-muted py-12 bg-brand-card/50 rounded-xl border border-dashed border-brand-muted/30">
                     <User size={48} className="mx-auto mb-2 opacity-20" />
                     <p>אין לך עדיין מתאמנים.</p>
                 </div>
@@ -244,17 +244,17 @@ export default function TrainerDashboard({ user, onBack }) {
                     <div
                         key={trainee.id}
                         onClick={() => setSelectedTrainee(trainee)}
-                        className="neu-card flex justify-between items-center p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="neu-card flex justify-between items-center p-4 hover:bg-brand-accent/5 transition-colors cursor-pointer"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-100 to-teal-100 flex items-center justify-center text-teal-600 font-bold">
+                            <div className="w-10 h-10 rounded-full bg-brand-card border border-brand-accent/30 flex items-center justify-center text-brand-accent font-bold">
                                 {trainee.name ? trainee.name[0].toUpperCase() : '?'}
                             </div>
                             <div>
                                 <div className="font-bold text-brand-text">
                                     {trainee.name || 'ממתין להרשמה'}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-brand-muted">
                                     {trainee.email || 'ללא אימייל'} | {trainee.phone || 'ללא טלפון'}
                                 </div>
                             </div>
@@ -271,7 +271,7 @@ export default function TrainerDashboard({ user, onBack }) {
     const renderRegisterForm = () => (
         <div className="max-w-2xl mx-auto neu-card p-8">
             <h2 className="text-2xl font-bold text-brand-text mb-6 flex items-center gap-2 justify-center">
-                <UserPlus className="text-teal-500" />
+                <UserPlus className="text-brand-accent" />
                 רשימת מתאמן חדש
             </h2>
             <form onSubmit={handleSaveTrainee} className="space-y-6">
@@ -279,14 +279,14 @@ export default function TrainerDashboard({ user, onBack }) {
                 {/* Profile Picture Upload */}
                 <div className="flex flex-col items-center mb-6">
                     <div className="relative group cursor-pointer">
-                        <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-teal-500 transition-colors">
+                        <div className="w-24 h-24 rounded-full bg-brand-bg border-2 border-dashed border-brand-muted/30 flex items-center justify-center overflow-hidden hover:border-brand-accent transition-colors">
                             {selectedImage ? (
                                 <img src={selectedImage} alt="Profile Preview" className="w-full h-full object-cover" />
                             ) : (
-                                <User size={40} className="text-gray-400" />
+                                <User size={40} className="text-brand-muted" />
                             )}
                         </div>
-                        <div className="absolute bottom-0 right-0 bg-teal-500 text-white p-1 rounded-full shadow-lg">
+                        <div className="absolute bottom-0 right-0 bg-brand-accent text-white p-1 rounded-full shadow-lg">
                             <div className="relative">
                                 <PlusIconBadge />
                             </div>
@@ -298,7 +298,7 @@ export default function TrainerDashboard({ user, onBack }) {
                             onChange={handleImageSelect}
                         />
                     </div>
-                    <span className="text-xs text-gray-500 mt-2">לחץ להעלאת תמונה</span>
+                    <span className="text-xs text-brand-muted mt-2">לחץ להעלאת תמונה</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -383,7 +383,7 @@ export default function TrainerDashboard({ user, onBack }) {
 
     const renderPlanner = () => (
         <div className="flex flex-col h-full animate-fade-in gap-4">
-            <div className="bg-brand-card p-4 rounded-xl border border-gray-100 flex flex-wrap gap-4 items-end shadow-sm z-10">
+            <div className="bg-brand-card p-4 rounded-xl border border-brand-accent/10 flex flex-wrap gap-4 items-end shadow-sm z-10">
                 <div className="flex-1 min-w-[200px]">
                     <label className="block text-sm font-bold text-brand-text mb-1">בחר מתאמן</label>
                     <select
@@ -413,7 +413,7 @@ export default function TrainerDashboard({ user, onBack }) {
                         onDateChange={setWorkoutDate}
                     />
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <div className="flex flex-col items-center justify-center h-full text-brand-muted bg-brand-card/30 rounded-xl border border-dashed border-brand-muted/30">
                         <Calendar size={48} className="mb-4 opacity-20" />
                         <p className="text-lg">אנא בחר מתאמן כדי להתחיל בתכנון האימון</p>
                     </div>

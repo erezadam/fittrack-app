@@ -379,7 +379,7 @@ function App() {
       )}
 
       {/* Version Footer */}
-      <div className="fixed bottom-2 left-0 w-full text-center text-[10px] text-gray-500 pointer-events-none z-50 opacity-50">
+      <div className="fixed bottom-2 left-0 w-full text-center text-[10px] text-brand-muted pointer-events-none z-50 opacity-50">
         גרסה: התחברות טרייני וסנכרון תוכניות | Antigravity | 20.12.2025
       </div>
     </div>

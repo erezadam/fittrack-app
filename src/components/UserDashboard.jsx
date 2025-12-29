@@ -82,7 +82,7 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent"></div>
             </div>
         );
     }
@@ -91,15 +91,15 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
         <div className="container mx-auto px-2 md:px-4 py-2 md:py-8 max-w-4xl">
             {/* Header */}
             <div className="mb-1 md:mb-8 flex justify-between items-start">
-                <div>
+                <div className="flex-1">
                     <h1 className="text-xl md:text-3xl font-bold text-brand-text leading-tight">
-                        ברוך הבא, <span className="text-teal-600">{user.firstName}</span>
+                        ברוך הבא, <span className="text-brand-accent">{user.firstName}</span>
                     </h1>
-                    <p className="text-gray-400 mt-0.5 text-[10px] md:text-base hidden md:block">הנה סיכום הפעילות שלך</p>
+                    <p className="text-brand-muted mt-0.5 text-[10px] md:text-base hidden md:block">הנה סיכום הפעילות שלך</p>
                 </div>
                 <button
                     onClick={onLogout}
-                    className="neu-btn text-[10px] md:text-xs text-red-500 bg-red-50 hover:bg-red-100 px-2 py-1 md:px-4 md:py-2"
+                    className="neu-btn text-[10px] md:text-xs text-brand-muted bg-brand-card border border-brand-muted/30 hover:bg-brand-accent/10 hover:text-brand-accent px-2 py-1 md:px-4 md:py-2"
                 >
                     יציאה
                 </button>
@@ -109,17 +109,17 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
             <div className="grid grid-cols-3 gap-1 md:gap-4 mb-3 md:mb-12 items-stretch">
                 <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
                     <div className="text-brand-muted text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים החודש</div>
-                    <div className="text-lg md:text-4xl font-extrabold text-teal-600 leading-none">{stats.monthCount}</div>
+                    <div className="text-lg md:text-4xl font-extrabold text-brand-accent leading-none">{stats.monthCount}</div>
                 </div>
                 <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
                     <div className="text-brand-muted text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימונים השבוע</div>
-                    <div className="text-lg md:text-4xl font-extrabold text-cyan-600 leading-none">{stats.weekCount}</div>
+                    <div className="text-lg md:text-4xl font-extrabold text-brand-accent leading-none">{stats.weekCount}</div>
                 </div>
                 <div className="neu-card p-1 py-1 md:p-6 flex flex-col items-center justify-center text-center">
                     <div className="text-brand-muted text-[9px] md:text-base font-medium leading-none mb-0.5 md:mb-2 text-nowrap">אימון אחרון</div>
                     <div className="text-sm md:text-xl font-bold text-brand-text leading-none">{stats.lastWorkoutDate}</div>
                     {stats.lastWorkoutName && (
-                        <div className="hidden md:block text-xs md:text-sm text-teal-600 mt-0.5 md:mt-1 font-medium truncate w-full px-2 max-w-[200px] md:max-w-none">
+                        <div className="hidden md:block text-xs md:text-sm text-brand-accent mt-0.5 md:mt-1 font-medium truncate w-full px-2 max-w-[200px] md:max-w-none">
                             {stats.lastWorkoutName}
                         </div>
                     )}
@@ -139,31 +139,40 @@ export default function UserDashboard({ user, onNavigateToBuilder, onNavigateToH
                         href={comparisonUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-sky-500 hover:bg-sky-600 text-white border-sky-600 flex items-center justify-center gap-2"
+                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-brand-card hover:bg-brand-accent/10 text-brand-accent border border-brand-accent/30 flex items-center justify-center gap-2"
                     >
                         נתוני השוואת מתאמנים
                     </a>
                 )}
+            </div>
+
+            {/* Quick Actions (Circular Buttons) */}
+            <div className="flex md:flex-col gap-4 md:fixed md:left-8 md:bottom-8 z-40 bg-brand-card/90 md:bg-transparent p-2 md:p-0 rounded-2xl md:rounded-none backdrop-blur-sm md:backdrop-blur-none border border-brand-accent/10 md:border-none shadow-lg md:shadow-none justify-center mt-2 md:mt-0">
                 <button
                     onClick={onNavigateToHistory}
-                    className="neu-btn primary text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all"
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-accent hover:bg-brand-accent/80 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110"
+                    title="היסטוריית אימונים"
                 >
-                    📅 אימונים מתוכננים
+                    <span className="text-xl">📅</span>
                 </button>
+
                 {(user.role === 'trainer' || user.role === 'admin' || user.isAdmin) && (
                     <button
                         onClick={onSwitchToTrainer}
-                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-teal-500 hover:bg-teal-600 text-white border-teal-600"
+                        className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-accent hover:bg-brand-accent/80 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110"
+                        title="לוח בקרה למאמן"
                     >
-                        תכנון מאמן
+                        <span className="text-xl">🎓</span>
                     </button>
                 )}
-                {user.role === 'admin' && (
+
+                {(user.role === 'admin' || user.isAdmin) && (
                     <button
                         onClick={onNavigateToAdmin}
-                        className="neu-btn text-lg md:text-xl py-3 md:py-4 px-8 md:px-12 shadow-lg hover:shadow-xl transition-all bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-600"
+                        className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-accent hover:bg-brand-accent/80 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110"
+                        title="ניהול מערכת"
                     >
-                        ניהול
+                        <span className="text-xl">⚙️</span>
                     </button>
                 )}
             </div>

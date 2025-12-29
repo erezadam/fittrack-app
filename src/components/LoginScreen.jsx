@@ -65,7 +65,7 @@ export default function LoginScreen({ onLogin }) {
                     <div className="relative z-10">
                         <div className="text-6xl mb-4">💪</div>
                         <h1 className="text-3xl font-extrabold tracking-tight">RepUp</h1>
-                        <p className="text-teal-100 mt-2 font-medium">המאמן האישי שלך</p>
+                        <p className="text-brand-accent mt-2 font-medium">המאמן האישי שלך</p>
                     </div>
                 </div>
 
@@ -111,7 +111,7 @@ export default function LoginScreen({ onLogin }) {
 
                         <div>
                             <label className="block text-sm font-bold text-brand-text mb-1">
-                                אימייל <span className="text-teal-500 text-xs font-normal">(מומלץ לסנכרון אימונים)</span>
+                                אימייל <span className="text-brand-accent/80 text-xs font-normal">(מומלץ לסנכרון אימונים)</span>
                             </label>
                             <input
                                 type="email"
@@ -124,7 +124,7 @@ export default function LoginScreen({ onLogin }) {
                         </div>
 
                         {error && (
-                            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm text-center font-medium border border-red-100">
+                            <div className="bg-brand-card text-red-500 p-3 rounded-xl text-sm text-center font-medium border border-red-500/20">
                                 {error}
                             </div>
                         )}
@@ -143,7 +143,7 @@ export default function LoginScreen({ onLogin }) {
                     </form>
                 </div>
 
-                <div className="bg-gray-50 p-4 text-center text-xs text-gray-400 flex justify-between items-center">
+                <div className="bg-brand-bg p-4 text-center text-xs text-brand-muted flex justify-between items-center">
                     <span>גרסה: שדרוג ממשק מלא - Antigravity | תאריך: 22/12/2025</span>
                     <button
                         onClick={() => {
@@ -151,7 +151,7 @@ export default function LoginScreen({ onLogin }) {
                             setLastName('User');
                             setPhone('054-7895818');
                         }}
-                        className="text-gray-300 hover:text-gray-500 transition-colors"
+                        className="text-brand-muted hover:text-brand-text transition-colors"
                         title="Dev Mode"
                     >
                         ⚡

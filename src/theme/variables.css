@@ -1,9 +1,18 @@
 :root {
-    --bg-main: #f1f5f9;       /* slate-100 */
-    --bg-card: #ffffff;       /* white */
-    --text-primary: #1f2937;  /* gray-800 */
-    --text-secondary: #4b5563;/* gray-600 */
-    --primary-accent: #06b6d4; /* cyan-500 */
-    --primary-gradient-start: #06b6d4; /* cyan-500 */
-    --primary-gradient-end: #14b8a6;   /* teal-500 */
+    --bg-main: #0a0b10;
+    /* Deep Black Background */
+    --bg-card: #1c1e26;
+    /* Dark Slate Card Background */
+    --text-primary: #ffffff;
+    /* Pure White Text */
+    --text-secondary: #9ca3af;
+    /* Light Gray Muted Text */
+    --primary-accent: #00e5d1;
+    /* Neon Cyan Accent */
+    --primary-gradient-start: #06b6d4;
+    /* Cyan */
+    --primary-gradient-end: #14b8a6;
+    /* Teal/Neon */
+    --card-border-glow: 0 0 10px rgba(0, 229, 209, 0.3);
+    /* Neon Glow for Cards */
 }
